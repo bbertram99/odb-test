@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="RMAX Cockpit" />
-  <title>Yamaha RMAX Pro Cockpit</title>
+  <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
+  <title>Yamaha RMAX Pro Telemetry Explorer</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -83,6 +83,7 @@
       background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--text); width: 34px; height: 34px; border-radius: 8px;
       display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem;
+      text-decoration: none;
     }
     .btn-hud-icon:active { transform: scale(0.92); }
 
@@ -113,7 +114,7 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
     @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
 
-    /* Live Status Strip (Gear, D-Mode, Brakes) */
+    /* Live Status Strip */
     .drive-status-strip {
       display: grid;
       grid-template-columns: 1fr 1.3fr 0.9fr 0.9fr;
@@ -140,14 +141,14 @@
     .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
     .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
 
-    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); font-weight: 800; }
-    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); font-weight: 800; }
-    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); font-weight: 800; }
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); }
 
     .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
     .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.18); }
 
-    /* Touch Metric Cards */
+    /* Touch Metric Cards Grid */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
     .touch-card {
       background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.85rem 1rem;
@@ -159,7 +160,7 @@
     .card-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
     .card-toggle-hint { font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
     .card-main { margin: 0.4rem 0; display: flex; align-items: baseline; gap: 0.35rem; }
-    .card-val { font-size: 2.2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-val { font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
     .card-unit { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
     .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
     .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
@@ -171,58 +172,32 @@
     }
     .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
 
-    /* Interactive Instruction Box */
-    .instruction-card {
-      background: rgba(2, 6, 23, 0.85);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      border-radius: 10px;
-      padding: 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      font-size: 0.8rem;
-    }
-    .inst-header {
-      font-weight: 800;
-      color: var(--amber);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-    .inst-state {
-      background: rgba(245, 158, 11, 0.15);
-      border-left: 3px solid var(--amber);
-      padding: 0.3rem 0.5rem;
-      border-radius: 4px;
-      color: #fff;
-      font-weight: 600;
-    }
-    .inst-steps {
-      color: var(--text);
-      line-height: 1.4;
-      padding-left: 1rem;
-    }
-
+    /* Action Buttons */
     .btn-touch {
       background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem;
       border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
     }
     .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
     .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
+    .btn-touch.yamaha { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); }
     .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
     .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; }
 
-    select {
+    select, input[type="text"] {
       background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.65rem;
-      border-radius: 8px; font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700;
+      border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 600;
     }
 
     .terminal-box {
       background: #020617; border: 1px solid var(--card-border); border-radius: 10px; padding: 0.75rem;
       font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.4; flex: 1;
       max-height: calc(100vh - 380px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 0.5rem;
     }
 
     /* Live Byte Matrix */
@@ -273,18 +248,19 @@
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
-        RMAX PRO COCKPIT
+        RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v1.6.0</span>
+      <span class="version-tag" id="app-version-badge">v2.0.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
+      <a href="readme.html" class="btn-hud-icon" title="Open Technical Documentation">📖</a>
       <button class="btn-hud-icon" onclick="toggleSimulator()" title="Toggle Simulator">⚡</button>
       <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
     </div>
   </header>
 
-  <!-- TAB 1: Cockpit Dashboard -->
+  <!-- TAB 1: Advanced Cockpit Telemetry -->
   <div id="tab-dash" class="view-panel" style="display: flex;">
     
     <!-- Hero Tachometer -->
@@ -302,7 +278,7 @@
       </div>
     </div>
 
-    <!-- Live Status Strip (Gear, D-Mode, P-Brake, Foot Brake) -->
+    <!-- Live Status Strip -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -326,7 +302,7 @@
       <!-- Ground Speed -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
-          <span class="card-label">Speed</span>
+          <span class="card-label">Speed (d:07)</span>
           <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
         </div>
         <div class="card-main">
@@ -352,6 +328,34 @@
         </div>
       </div>
 
+      <!-- Spark Advance / Timing (Byte 17) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Spark Timing</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-timing" class="card-val">--</span>
+          <span class="card-unit">°BTDC</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-timing" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Barometric Pressure (Bytes 14 & 15) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Baro (d:02)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-baro" class="card-val">--</span>
+          <span class="card-unit">kPa</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-baro" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
       <!-- Gas Pedal / APS (Byte 7) -->
       <div class="touch-card">
         <div class="card-top">
@@ -366,7 +370,7 @@
         </div>
       </div>
 
-      <!-- Throttle Blade / TPS (d:01) -->
+      <!-- Throttle Body / TPS (d:01) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -380,10 +384,11 @@
         </div>
       </div>
 
-      <!-- Battery Voltage -->
+      <!-- ECU ADC Voltage (Byte 13) -->
       <div class="touch-card" style="grid-column: span 2;">
         <div class="card-top">
-          <span class="card-label">Battery Voltage</span>
+          <span class="card-label">ECU Regulated Voltage (Byte 13 d:09)</span>
+          <span id="val-dash-atrv" style="font-size:0.75rem; color:var(--text-muted); font-family:'JetBrains Mono';">ATRV: --V</span>
         </div>
         <div class="card-main">
           <span id="val-dash-voltage" class="card-val">--</span>
@@ -396,76 +401,73 @@
     </div>
   </div>
 
-  <!-- TAB 2: Guided Flight Recorder & Cumulative Logger -->
-  <div id="tab-recorder" class="view-panel">
+  <!-- TAB 2: Multi-ECU Network Explorer & Scanner -->
+  <div id="tab-modules" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Guided Test Flight Recorder</div>
-      
-      <!-- Test Selector Dropdown -->
-      <div style="display:flex; flex-direction:column; gap:0.3rem;">
-        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT TARGET TEST:</label>
-        <select id="record-test-select" onchange="onTestSelectChanged()">
-          <option value="test_drive_mode_2140">1. 4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock) [Target: 21 40]</option>
-          <option value="test_diff_2164">2. Extended Diff & Chassis Sweep [Target: 21 64]</option>
-          <option value="test_reverse_2140">3. Reverse vs Neutral Isolation [Target: 21 40]</option>
-          <option value="test_handbrake_2101">4. Parking Brake Hand Lever [Target: 21 01]</option>
-          <option value="test_dmode_2101">5. D-Mode Switch (Crawling / Trail / Sport) [Target: 21 01]</option>
-          <option value="test_warmup_2101">6. Engine Warmup & MAP Blip [Target: 21 01]</option>
-        </select>
+      <div class="disc-title">Multi-ECU CAN Bus Gateway</div>
+      <p style="font-size:0.75rem; color:var(--text-muted);">
+        Switch active target headers to communicate with auxiliary control units on the RMAX bus.
+      </p>
+      <div class="action-grid">
+        <button class="btn-touch yamaha" onclick="setModuleHeader('7E0', 'Engine ECU')">Engine ECU (7E0)</button>
+        <button class="btn-touch secondary" onclick="setModuleHeader('760', 'EPS Power Steering')">EPS Steering (760)</button>
+        <button class="btn-touch secondary" onclick="setModuleHeader('7A0', 'Fox iQS Suspension')">Fox iQS Shocks (7A0)</button>
+        <button class="btn-touch secondary" onclick="setModuleHeader('7D0', 'Meter Cluster')">Meter Node (7D0)</button>
       </div>
-
-      <!-- Dynamic On-Screen Instructions -->
-      <div class="instruction-card" id="instruction-box">
-        <div class="inst-header">🔑 REQUIRED MACHINE STATE</div>
-        <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Machine stationary.</div>
-        <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 TEST PROCEDURE</div>
-        <ol class="inst-steps" id="inst-steps-list">
-          <li>Start with the rotary switch in <strong>Turf Mode</strong>.</li>
-          <li>Tap the <strong>🔴 Start Session Record</strong> button below.</li>
-          <li>Turn switch to <strong>2WD</strong> (pause 2s) &rarr; <strong>4WD</strong> (pause 2s) &rarr; <strong>Diff Lock</strong> (pause 2s).</li>
-          <li>Return switch back to <strong>Turf Mode</strong>.</li>
-          <li>Tap <strong>⏹️ Stop & Append to Master Log</strong>.</li>
-        </ol>
-      </div>
-
-      <div style="display:flex; gap:0.5rem; margin-top:0.2rem;">
-        <button class="btn-touch record-btn" id="btn-record" style="flex:1;" onclick="toggleSessionRecording()">
-          🔴 Start Session Record
-        </button>
-      </div>
-      <div id="record-status-text" style="font-size:0.8rem; color:var(--cyan); font-weight:700;">Recorder Standby</div>
+      <div id="active-header-status" style="font-size:0.8rem; color:var(--cyan); font-weight:700;">Target: Engine ECU (0x7E0)</div>
     </div>
 
-    <!-- Cumulative Master Report Box -->
-    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="disc-title">Master Test Report (<span id="accumulated-count">0</span> Tests Logged)</div>
-        <div style="display:flex; gap:0.4rem;">
-          <button class="btn-touch" style="padding:0.25rem 0.6rem; font-size:0.75rem; background:rgba(74,222,128,0.2); border-color:var(--green); color:var(--green);" onclick="copyAccumulatedReport()">
-            📋 Copy All Logs for AI
-          </button>
-          <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearAccumulatedReport()">
-            Clear
-          </button>
-        </div>
-      </div>
-      <div id="recorder-output" class="terminal-box">
-        <div style="color:var(--text-muted);">Run tests above. Each completed test will automatically append here for combined export...</div>
+    <!-- ECU Network Scanner -->
+    <div class="disc-section">
+      <div class="disc-title">Auto-Scan CAN Network (0x700 – 0x7DF)</div>
+      <button class="btn-touch" onclick="scanAllCANModules()">🔍 Ping All CAN Module Addresses</button>
+      <div id="module-scan-results" class="terminal-box" style="max-height:160px;">
+        <div style="color:var(--text-muted);">Tap to scan for all live electronic control units...</div>
       </div>
     </div>
   </div>
 
-  <!-- TAB 3: Live Byte Matrix Stream -->
-  <div id="tab-payload" class="view-panel">
+  <!-- TAB 3: Yamaha DTC & Diagnostics Explorer -->
+  <div id="tab-diagnostics" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Live 21 01 Byte Stream (26 Bytes)</div>
-      <div id="byte-matrix" class="byte-matrix"></div>
+      <div class="disc-title">Diagnostic Trouble Codes & Calibration ID</div>
+      <div class="action-grid">
+        <button class="btn-touch yamaha" onclick="queryYamahaDTCs()">🔍 Read Active & Stored DTCs</button>
+        <button class="btn-touch secondary" onclick="queryECUIdentification()">Read ECU Part No & ROM ID</button>
+        <button class="btn-touch secondary" onclick="querySecondaryPowertrain()">Query 21 02 (O2 / Inj ms)</button>
+      </div>
     </div>
 
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
-      <div class="disc-title">Raw Packet Console</div>
-      <div id="live-terminal" class="terminal-box">
-        <div style="color:var(--text-muted);">Console ready. Connect to view packet feed...</div>
+      <div class="disc-title">Diagnostics Output</div>
+      <div id="diagnostics-terminal" class="terminal-box">
+        <div style="color:var(--text-muted);">Diagnostic and trouble code output will display here...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: High-Speed Passive CAN Monitor (50-100 Hz) -->
+  <div id="tab-sniffer" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">High-Speed Passive Bus Sniffer (ATMA)</div>
+      <p style="font-size:0.75rem; color:var(--text-muted);">
+        Listens directly to cyclic broadcast frames for 50–100 Hz refresh rates.
+      </p>
+      <div class="action-grid">
+        <button class="btn-touch yamaha" id="btn-sniff-201" onclick="startPassiveSniff('201')">Sniff 0x201 (Engine Stream)</button>
+        <button class="btn-touch secondary" id="btn-sniff-208" onclick="startPassiveSniff('208')">Sniff 0x208 (Wheel Speeds)</button>
+        <button class="btn-touch secondary" id="btn-sniff-320" onclick="startPassiveSniff('320')">Sniff 0x320 (4WD/Diff)</button>
+        <button class="btn-touch record-btn" id="btn-stop-sniff" onclick="stopPassiveSniff()" style="display:none;">Stop Monitor</button>
+      </div>
+    </div>
+
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="disc-title">Broadcast Stream Feed</div>
+        <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearSnifferLog()">Clear</button>
+      </div>
+      <div id="sniffer-terminal" class="terminal-box">
+        <div style="color:var(--text-muted);">Passive CAN broadcast packets will stream here...</div>
       </div>
     </div>
   </div>
@@ -481,13 +483,17 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
       <span>Cockpit</span>
     </button>
-    <button class="dock-btn" id="btn-tab-recorder" onclick="switchTab('tab-recorder')">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-      <span>Recorder</span>
-    </button>
-    <button class="dock-btn" id="btn-tab-payload" onclick="switchTab('tab-payload')">
+    <button class="dock-btn" id="btn-tab-modules" onclick="switchTab('tab-modules')">
       <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-      <span>Byte Feed</span>
+      <span>Modules</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-diagnostics" onclick="switchTab('tab-diagnostics')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>DTCs</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-sniffer" onclick="switchTab('tab-sniffer')">
+      <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+      <span>CAN Sniff</span>
     </button>
 
     <button id="btn-connect" class="dock-action-btn" onclick="handleConnectClick()">
@@ -499,89 +505,12 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.6.0";
+    const APP_VERSION = "v2.0.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
-      logDebug(`[ERROR] ${msg} (L${line})`, 'err');
+      log(`[ERROR] ${msg} (L${line})`);
       return false;
-    };
-
-    /* ==========================================================
-       TEST DEFINITIONS & STEP-BY-STEP INSTRUCTIONS
-       ========================================================== */
-    const TEST_DEFINITIONS = {
-      test_drive_mode_2140: {
-        title: "4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock)",
-        targetCmd: "2140",
-        stateText: "Key ON, Engine OFF (or Idle). Machine stationary.",
-        steps: [
-          "Start with the rotary switch in <strong>Turf Mode</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Switch to <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
-          "Rotate switch back to <strong>Turf Mode</strong>.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_diff_2164: {
-        title: "Extended Diff & Chassis Sweep",
-        targetCmd: "2164",
-        stateText: "Key ON, Engine OFF. Machine stationary.",
-        steps: [
-          "Start with rotary switch in <strong>Turf Mode</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Cycle through <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_reverse_2140: {
-        title: "Reverse vs Neutral Isolation",
-        targetCmd: "2140",
-        stateText: "Key ON, Engine OFF. Foot holding Brake Pedal firmly.",
-        steps: [
-          "Start with shifter in <strong>Neutral (N)</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Shift to <strong>Reverse (R)</strong> and hold for 3 seconds.",
-          "Shift back to <strong>Neutral (N)</strong> and hold for 3 seconds.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_handbrake_2101: {
-        title: "Parking Brake Hand Lever",
-        targetCmd: "2101",
-        stateText: "Key ON, Engine OFF. Shifter in Neutral (N).",
-        steps: [
-          "Start with Parking Brake lever pulled <strong>ON / ENGAGED</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Release Parking Brake lever completely (pause 3s).",
-          "Pull Parking Brake lever firmly back <strong>ON</strong> (pause 3s).",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_dmode_2101: {
-        title: "D-Mode Switch (Crawling / Trail / Sport)",
-        targetCmd: "2101",
-        stateText: "Key ON, Engine OFF. In Neutral.",
-        steps: [
-          "Start in <strong>Crawl Mode</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Switch to <strong>Trail Mode</strong> (hold 2s) &rarr; <strong>Sport Mode</strong> (hold 2s).",
-          "Return switch back to <strong>Crawl Mode</strong>.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_warmup_2101: {
-        title: "Engine Warmup & MAP Blip",
-        targetCmd: "2101",
-        stateText: "Engine RUNNING at Idle, In Neutral, Parking Brake ON.",
-        steps: [
-          "With engine idling, tap <strong>🔴 Start Session Record</strong>.",
-          "Let engine idle steadily for 10 seconds.",
-          "Smoothly blip accelerator pedal to ~2,500 RPM and release.",
-          "Let engine idle for 5 seconds.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      }
     };
 
     const SERVICE_UUIDS = [
@@ -596,63 +525,19 @@
     let rxBuffer = '';
     let isPolling = false;
     let isSimulator = false;
-    let isRecordingSession = false;
+    let isSniffing = false;
     let activeTab = 'tab-dash';
     let speedUnit = 'kmh';
-    let currentPollingCommand = '2101';
-
-    let lastBytes = [];
-    let recordedFrames = [];
-    let recordStartTime = null;
-    let accumulatedReports = [];
+    let currentModuleHeader = '7E0';
 
     function log(msg) {
       const el = document.getElementById('log');
       if (el) el.innerText = msg;
-      logDebug(msg);
     }
-
-    function logDebug(msg, type = 'info') {
-      const box = document.getElementById('live-terminal');
-      if (!box) return;
-      const time = new Date().toISOString().substring(11, 23);
-      const entry = document.createElement('div');
-      
-      if (type === 'tx') {
-        entry.style.color = 'var(--cyan)';
-        entry.innerText = `[${time}] ➜ TX: ${msg}`;
-      } else if (type === 'rx') {
-        entry.style.color = 'var(--green)';
-        entry.innerText = `[${time}] 🠔 RX: ${msg}`;
-      } else if (type === 'err') {
-        entry.style.color = 'var(--red)';
-        entry.innerText = `[${time}] ⚠️ ${msg}`;
-      } else if (type === 'warn') {
-        entry.style.color = 'var(--amber)';
-        entry.innerText = `[${time}] ⚡ ${msg}`;
-      } else {
-        entry.style.color = 'var(--text-muted)';
-        entry.innerText = `[${time}] ${msg}`;
-      }
-
-      box.appendChild(entry);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    /* UI Instruction Sync */
-    window.onTestSelectChanged = function() {
-      const testKey = document.getElementById('record-test-select').value;
-      const def = TEST_DEFINITIONS[testKey];
-      if (!def) return;
-
-      document.getElementById('inst-state-text').innerText = def.stateText;
-      const listEl = document.getElementById('inst-steps-list');
-      listEl.innerHTML = def.steps.map(s => `<li>${s}</li>`).join('');
-    };
 
     window.switchTab = function(tabId) {
       activeTab = tabId;
-      const tabs = ['tab-dash', 'tab-recorder', 'tab-payload'];
+      const tabs = ['tab-dash', 'tab-modules', 'tab-diagnostics', 'tab-sniffer'];
       tabs.forEach(t => {
         const btn = document.getElementById('btn-' + t);
         if (btn) btn.classList.toggle('active', t === tabId);
@@ -661,8 +546,7 @@
         if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
 
-      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
-        currentPollingCommand = '2101';
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && !isSniffing && tabId === 'tab-dash') {
         startPolling();
       }
     };
@@ -690,13 +574,11 @@
             const p = exitFs.call(doc);
             if (p && p.catch) p.catch(() => {});
           }
-        } catch (err) {
-          logDebug("Fullscreen error: " + err.message, 'err');
-        }
+        } catch (err) {}
       }
     };
 
-    /* Bluetooth Engine */
+    /* Bluetooth Communication Engine */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -707,14 +589,14 @@
       try {
         if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable. Open in Bluefy.");
 
-        logDebug("Opening Bluetooth pairing prompt...");
+        log("Opening Bluetooth pairing prompt...");
         bleDevice = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: SERVICE_UUIDS
         });
 
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-        logDebug("Connecting to GATT server...");
+        log("Connecting to GATT server...");
         const server = await bleDevice.gatt.connect();
         await new Promise(r => setTimeout(r, 300));
 
@@ -750,7 +632,6 @@
         startPolling();
 
       } catch (err) {
-        logDebug("BLE Error: " + err.message, 'err');
         log("BLE Error: " + err.message);
         disconnect();
       }
@@ -763,12 +644,11 @@
 
     function onDisconnected() {
       isPolling = false;
-      isRecordingSession = false;
+      isSniffing = false;
       const statusEl = document.getElementById('status');
       const btnConnect = document.getElementById('btn-connect');
       if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
       if (btnConnect) { btnConnect.innerText = "Connect"; btnConnect.classList.remove("disconnect"); }
-      logDebug("Device disconnected.", 'warn');
       log("Disconnected.");
     }
 
@@ -776,6 +656,19 @@
     function handleNotification(event) {
       const chunk = new TextDecoder().decode(event.target.value);
       rxBuffer += chunk;
+
+      if (isSniffing) {
+        // Stream raw frames directly to sniffer terminal
+        const term = document.getElementById('sniffer-terminal');
+        if (term) {
+          const entry = document.createElement('div');
+          entry.innerText = chunk.trim();
+          term.appendChild(entry);
+          term.scrollTop = term.scrollHeight;
+        }
+        return;
+      }
+
       if (rxBuffer.includes('>')) {
         if (responseResolver) {
           const res = rxBuffer.replace(/>/g, '').trim();
@@ -806,17 +699,14 @@
 
       return new Promise(async (resolve) => {
         rxBuffer = '';
-        logDebug(cmd, 'tx');
 
         const timer = setTimeout(() => {
           responseResolver = null;
-          logDebug(`${cmd} ➜ TIMEOUT (${timeoutMs}ms)`, 'err');
           resolve("TIMEOUT");
         }, timeoutMs);
 
         responseResolver = (response) => {
           clearTimeout(timer);
-          logDebug(`${cmd} ➜ ${response || '[EMPTY]'}`, 'rx');
           resolve(response);
         };
 
@@ -826,7 +716,6 @@
         } catch (e) {
           clearTimeout(timer);
           responseResolver = null;
-          logDebug(`Write Error on ${cmd}: ${e.message}`, 'err');
           resolve("WRITE_ERR");
         }
       });
@@ -834,7 +723,6 @@
 
     /* Yamaha Init Sequence */
     async function initYamahaELM327() {
-      logDebug("--- INITIALIZING YAMAHA RMAX CAN PROTOCOL ---", 'warn');
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
 
@@ -849,38 +737,34 @@
       await sendCommand("ATAT2", 1500);
       await sendCommand("ATSTFF", 1500);
       await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
-      await sendCommand("ATSH7E0", 1500); // Yamaha Primary ECU
+      await sendCommand("ATSH7E0", 1500); // Yamaha Engine ECU
 
       log("Connected to Yamaha RMAX! Live telemetry active.");
     }
 
     /* Continuous Live Polling Loop */
     async function startPolling() {
-      if (isPolling) return;
+      if (isPolling || isSniffing) return;
       isPolling = true;
 
       while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
-        let targetCmd = '2101';
-        if (isRecordingSession) {
-          const testKey = document.getElementById('record-test-select').value;
-          const def = TEST_DEFINITIONS[testKey];
-          if (def) targetCmd = def.targetCmd;
-        }
-
         const startT = performance.now();
-        const rawRes = await sendCommand(targetCmd, 1200);
+        const rawRes = await sendCommand("2101", 1200);
         const rtt = Math.round(performance.now() - startT);
 
-        parseYamahaPayload(rawRes, targetCmd);
+        parseYamahaPayload(rawRes);
 
-        // Update Voltage
+        // Update Voltage via ATRV
         const voltRes = await sendCommand("ATRV", 800);
-        parseVoltage(voltRes);
+        const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
+        if (m && m[1]) {
+          const atrvEl = document.getElementById('val-dash-atrv');
+          if (atrvEl) atrvEl.innerText = `ATRV: ${m[1]}V`;
+        }
 
         const rpmVal = document.getElementById('val-dash-rpm').innerText;
         const gearVal = document.getElementById('val-dash-gear').innerText;
-        const dmodeVal = document.getElementById('val-dash-dmode').innerText;
-        log(`⚡ RMAX: ${gearVal} | ${dmodeVal} | RPM ${rpmVal} | ${rtt}ms`);
+        log(`⚡ RMAX: ${gearVal} | RPM ${rpmVal} | ${rtt}ms`);
 
         await new Promise(r => setTimeout(r, 35));
       }
@@ -888,9 +772,9 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX MULTI-FRAME DEFRAGMENTER & DECODER
+       YAMAHA RMAX 21 01 EXTENDED SENSOR DECODER
        ========================================================== */
-    function parseYamahaPayload(raw, targetCmd) {
+    function parseYamahaPayload(raw) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
 
       let hexStream = '';
@@ -906,167 +790,103 @@
         }
       }
 
-      const expectedHeader = "61" + targetCmd.substring(2);
-      if (!hexStream.includes(expectedHeader)) return;
+      if (!hexStream.includes("6101")) return;
 
-      const payloadHex = hexStream.substring(hexStream.indexOf(expectedHeader) + expectedHeader.length);
+      const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
       const bytes = [];
       for (let i = 0; i < payloadHex.length; i += 2) {
         bytes.push(parseInt(payloadHex.substr(i, 2), 16));
       }
 
-      if (bytes.length < 2) return;
+      if (bytes.length < 18) return;
 
-      if (isRecordingSession) {
-        const elapsed = ((Date.now() - recordStartTime) / 1000).toFixed(2);
-        recordedFrames.push({ time: elapsed, bytes: [...bytes] });
-        document.getElementById('record-status-text').innerText = `🔴 Recording [${targetCmd}]: ${recordedFrames.length} frames (${elapsed}s)`;
+      // 1. Engine RPM (Bytes 0 & 1)
+      const rpm = (bytes[0] * 256) + bytes[1];
+      if (!isNaN(rpm) && rpm <= 10000) {
+        document.getElementById('val-dash-rpm').innerText = rpm;
+        updateTachometer(rpm);
       }
 
-      if (targetCmd === '2101') {
-        renderByteMatrix(bytes);
+      // 2. Speed (Bytes 2 & 3)
+      let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
+      if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
+      document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
+      const speedBar = document.getElementById('bar-speed');
+      if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-        // --- 1. Engine RPM (Bytes 0 & 1) ---
-        const rpm = (bytes[0] * 256) + bytes[1];
-        if (!isNaN(rpm) && rpm <= 10000) {
-          document.getElementById('val-dash-rpm').innerText = rpm;
-          updateTachometer(rpm);
-        }
-
-        // --- 2. Speed (Bytes 2 & 3) ---
-        let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
-        if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
-        document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
-        const speedBar = document.getElementById('bar-speed');
-        if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
-
-        // --- 3. Coolant (Byte 4) -> d:06 ---
-        if (bytes.length >= 5) {
-          const coolant = bytes[4];
-          document.getElementById('val-dash-coolant').innerText = coolant;
-          const coolantBar = document.getElementById('bar-coolant');
-          if (coolantBar) {
-            coolantBar.style.width = Math.min(100, (coolant / 120) * 100) + '%';
-            coolantBar.style.background = coolant > 105 ? 'var(--red)' : coolant > 95 ? 'var(--amber)' : 'var(--cyan)';
-          }
-        }
-
-        // --- 4. Gas Pedal / APS (Byte 7) ---
-        if (bytes.length >= 8) {
-          const rawAPS = bytes[7];
-          const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
-          document.getElementById('val-dash-pedal').innerText = pedalPct;
-          const pedalBar = document.getElementById('bar-pedal');
-          if (pedalBar) pedalBar.style.width = pedalPct + '%';
-        }
-
-        // --- 5. Throttle Blade / TPS (Byte 9) ---
-        if (bytes.length >= 10) {
-          const rawTPS = bytes[9];
-          const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
-          document.getElementById('val-dash-throttle').innerText = tpsPct;
-          const tpsBar = document.getElementById('bar-throttle');
-          if (tpsBar) tpsBar.style.width = tpsPct + '%';
-        }
-
-        // --- 6. Live Transmission Gear (Byte 19) ---
-        if (bytes.length >= 20) {
-          const b19 = bytes[19];
-          const gearNibble = b19 & 0x0F;
-          const gearEl = document.getElementById('val-dash-gear');
-          
-          let gearText = 'N';
-          let gearClass = 'gear-n';
-
-          if (gearNibble === 0x02) {
-            gearText = 'H';
-            gearClass = 'gear-h';
-          } else if (gearNibble === 0x01) {
-            gearText = 'L';
-            gearClass = 'gear-l';
-          } else if (gearNibble === 0x00) {
-            gearText = 'N';
-            gearClass = 'gear-n';
-          }
-
-          gearEl.className = `status-pill-val ${gearClass}`;
-          gearEl.innerText = gearText;
-        }
-
-        // --- 7. Live D-MODE Selector (Byte 20) ---
-        if (bytes.length >= 21) {
-          const b20 = bytes[20];
-          const dmodeEl = document.getElementById('val-dash-dmode');
-          
-          if (b20 === 0x82) {
-            dmodeEl.innerText = 'CRAWL';
-            dmodeEl.className = 'status-pill-val dmode-crawl';
-          } else if (b20 === 0x81) {
-            dmodeEl.innerText = 'TRAIL';
-            dmodeEl.className = 'status-pill-val dmode-trail';
-          } else if (b20 === 0x80) {
-            dmodeEl.innerText = 'SPORT';
-            dmodeEl.className = 'status-pill-val dmode-sport';
-          }
-        }
-
-        // --- 8. Live Parking Brake Lever (Byte 21 Bit 2: 0x04) ---
-        if (bytes.length >= 22) {
-          const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
-          const pbrakeEl = document.getElementById('val-dash-pbrake');
-          if (isPBrakeOn) {
-            pbrakeEl.innerText = 'PARK';
-            pbrakeEl.className = 'status-pill-val brake-on';
-          } else {
-            pbrakeEl.innerText = 'OFF';
-            pbrakeEl.className = 'status-pill-val brake-off';
-          }
-        }
-
-        // --- 9. Live Foot Brake Pedal (Byte 21 Bit 4: 0x10) ---
-        if (bytes.length >= 22) {
-          const isBrakeOn = (bytes[21] & 0x10) === 0x10;
-          const brakeEl = document.getElementById('val-dash-brake');
-          if (isBrakeOn) {
-            brakeEl.innerText = 'ON';
-            brakeEl.className = 'status-pill-val brake-on';
-          } else {
-            brakeEl.innerText = 'OFF';
-            brakeEl.className = 'status-pill-val brake-off';
-          }
-        }
-
-        lastBytes = [...bytes];
+      // 3. Coolant (Byte 4) -> d:06
+      const coolant = bytes[4];
+      document.getElementById('val-dash-coolant').innerText = coolant;
+      const coolantBar = document.getElementById('bar-coolant');
+      if (coolantBar) {
+        coolantBar.style.width = Math.min(100, (coolant / 120) * 100) + '%';
+        coolantBar.style.background = coolant > 105 ? 'var(--red)' : coolant > 95 ? 'var(--amber)' : 'var(--cyan)';
       }
-    }
 
-    function renderByteMatrix(bytes) {
-      const container = document.getElementById('byte-matrix');
-      if (!container) return;
-      container.innerHTML = '';
+      // 4. Gas Pedal / APS (Byte 7)
+      const rawAPS = bytes[7];
+      const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
+      document.getElementById('val-dash-pedal').innerText = pedalPct;
+      const pedalBar = document.getElementById('bar-pedal');
+      if (pedalBar) pedalBar.style.width = pedalPct + '%';
 
-      bytes.forEach((b, idx) => {
-        const hex = b.toString(16).toUpperCase().padStart(2, '0');
-        const hasChanged = lastBytes.length > idx && lastBytes[idx] !== b;
-        const cell = document.createElement('div');
-        cell.className = `byte-cell ${hasChanged ? 'changed' : ''}`;
-        cell.innerHTML = `
-          <span class="byte-index">B${idx}</span>
-          <span class="byte-hex">${hex}</span>
-        `;
-        container.appendChild(cell);
-      });
-    }
+      // 5. Throttle Blade / TPS (Byte 9)
+      const rawTPS = bytes[9];
+      const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
+      document.getElementById('val-dash-throttle').innerText = tpsPct;
+      const tpsBar = document.getElementById('bar-throttle');
+      if (tpsBar) tpsBar.style.width = tpsPct + '%';
 
-    function parseVoltage(raw) {
-      const match = String(raw).match(/([0-9]+\.?[0-9]*)/);
-      if (match && match[1]) {
-        document.getElementById('val-dash-voltage').innerText = match[1];
-        const numV = parseFloat(match[1]);
-        const pct = Math.min(100, Math.max(0, ((numV - 10) / 5) * 100));
-        const bar = document.getElementById('bar-voltage');
-        if (bar) bar.style.width = pct + '%';
-      }
+      // 6. ECU Sensor / Regulated Voltage (Byte 13 -> d:09): (B13 * 0.0706)
+      const ecuVolt = (bytes[13] * 0.0706).toFixed(1);
+      document.getElementById('val-dash-voltage').innerText = ecuVolt;
+      const voltBar = document.getElementById('bar-voltage');
+      if (voltBar) voltBar.style.width = Math.min(100, Math.max(0, ((parseFloat(ecuVolt) - 10) / 5) * 100)) + '%';
+
+      // 7. Barometric Pressure (Bytes 14 & 15 -> d:02)
+      const baro = Math.round(((bytes[14] * 256) + bytes[15]) / 10);
+      document.getElementById('val-dash-baro').innerText = baro > 50 && baro < 150 ? baro : (bytes[14] + 30);
+      const baroBar = document.getElementById('bar-baro');
+      if (baroBar) baroBar.style.width = Math.min(100, (baro / 115) * 100) + '%';
+
+      // 8. Spark Advance / Timing (Byte 17)
+      const timing = (bytes[17] > 128 ? bytes[17] - 256 : bytes[17]) / 2;
+      document.getElementById('val-dash-timing').innerText = timing >= -10 && timing <= 50 ? timing.toFixed(1) : (bytes[17] / 2).toFixed(1);
+      const timingBar = document.getElementById('bar-timing');
+      if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timing / 45) * 100)) + '%';
+
+      // 9. Transmission Gear (Byte 19)
+      const b19 = bytes[19];
+      const gearNibble = b19 & 0x0F;
+      const gearEl = document.getElementById('val-dash-gear');
+      let gearText = 'N';
+      let gearClass = 'gear-n';
+
+      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+      else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
+
+      gearEl.className = `status-pill-val ${gearClass}`;
+      gearEl.innerText = gearText;
+
+      // 10. D-MODE Selector (Byte 20)
+      const b20 = bytes[20];
+      const dmodeEl = document.getElementById('val-dash-dmode');
+      if (b20 === 0x82) { dmodeEl.innerText = 'CRAWL'; dmodeEl.className = 'status-pill-val dmode-crawl'; }
+      else if (b20 === 0x81) { dmodeEl.innerText = 'TRAIL'; dmodeEl.className = 'status-pill-val dmode-trail'; }
+      else if (b20 === 0x80) { dmodeEl.innerText = 'SPORT'; dmodeEl.className = 'status-pill-val dmode-sport'; }
+
+      // 11. Parking Brake (Byte 21 Bit 2: 0x04)
+      const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+      const pbrakeEl = document.getElementById('val-dash-pbrake');
+      pbrakeEl.innerText = isPBrakeOn ? 'PARK' : 'OFF';
+      pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'brake-off'}`;
+
+      // 12. Foot Brake (Byte 21 Bit 4: 0x10)
+      const isBrakeOn = (bytes[21] & 0x10) === 0x10;
+      const brakeEl = document.getElementById('val-dash-brake');
+      brakeEl.innerText = isBrakeOn ? 'ON' : 'OFF';
+      brakeEl.className = `status-pill-val ${isBrakeOn ? 'brake-on' : 'brake-off'}`;
     }
 
     function updateTachometer(rpm) {
@@ -1097,122 +917,154 @@
     }
 
     /* ==========================================================
-       CUMULATIVE FLIGHT RECORDER LOGGING ENGINE
+       MULTI-ECU MODULE EXPLORER & NETWORK SCANNER
        ========================================================== */
-    window.toggleSessionRecording = function() {
+    window.setModuleHeader = async function(headerHex, moduleName) {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
 
-      const btn = document.getElementById('btn-record');
-      const statusBadge = document.getElementById('status');
-      const testKey = document.getElementById('record-test-select').value;
-      const def = TEST_DEFINITIONS[testKey];
+      log(`Setting Target Module: ${moduleName} (0x${headerHex})...`);
+      await sendCommand(`ATSH${headerHex}`, 1500);
+      currentModuleHeader = headerHex;
 
-      if (!isRecordingSession) {
-        isRecordingSession = true;
-        recordedFrames = [];
-        recordStartTime = Date.now();
+      document.getElementById('active-header-status').innerText = `Target: ${moduleName} (0x${headerHex})`;
 
-        btn.innerText = "⏹️ Stop & Append to Master Log";
-        btn.classList.add('recording');
-        statusBadge.innerText = "RECORDING";
-        statusBadge.className = "status-badge recording";
-
-        document.getElementById('record-status-text').innerText = `🔴 Recording Active: ${def.title}`;
-      } else {
-        isRecordingSession = false;
-        btn.innerText = "🔴 Start Session Record";
-        btn.classList.remove('recording');
-        statusBadge.innerText = "CONNECTED";
-        statusBadge.className = "status-badge connected";
-
-        appendSessionToMaster(def);
-      }
+      // Test response
+      const res = await sendCommand("2101", 2000);
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML += `<div><strong>${moduleName} (0x${headerHex}) ➜ 21 01:</strong> ${res}</div>`;
+      term.scrollTop = term.scrollHeight;
     };
 
-    function appendSessionToMaster(def) {
-      if (!recordedFrames.length) {
-        document.getElementById('record-status-text').innerText = "No frames captured.";
-        return;
+    window.scanAllCANModules = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Scanning CAN Node IDs 0x700 to 0x7E8...</div>';
+
+      const scanAddresses = ["7E0", "760", "7A0", "7D0", "750", "7E2", "7E3", "7E4", "7E5", "730", "740"];
+      let foundCount = 0;
+
+      for (const addr of scanAddresses) {
+        await sendCommand(`ATSH${addr}`, 1000);
+        const res = await sendCommand("2101", 1500);
+        const clean = res.replace(/[\s\r\n>]/g, '');
+
+        if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT") && clean.length > 4) {
+          foundCount++;
+          term.innerHTML += `<div style="color:var(--green); font-weight:700;">🎯 [ACTIVE NODE FOUND] 0x${addr} ➜ ${res}</div>`;
+        } else {
+          term.innerHTML += `<div style="color:var(--text-muted);">0x${addr} &rarr; ${clean || 'No response'}</div>`;
+        }
+        term.scrollTop = term.scrollHeight;
+        await new Promise(r => setTimeout(r, 40));
       }
 
-      const totalFrames = recordedFrames.length;
-      const durationSec = recordedFrames[totalFrames - 1].time;
-      const numBytes = recordedFrames[0].bytes.length;
-
-      let sessionText = `\n========================================\n`;
-      sessionText += `[TEST RUN #${accumulatedReports.length + 1}]: ${def.title}\n`;
-      sessionText += `Target Command: ${def.targetCmd} (${numBytes} Bytes Payload)\n`;
-      sessionText += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
-      sessionText += `Machine State: ${def.stateText}\n`;
-      sessionText += `Timestamp: ${new Date().toISOString()}\n\n`;
-
-      sessionText += `--- BYTE VARIANCE ANALYSIS (Which bytes moved?) ---\n`;
-
-      for (let b = 0; b < numBytes; b++) {
-        const values = recordedFrames.map(f => f.bytes[b]);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const delta = max - min;
-        const startVal = values[0];
-        const endVal = values[values.length - 1];
-
-        const minHex = min.toString(16).toUpperCase().padStart(2, '0');
-        const maxHex = max.toString(16).toUpperCase().padStart(2, '0');
-        const dHex = delta.toString(16).toUpperCase().padStart(2, '0');
-
-        let indicator = (delta > 0) ? `🎯 ACTIVE (Δ = ${delta} / 0x${dHex})` : `⚪ Static (0x${minHex})`;
-        sessionText += `Byte [${String(b).padStart(2, '0')}]: Range [0x${minHex}..0x${maxHex}] | Start: 0x${startVal.toString(16).toUpperCase().padStart(2, '0')} ➜ End: 0x${endVal.toString(16).toUpperCase().padStart(2, '0')} | ${indicator}\n`;
-      }
-
-      sessionText += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
-      const step = Math.max(1, Math.floor(totalFrames / 6));
-      for (let i = 0; i < totalFrames; i += step) {
-        const f = recordedFrames[i];
-        const hexDump = f.bytes.map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
-        sessionText += `T+${f.time.padStart(5, ' ')}s: ${hexDump}\n`;
-      }
-
-      accumulatedReports.push(sessionText);
-
-      updateMasterReportUI();
-      document.getElementById('record-status-text').innerText = `✅ Test Run #${accumulatedReports.length} Appended! Select next test or Copy All.`;
-    }
-
-    function updateMasterReportUI() {
-      const outBox = document.getElementById('recorder-output');
-      const countEl = document.getElementById('accumulated-count');
-      countEl.innerText = accumulatedReports.length;
-
-      let master = `=== YAMAHA RMAX MASTER TELEMETRY BATCH REPORT ===\n`;
-      master += `App Version: ${APP_VERSION} | Total Test Runs: ${accumulatedReports.length}\n`;
-      master += `Generated: ${new Date().toISOString()}\n`;
-      master += accumulatedReports.join('\n');
-      master += `\n=== END OF MASTER BATCH REPORT ===`;
-
-      outBox.innerText = master;
-    }
-
-    window.copyAccumulatedReport = function() {
-      if (!accumulatedReports.length) return alert("Run at least one test recording first!");
-      const outBox = document.getElementById('recorder-output');
-      navigator.clipboard.writeText(outBox.innerText)
-        .then(() => alert("Master batch report copied! Paste it in the chat."))
-        .catch(() => {
-          const ta = document.createElement('textarea');
-          ta.value = outBox.innerText;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          alert("Master batch report copied! Paste it in the chat.");
-        });
+      // Restore Engine ECU
+      await sendCommand("ATSH7E0", 1000);
+      currentModuleHeader = '7E0';
+      term.innerHTML += `<div style="color:var(--amber); font-weight:700;">Scan Complete! Found ${foundCount} active CAN nodes. Restored header to 0x7E0.</div>`;
     };
 
-    window.clearAccumulatedReport = function() {
-      accumulatedReports = [];
-      document.getElementById('accumulated-count').innerText = '0';
-      document.getElementById('recorder-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run tests to accumulate reports...</div>';
-      document.getElementById('record-status-text').innerText = 'Recorder Standby';
+    /* ==========================================================
+       YAMAHA DTC & IDENTIFICATION INSPECTOR
+       ========================================================== */
+    window.queryYamahaDTCs = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('diagnostics-terminal');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying Active (21 60) and Historic (21 61) DTCs...</div>';
+
+      // 1. Active DTCs (21 60 / d:60)
+      const activeRes = await sendCommand("2160", 2500);
+      term.innerHTML += `<div><strong>Active DTCs (21 60 / d:60):</strong> ${activeRes}</div>`;
+
+      // 2. Historic DTCs (21 61 / d:61)
+      const histRes = await sendCommand("2161", 2500);
+      term.innerHTML += `<div><strong>Historic Memory (21 61 / d:61):</strong> ${histRes}</div>`;
+
+      term.scrollTop = term.scrollHeight;
+    };
+
+    window.queryECUIdentification = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('diagnostics-terminal');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying OEM Part Number & ROM Calibration ID...</div>';
+
+      // 22 F1 87: Part Number
+      const partRes = await sendCommand("22F187", 2500);
+      term.innerHTML += `<div><strong>OEM Part Number (22 F1 87):</strong> ${partRes}</div>`;
+
+      // 22 F1 88: ROM ID
+      const romRes = await sendCommand("22F188", 2500);
+      term.innerHTML += `<div><strong>ROM Calibration Version (22 F1 88):</strong> ${romRes}</div>`;
+
+      // 22 F1 89: CVN
+      const cvnRes = await sendCommand("22F189", 2500);
+      term.innerHTML += `<div><strong>Calibration Verification (22 F1 89):</strong> ${cvnRes}</div>`;
+
+      term.scrollTop = term.scrollHeight;
+    };
+
+    window.querySecondaryPowertrain = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('diagnostics-terminal');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying Secondary Powertrain Telemetry (21 02 & 21 03)...</div>';
+
+      const p2 = await sendCommand("2102", 2500);
+      term.innerHTML += `<div><strong>LID 21 02 (Injector ms / O2 Volts):</strong> ${p2}</div>`;
+
+      const p3 = await sendCommand("2103", 2500);
+      term.innerHTML += `<div><strong>LID 21 03 (Closed-Loop Fuel Status):</strong> ${p3}</div>`;
+
+      term.scrollTop = term.scrollHeight;
+    };
+
+    /* ==========================================================
+       HIGH-SPEED PASSIVE CAN MONITOR (50-100 HZ)
+       ========================================================== */
+    window.startPassiveSniff = async function(canIdHex) {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+      isSniffing = true;
+
+      document.getElementById('btn-sniff-201').style.display = 'none';
+      document.getElementById('btn-sniff-208').style.display = 'none';
+      document.getElementById('btn-sniff-320').style.display = 'none';
+      document.getElementById('btn-stop-sniff').style.display = 'block';
+
+      const term = document.getElementById('sniffer-terminal');
+      term.innerHTML = `<div style="color:var(--green);">⚡ Monitoring CAN ID 0x${canIdHex} in high-speed passive mode...</div>`;
+
+      await sendCommand("ATH1", 1000); // Headers ON
+      await sendCommand(`ATCRA${canIdHex}`, 1000); // Filter to target CAN ID
+      await writeBLE(new TextEncoder().encode('ATMA\r')); // Monitor All
+    };
+
+    window.stopPassiveSniff = async function() {
+      isSniffing = false;
+      await writeBLE(new TextEncoder().encode('\r\r\r'));
+      await new Promise(r => setTimeout(r, 300));
+      await sendCommand("ATH0", 1000);
+      await sendCommand("ATAR", 1000); // Reset CAN receive filter
+
+      document.getElementById('btn-sniff-201').style.display = 'block';
+      document.getElementById('btn-sniff-208').style.display = 'block';
+      document.getElementById('btn-sniff-320').style.display = 'block';
+      document.getElementById('btn-stop-sniff').style.display = 'none';
+
+      const term = document.getElementById('sniffer-terminal');
+      term.innerHTML += '<div style="color:var(--amber);">Passive monitor stopped. Restored polling mode.</div>';
+    };
+
+    window.clearSnifferLog = function() {
+      document.getElementById('sniffer-terminal').innerHTML = '';
     };
 
     /* Simulation Mode */
@@ -1223,43 +1075,37 @@
       if (isSimulator) {
         if (bleDevice?.gatt?.connected) disconnect();
         if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
-        logDebug("Simulator active: Generating dynamic RMAX telemetry.", 'warn');
+        log("Simulator active: Generating dynamic RMAX telemetry.");
         startPolling();
       } else {
         isPolling = false;
         if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
-        logDebug("Simulator deactivated.", 'warn');
+        log("Simulator deactivated.");
       }
     };
 
     function getSimulatedResponse(cmd) {
       if (cmd.startsWith("AT")) {
         if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
-        if (cmd === "ATRV") return (14.2 + Math.sin(Date.now() / 2500) * 0.3).toFixed(1) + "V";
+        if (cmd === "ATRV") return "14.2V";
         return "OK";
       }
       if (cmd === "2101") {
         const time = Date.now() / 1000;
-        const rpm = Math.round(1300 + Math.sin(time * 0.9) * 4500);
+        const rpm = Math.round(1320 + Math.sin(time * 0.9) * 4500);
         const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
         const coolant = Math.round(45 + Math.sin(time * 0.1) * 15);
         const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
-        const brake = Math.sin(time * 0.5) > 0 ? 0x14 : 0x00;
+        const timing = Math.round(15 + Math.sin(time * 0.5) * 10);
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF6346${timing.toString(16).padStart(2,'0')}00 3:C18281048000AA`;
       }
-      if (cmd === "2140") {
-        const diffVal = Math.sin(Date.now() / 3000) > 0 ? "80" : "81";
-        return `61 40 00 ${diffVal}`;
-      }
-      if (cmd === "2164") {
-        return `03E 0:61640048001D 1:00020000000000 2:00000100000000 3:00000000000700 4:00000000000000 5:00030011000300 6:0000000005000C 7:00030000000100 8:03000500000000`;
-      }
+      if (cmd === "2160") return "61 60 00 00 00 00 (No Active Fault Codes)";
+      if (cmd === "2161") return "61 61 00 15 00 21 00 00 (Historical Codes Logged)";
+      if (cmd === "22F187") return "62 F1 87 42 34 53 2D 38 35 39 31 41 2D 30 30 (B4S-8591A-00)";
       return "OK";
     }
-
-    onTestSelectChanged();
   </script>
 </body>
 </html>
