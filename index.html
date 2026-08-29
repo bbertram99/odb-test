@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <!-- Anti-Cache Directives for iOS WebKit & Bluefy -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="RMAX Master" />
-  <title>Yamaha RMAX Master Suite (v2.1.1)</title>
+  <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
+  <title>Yamaha RMAX Pro (v2.2.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -235,14 +234,14 @@
 </head>
 <body>
 
-  <!-- Top HUD Header with Verified Version -->
+  <!-- Top HUD Header -->
   <header>
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
-        RMAX MASTER SUITE
+        RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v2.1.1</span>
+      <span class="version-tag" id="app-version-badge">v2.2.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -306,7 +305,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (d:06) -->
+      <!-- Coolant Temp (CALIBRATED: Byte 15 / d:06) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Coolant (d:06)</span>
@@ -320,7 +319,7 @@
         </div>
       </div>
 
-      <!-- Spark Advance / Timing (Byte 17) -->
+      <!-- Spark Advance / Timing (Byte 16) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Spark Timing</span>
@@ -334,17 +333,17 @@
         </div>
       </div>
 
-      <!-- Barometric Pressure (Bytes 14 & 15) -->
+      <!-- Manifold Absolute Pressure (MAP: Bytes 5 & 6) -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Baro (d:02)</span>
+          <span class="card-label">Intake MAP (d:03)</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-baro" class="card-val">--</span>
+          <span id="val-dash-map" class="card-val">--</span>
           <span class="card-unit">kPa</span>
         </div>
         <div class="meter-bar-track">
-          <div id="bar-baro" class="meter-bar-fill"></div>
+          <div id="bar-map" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -362,7 +361,7 @@
         </div>
       </div>
 
-      <!-- Throttle Blade / TPS (d:01) -->
+      <!-- Throttle Blade / TPS (Byte 9 / d:01) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -438,9 +437,8 @@
       <div class="disc-title">Multi-ECU Network Gateway</div>
       <div class="action-grid">
         <button class="btn-touch yamaha" onclick="scanAllCANModules()">🔍 Ping All CAN Addresses (700-7E8)</button>
+        <button class="btn-touch secondary" onclick="queryEPSModule()">Query EPS Steering (0x760)</button>
         <button class="btn-touch secondary" onclick="queryYamahaDTCs()">Read DTCs (21 60 / 21 61)</button>
-        <button class="btn-touch secondary" onclick="queryECUIdentification()">Read OEM Part No & ROM ID</button>
-        <button class="btn-touch secondary" onclick="querySecondaryPowertrain()">Query 21 02 (O2 / Inj ms)</button>
       </div>
     </div>
 
@@ -505,7 +503,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v2.1.1";
+    const APP_VERSION = "v2.2.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -854,7 +852,7 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX 21 01 EXTENDED SENSOR DECODER
+       YAMAHA RMAX 21 01 CALIBRATED SENSOR DECODER
        ========================================================== */
     function parseYamahaPayload(raw, targetCmd) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
@@ -904,8 +902,8 @@
         const speedBar = document.getElementById('bar-speed');
         if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-        // 3. Coolant (Byte 4) -> d:06
-        const coolant = bytes[4];
+        // 3. Coolant Temperature (EXACT CALIBRATION: Byte 15 -> d:06)
+        const coolant = bytes[15];
         document.getElementById('val-dash-coolant').innerText = coolant;
         const coolantBar = document.getElementById('bar-coolant');
         if (coolantBar) {
@@ -933,17 +931,18 @@
         const voltBar = document.getElementById('bar-voltage');
         if (voltBar) voltBar.style.width = Math.min(100, Math.max(0, ((parseFloat(ecuVolt) - 10) / 5) * 100)) + '%';
 
-        // 7. Barometric Pressure (Bytes 14 & 15 -> d:02)
-        const baro = Math.round(((bytes[14] * 256) + bytes[15]) / 10);
-        document.getElementById('val-dash-baro').innerText = baro > 50 && baro < 150 ? baro : (bytes[14] + 30);
-        const baroBar = document.getElementById('bar-baro');
-        if (baroBar) baroBar.style.width = Math.min(100, (baro / 115) * 100) + '%';
+        // 7. Manifold Absolute Pressure (MAP: Bytes 5 & 6)
+        const mapKpa = (bytes[5] * 256) + bytes[6];
+        document.getElementById('val-dash-map').innerText = mapKpa > 0 ? mapKpa : '--';
+        const mapBar = document.getElementById('bar-map');
+        if (mapBar) mapBar.style.width = Math.min(100, (mapKpa / 250) * 100) + '%';
 
-        // 8. Spark Advance / Timing (Byte 17)
-        const timing = (bytes[17] > 128 ? bytes[17] - 256 : bytes[17]) / 2;
-        document.getElementById('val-dash-timing').innerText = timing >= -10 && timing <= 50 ? timing.toFixed(1) : (bytes[17] / 2).toFixed(1);
+        // 8. Spark Advance / Ignition Timing (CALIBRATED: Byte 16)
+        // Byte 16: 0x69 (105) at idle -> 0x92 (146) at blip
+        const timingDeg = Math.round((bytes[16] - 80) / 2);
+        document.getElementById('val-dash-timing').innerText = timingDeg > -10 && timingDeg < 55 ? timingDeg : (bytes[16] - 90);
         const timingBar = document.getElementById('bar-timing');
-        if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timing / 45) * 100)) + '%';
+        if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timingDeg / 45) * 100)) + '%';
 
         // 9. Transmission Gear (Byte 19)
         const b19 = bytes[19];
@@ -1124,8 +1123,8 @@
         logBody += `Byte [${String(b).padStart(2, '0')}]: Range [0x${minHex}..0x${maxHex}] | Start: 0x${startVal.toString(16).toUpperCase().padStart(2, '0')} ➜ End: 0x${endVal.toString(16).toUpperCase().padStart(2, '0')} | ${indicator}\n`;
       }
 
-      logBody += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
       const step = Math.max(1, Math.floor(totalFrames / 6));
+      logBody += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
       for (let i = 0; i < totalFrames; i += step) {
         const f = recordedFrames[i];
         const hexDump = f.bytes.map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
@@ -1170,6 +1169,21 @@
       appendToMasterReport("CAN Bus Multi-Module Address Ping", `Scanned 11 Target Addresses`, scanLog);
     };
 
+    window.queryEPSModule = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying EPS Steering Computer (0x760)...</div>';
+
+      await sendCommand("ATSH760", 1000);
+      const epsRes = await sendCommand("2101", 2000);
+      await sendCommand("ATSH7E0", 1000); // restore
+
+      term.innerHTML += `<div><strong>EPS (0x760) ➜ 21 01:</strong> ${epsRes}</div>`;
+      appendToMasterReport("Electronic Power Steering Query", "Header 0x760 LID 2101", epsRes);
+    };
+
     window.queryYamahaDTCs = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
       isPolling = false;
@@ -1185,43 +1199,6 @@
 
       let dtcLog = `Active DTCs (21 60 / d:60): ${activeRes}\nHistoric DTCs (21 61 / d:61): ${histRes}`;
       appendToMasterReport("Yamaha Fault Code & DTC Query", "Checked Active and Stored Diagnostic Memory", dtcLog);
-    };
-
-    window.queryECUIdentification = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      const term = document.getElementById('module-scan-results');
-      term.innerHTML = '<div style="color:var(--cyan);">Querying OEM Part Number & ROM Calibration ID...</div>';
-
-      const partRes = await sendCommand("22F187", 2500);
-      term.innerHTML += `<div><strong>OEM Part Number (22 F1 87):</strong> ${partRes}</div>`;
-
-      const romRes = await sendCommand("22F188", 2500);
-      term.innerHTML += `<div><strong>ROM Version (22 F1 88):</strong> ${romRes}</div>`;
-
-      const cvnRes = await sendCommand("22F189", 2500);
-      term.innerHTML += `<div><strong>CVN (22 F1 89):</strong> ${cvnRes}</div>`;
-
-      let idLog = `Part No (22F187): ${partRes}\nROM Version (22F188): ${romRes}\nCVN (22F189): ${cvnRes}`;
-      appendToMasterReport("ECU OEM Identification & Calibration", "Hardware and Software Version Inquiry", idLog);
-    };
-
-    window.querySecondaryPowertrain = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      const term = document.getElementById('module-scan-results');
-      term.innerHTML = '<div style="color:var(--cyan);">Querying Secondary Powertrain Telemetry (21 02 & 21 03)...</div>';
-
-      const p2 = await sendCommand("2102", 2500);
-      term.innerHTML += `<div><strong>LID 21 02 (O2/Inj):</strong> ${p2}</div>`;
-
-      const p3 = await sendCommand("2103", 2500);
-      term.innerHTML += `<div><strong>LID 21 03 (Lambda/Trim):</strong> ${p3}</div>`;
-
-      let powLog = `LID 21 02 (Injector ms / O2 Volts): ${p2}\nLID 21 03 (Closed-Loop Status): ${p3}`;
-      appendToMasterReport("Secondary Powertrain Telemetry", "LID 2102 and 2103 Inquiry", powLog);
     };
 
     /* Simulation Mode */
@@ -1251,19 +1228,17 @@
         const time = Date.now() / 1000;
         const rpm = Math.round(1320 + Math.sin(time * 0.9) * 4500);
         const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
-        const coolant = Math.round(45 + Math.sin(time * 0.1) * 15);
         const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
-        const timing = Math.round(15 + Math.sin(time * 0.5) * 10);
+        const timing = Math.round(105 + Math.sin(time * 0.5) * 40);
         const brake = Math.sin(time * 0.5) > 0 ? 0x14 : 0x00;
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF6346${timing.toString(16).padStart(2,'0')}00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF634A${timing.toString(16).padStart(2,'0')}00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
       }
       if (cmd === "2140") return Math.sin(Date.now() / 3000) > 0 ? "61 40 00 80" : "61 40 00 81";
       if (cmd === "2164") return "03E 0:61640048001D 1:00020000000000 2:00000100000000 3:00000000000700 4:00000000000000 5:00030011000300 6:0000000005000C 7:00030000000100 8:03000500000000";
       if (cmd === "2160") return "61 60 00 00 00 00 (No Active Fault Codes)";
       if (cmd === "2161") return "61 61 00 15 00 21 00 00 (Historical Codes Logged)";
-      if (cmd === "22F187") return "62 F1 87 42 34 53 2D 38 35 39 31 41 2D 30 30 (B4S-8591A-00)";
       return "OK";
     }
 
