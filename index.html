@@ -208,7 +208,7 @@
         <span class="brand-glow"></span>
         OBD-II COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.0.6</span>
+      <span class="version-tag" id="app-version-badge">v1.0.7</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -420,7 +420,7 @@
     /* ==========================================================
        APP VERSION CONFIGURATION
        ========================================================== */
-    const APP_VERSION = "v1.0.6";
+    const APP_VERSION = "v1.0.7";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -602,7 +602,7 @@
       if (countEl) countEl.innerText = `Showing ${count} PIDs`;
     };
 
-    /* Bluetooth Engine (Bluefy iOS & Android / Desktop Compatible) */
+    /* Bluetooth Engine */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -715,7 +715,6 @@
     /* Core Safe BLE Write Routine */
     async function writeBLE(data) {
       if (!writeChar) return;
-      // Prefer writeWithoutResponse if available (required for iOS/Bluefy ELM327 BLE)
       if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
         await writeChar.writeValueWithoutResponse(data);
       } else if (writeChar.writeValueWithResponse) {
@@ -733,6 +732,9 @@
       }
 
       return new Promise(async (resolve) => {
+        // Clear any old leftover buffer characters before starting new transmit
+        rxBuffer = '';
+
         const timer = setTimeout(() => {
           responseResolver = null;
           resolve("TIMEOUT");
@@ -779,35 +781,42 @@
       if (sniffer) sniffer.innerHTML = '';
     };
 
-    /* Resilient Step-by-Step Initialization */
+    /* Resilient Initialization + Protocol Lock */
     async function initELM327() {
       log("Flushing adapter serial buffer...");
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
 
-      log("[1/5] Resetting adapter (ATZ)...");
+      log("[1/6] Resetting adapter (ATZ)...");
       const atz = await sendCommand("ATZ", 3000);
-      log(`[1/5] ATZ Response: ${atz || 'OK'}`);
-      
-      // Mandatory stabilization pause for microcontroller reset
+      log(`[1/6] ATZ: ${atz || 'OK'}`);
       await new Promise(r => setTimeout(r, 500));
 
-      log("[2/5] Echo Off (ATE0)...");
+      log("[2/6] Echo Off (ATE0)...");
       await sendCommand("ATE0", 1500);
 
-      log("[3/5] Linefeeds Off (ATL0)...");
+      log("[3/6] Linefeeds Off (ATL0)...");
       await sendCommand("ATL0", 1500);
 
-      log("[4/5] Headers Off (ATH0)...");
+      log("[4/6] Headers Off (ATH0)...");
       await sendCommand("ATH0", 1500);
 
-      log("[5/5] Auto Protocol (ATSP0)...");
+      log("[5/6] Auto Protocol (ATSP0)...");
       await sendCommand("ATSP0", 2500);
 
-      log("ELM327 protocol configured! Starting live telemetry...");
+      // Lock Protocol Search via 0100 with generous 8-second timeout
+      log("[6/6] Locking vehicle ECU protocol (0100)...");
+      const lockRes = await sendCommand("0100", 8000);
+      
+      if (lockRes === "TIMEOUT" || lockRes.includes("NO DATA") || lockRes.includes("UNABLE")) {
+        log("⚠️ ECU returned NO DATA. Ensure vehicle ignition is ON/RUNNING!");
+        await new Promise(r => setTimeout(r, 1500));
+      } else {
+        log("✅ Protocol locked! Live telemetry active.");
+      }
     }
 
-    /* Polling Loop */
+    /* Polling Loop with Live Telemetry Heartbeat */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
@@ -817,8 +826,22 @@
           const dashPIDs = ["010C", "010D", "0105", "0104", "0111", "ATRV"];
           for (const cmd of dashPIDs) {
             if (!isPolling || activeTab !== 'tab-dash') break;
-            const res = await sendCommand(cmd);
+            
+            const startT = performance.now();
+            const res = await sendCommand(cmd, 1500);
+            const rtt = Math.round(performance.now() - startT);
+            
             updatePIDValue(cmd, res, 'dash');
+
+            // Live HUD Heartbeat in log
+            if (cmd === '010C') {
+              if (res.includes("NO DATA") || res.includes("UNABLE")) {
+                log("⚠️ ECU NO DATA. Turn vehicle key to ON/RUN!");
+              } else if (res !== "TIMEOUT") {
+                const rpmEl = document.getElementById('val-dash-010C');
+                log(`⚡ Live: RPM ${rpmEl ? rpmEl.innerText : '--'} | ${rtt}ms`);
+              }
+            }
           }
         } else if (activeTab === 'tab-categories') {
           for (const [cmd, def] of Object.entries(PID_REGISTRY)) {
@@ -826,7 +849,7 @@
             if (currentCategory !== 'all' && def.cat !== currentCategory) continue;
             if (!supportedPIDs.has(cmd)) continue;
 
-            const res = await sendCommand(cmd);
+            const res = await sendCommand(cmd, 1500);
             updatePIDValue(cmd, res, 'cat');
           }
         }
@@ -934,7 +957,7 @@
 
       for (const baseCmd of scanBases) {
         log(`Querying ${baseCmd}...`);
-        const res = await sendCommand(baseCmd);
+        const res = await sendCommand(baseCmd, 3500);
         const clean = res.replace(/\s+/g, '');
         const header = "41" + baseCmd.substring(2);
         const idx = clean.indexOf(header);
@@ -966,11 +989,11 @@
       isPolling = false;
 
       log("Querying VIN & protocol...");
-      const protoRes = await sendCommand("ATDP");
+      const protoRes = await sendCommand("ATDP", 2000);
       const protoEl = document.getElementById('info-proto');
       if (protoEl) protoEl.innerText = protoRes.replace(/[\r\n]/g, ' ') || 'Unknown';
 
-      const vinRes = await sendCommand("0902");
+      const vinRes = await sendCommand("0902", 4000);
       const vin = parseVIN(vinRes);
       const vinEl = document.getElementById('info-vin');
       if (vinEl) vinEl.innerText = vin || "VIN not broadcasted by vehicle.";
@@ -1009,7 +1032,7 @@
 
       isPolling = false;
       log(`Sending: ${cmd}`);
-      const res = await sendCommand(cmd);
+      const res = await sendCommand(cmd, 3000);
       const resEl = document.getElementById('manual-res');
       if (resEl) resEl.innerText = res;
     };
@@ -1035,7 +1058,7 @@
         const def = PID_REGISTRY[cmd];
         if (progressEl) progressEl.innerText = `Testing ${i + 1}/${pidsToTest.length}: ${cmd}...`;
 
-        const { raw, rtt } = await sendCommandWithLog(cmd);
+        const { raw, rtt } = await sendCommandWithLog(cmd, 2500);
         let status = 'NO DATA / ERROR';
         let parsedVal = '--';
         const clean = raw.replace(/\s+/g, '');
