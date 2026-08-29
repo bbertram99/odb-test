@@ -113,7 +113,7 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
     @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
 
-    /* Live Gear Strip */
+    /* Live Status Strip (Gear, Drive Mode, Brake Light) */
     .drive-status-strip {
       display: flex;
       gap: 0.5rem;
@@ -124,18 +124,27 @@
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 0.65rem 0.85rem;
+      padding: 0.6rem 0.8rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       backdrop-filter: blur(8px);
     }
-    .status-pill-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .status-pill-val { font-size: 1.5rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
-    .status-pill-val.gear-r { color: var(--red); text-shadow: 0 0 12px var(--red); }
+    .status-pill-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.4rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
     .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
     .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
+
+    .status-pill-val.brake-on {
+      color: var(--red) !important;
+      text-shadow: 0 0 12px var(--red);
+      font-weight: 900;
+    }
+    .status-pill-val.brake-off {
+      color: rgba(255, 255, 255, 0.2);
+    }
 
     /* Touch Metric Cards */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
@@ -231,7 +240,7 @@
         <span class="brand-glow"></span>
         RMAX COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.3.6</span>
+      <span class="version-tag" id="app-version-badge">v1.4.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -258,15 +267,19 @@
       </div>
     </div>
 
-    <!-- Live Transmission & Drive Mode Strip -->
+    <!-- Live Transmission, Drive Mode, and Brake Light Strip -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
         <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
       </div>
       <div class="status-pill-box">
-        <span class="status-pill-label">Drive Mode</span>
-        <span id="val-dash-drive" class="status-pill-val">TURF / 2WD</span>
+        <span class="status-pill-label">Brake</span>
+        <span id="val-dash-brake" class="status-pill-val brake-off">OFF</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">Drive</span>
+        <span id="val-dash-drive" class="status-pill-val" style="font-size:1.1rem;">2WD</span>
       </div>
     </div>
 
@@ -314,7 +327,7 @@
         </div>
       </div>
 
-      <!-- Throttle Body / TPS (d:01) -->
+      <!-- Throttle Blade / TPS (d:01) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -349,27 +362,26 @@
     <div class="disc-section">
       <div class="disc-title">Session Flight Recorder</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Select target LID and tag your test to capture differential register movements.
+        Target <strong>21 40</strong> or <strong>21 64</strong> to capture the 2025 Turf / 4WD / Diff-Lock switch register.
       </p>
       
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.4rem;">
         <div>
           <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TARGET PAYLOAD:</label>
           <select id="record-payload-target" style="width:100%;">
-            <option value="2101">21 01 (Engine/Transmission)</option>
-            <option value="2140">21 40 (Chassis/Diff Unit)</option>
-            <option value="2141">21 41 (Body Control Unit)</option>
+            <option value="2140">21 40 (Chassis/Diff Control Unit)</option>
             <option value="2164">21 64 (Extended Status Block)</option>
+            <option value="2141">21 41 (Body Control Unit)</option>
             <option value="2165">21 65 (Switch Matrix Block)</option>
+            <option value="2101">21 01 (Engine Main Block)</option>
           </select>
         </div>
         <div>
           <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TEST ACTION TAG:</label>
           <select id="record-tag" style="width:100%;">
             <option value="Turf -> 2WD -> 4WD -> Diff-Lock">Turf -> 2WD -> 4WD -> Diff-Lock</option>
-            <option value="Gear Shift Cycle (N -> R -> N -> H -> L)">Gear Shift Cycle (N -> R -> N -> H -> L)</option>
+            <option value="Neutral vs Reverse Shifter Toggle">Neutral vs Reverse Shifter Toggle</option>
             <option value="Brake Pedal Press & Release">Brake Pedal Press & Release</option>
-            <option value="Ground Speed Acceleration">Ground Speed Acceleration</option>
           </select>
         </div>
       </div>
@@ -439,7 +451,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.3.6";
+    const APP_VERSION = "v1.4.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -462,7 +474,6 @@
     let isRecordingSession = false;
     let activeTab = 'tab-dash';
     let speedUnit = 'kmh';
-    let currentPollingCommand = '2101';
 
     let lastBytes = [];
     let recordedFrames = [];
@@ -514,7 +525,6 @@
       });
 
       if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
-        currentPollingCommand = '2101';
         startPolling();
       }
     };
@@ -548,7 +558,7 @@
       }
     };
 
-    /* Bluetooth Communication Engine */
+    /* Bluetooth Engine */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -703,10 +713,10 @@
       await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
       await sendCommand("ATSH7E0", 1500); // Yamaha Primary ECU
 
-      log("Connected to Yamaha RMAX! Live telemetry active.");
+      log("Connected to Yamaha RMAX! Telemetry active.");
     }
 
-    /* Continuous Live Polling Loop */
+    /* Live Polling Loop */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
@@ -735,7 +745,7 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED GEAR DECODER
+       YAMAHA RMAX MULTI-FRAME DEFRAGMENTER & DECODER
        ========================================================== */
     function parseYamahaPayload(raw, targetCmd) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
@@ -764,11 +774,10 @@
 
       if (bytes.length < 2) return;
 
-      // Session Recording Hook
       if (isRecordingSession) {
         const elapsed = ((Date.now() - recordStartTime) / 1000).toFixed(2);
         recordedFrames.push({ time: elapsed, bytes: [...bytes] });
-        document.getElementById('record-status-text').innerText = `🔴 Recording: ${recordedFrames.length} frames (${elapsed}s)`;
+        document.getElementById('record-status-text').innerText = `🔴 Recording [${targetCmd}]: ${recordedFrames.length} frames (${elapsed}s)`;
       }
 
       if (targetCmd === '2101') {
@@ -799,7 +808,7 @@
           }
         }
 
-        // --- 4. Gas Pedal / APS (Byte 7): 0x23 (35) -> 0xC5 (197) ---
+        // --- 4. Gas Pedal / APS (Byte 7) ---
         if (bytes.length >= 8) {
           const rawAPS = bytes[7];
           const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
@@ -808,7 +817,7 @@
           if (pedalBar) pedalBar.style.width = pedalPct + '%';
         }
 
-        // --- 5. Throttle Blade / TPS (Byte 9): 0x21 (33) -> 0xD2 (210) -> d:01 ---
+        // --- 5. Throttle Blade / TPS (Byte 9) ---
         if (bytes.length >= 10) {
           const rawTPS = bytes[9];
           const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
@@ -817,14 +826,12 @@
           if (tpsBar) tpsBar.style.width = tpsPct + '%';
         }
 
-        // --- 6. CORRECTED RMAX TRANSMISSION GEAR DECODER ---
+        // --- 6. Live Transmission Gear (Byte 19) ---
         if (bytes.length >= 20) {
-          const b18 = bytes[18];
           const b19 = bytes[19];
           const gearNibble = b19 & 0x0F;
-          const isNeutralSwitch = (b18 & 0x01) === 1;
-
           const gearEl = document.getElementById('val-dash-gear');
+          
           let gearText = 'N';
           let gearClass = 'gear-n';
 
@@ -835,17 +842,25 @@
             gearText = 'L';
             gearClass = 'gear-l';
           } else if (gearNibble === 0x00) {
-            if (isNeutralSwitch) {
-              gearText = 'N';
-              gearClass = 'gear-n';
-            } else {
-              gearText = 'R';
-              gearClass = 'gear-r';
-            }
+            gearText = 'N';
+            gearClass = 'gear-n';
           }
 
           gearEl.className = `status-pill-val ${gearClass}`;
           gearEl.innerText = gearText;
+        }
+
+        // --- 7. Live Brake Light Indicator (Byte 21 Bit 4: 0x10) ---
+        if (bytes.length >= 22) {
+          const isBrakeOn = (bytes[21] & 0x10) === 0x10;
+          const brakeEl = document.getElementById('val-dash-brake');
+          if (isBrakeOn) {
+            brakeEl.innerText = 'ON';
+            brakeEl.className = 'status-pill-val brake-on';
+          } else {
+            brakeEl.innerText = 'OFF';
+            brakeEl.className = 'status-pill-val brake-off';
+          }
         }
 
         lastBytes = [...bytes];
@@ -909,7 +924,7 @@
     }
 
     /* ==========================================================
-       SESSION FLIGHT RECORDER & TELEMETRY VARIANCE MATCHER
+       SESSION FLIGHT RECORDER
        ========================================================== */
     window.toggleSessionRecording = function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
@@ -1038,8 +1053,9 @@
         const coolant = Math.round(45 + Math.sin(time * 0.1) * 15);
         const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
+        const brake = Math.sin(time * 0.5) > 0 ? 0x11 : 0x01;
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18082048000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18282${brake.toString(16).padStart(2,'0')}8000AA`;
       }
       return "OK";
     }
