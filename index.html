@@ -46,11 +46,17 @@
       padding: 0.25rem 0.25rem 0.75rem 0.25rem;
     }
 
-    .brand-title {
+    .brand-container {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: 1.25rem;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 1.15rem;
       font-weight: 800;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -66,17 +72,29 @@
       box-shadow: 0 0 10px var(--cyan);
     }
 
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--cyan);
+      letter-spacing: 0.02em;
+    }
+
     .hud-widgets {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     .status-badge {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
       font-weight: 700;
-      padding: 0.35rem 0.75rem;
+      padding: 0.35rem 0.65rem;
       border-radius: 9999px;
       background: rgba(30, 41, 59, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -101,14 +119,14 @@
       background: rgba(30, 41, 59, 0.8);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--text);
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
     .btn-hud-icon:active { transform: scale(0.92); }
 
@@ -494,11 +512,14 @@
 </head>
 <body>
 
-  <!-- Top HUD Header -->
+  <!-- Top HUD Header with Version Tag -->
   <header>
-    <div class="brand-title">
-      <span class="brand-glow"></span>
-      OBD-II COCKPIT
+    <div class="brand-container">
+      <div class="brand-title">
+        <span class="brand-glow"></span>
+        OBD-II COCKPIT
+      </div>
+      <span class="version-tag" id="app-version-badge">v1.0.4</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -707,6 +728,12 @@
   </div>
 
   <script>
+    /* ==========================================================
+       APP VERSION CONFIGURATION
+       ========================================================== */
+    const APP_VERSION = "v1.0.4";
+    document.getElementById('app-version-badge').innerText = APP_VERSION;
+
     window.onerror = function(msg, url, line) {
       const logBox = document.getElementById('log');
       if (logBox) logBox.innerText = 'Error: ' + msg + ' (L' + line + ')';
@@ -770,7 +797,7 @@
       }}
     };
 
-    /* Canonical 128-bit String UUIDs (Strictly formatted for iOS / Bluefy bridge) */
+    /* Canonical 128-bit String UUIDs for CoreBluetooth / Bluefy compatibility */
     const SERVICE_UUIDS = [
       '0000fff0-0000-1000-8000-00805f9b34fb', // Veepeak & generic ELM327 BLE
       '0000ffe0-0000-1000-8000-00805f9b34fb', // Vgate iCar / CC2541
