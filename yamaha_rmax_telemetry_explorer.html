@@ -2,1038 +2,1270 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yamaha RMAX 1000 & Motorcycle ECU Telemetry Deep Dive</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              500: '#0284c7',
-              600: '#0369a1',
-              700: '#075985',
-              900: '#0c4a6e',
-            },
-            slate: {
-              850: '#152032',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RMAX Master" />
+  <title>Yamaha RMAX Master Test Suite</title>
   <style>
-    .chart-container {
-      position: relative;
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #05070e;
+      --card-bg: rgba(16, 23, 41, 0.75);
+      --card-border: rgba(56, 189, 248, 0.15);
+      --card-glow: rgba(56, 189, 248, 0.05);
+      --text: #f8fafc;
+      --text-muted: #64748b;
+      --cyan: #38bdf8;
+      --green: #4ade80;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #c084fc;
+      --redline: #ff0055;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #070b14 0%, #030408 100%);
+      color: var(--text);
+      padding: 0.75rem 0.75rem 5.5rem 0.75rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 0.25rem 0.75rem 0.25rem;
+    }
+
+    .brand-container { display: flex; align-items: center; gap: 0.5rem; }
+    .brand-title {
+      display: flex; align-items: center; gap: 0.4rem; font-size: 1.15rem;
+      font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff;
+    }
+    .brand-glow {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+    }
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700;
+      padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3); color: var(--cyan);
+    }
+
+    .hud-widgets { display: flex; align-items: center; gap: 0.4rem; }
+    .status-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700;
+      padding: 0.35rem 0.65rem; border-radius: 9999px; background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-muted); letter-spacing: 0.05em;
+    }
+    .status-badge.connected {
+      background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green);
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+    }
+    .status-badge.recording {
+      background: rgba(239, 68, 68, 0.15); border-color: var(--red); color: var(--red);
+      animation: pulseRecord 0.6s infinite alternate;
+    }
+    @keyframes pulseRecord { from { opacity: 0.6; } to { opacity: 1; } }
+
+    .btn-hud-icon {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text); width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .btn-hud-icon:active { transform: scale(0.92); }
+
+    .view-panel { display: none; flex-direction: column; gap: 0.75rem; flex: 1; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Hero Tachometer */
+    .cockpit-hero {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow);
+      backdrop-filter: blur(12px);
+    }
+    .gauge-wrapper { position: relative; width: 240px; height: 200px; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { width: 240px; height: 200px; transform: rotate(-30deg); }
+    .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
+    .gauge-val-track {
+      fill: none; stroke: var(--cyan); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2;
+      transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan));
+    }
+    .gauge-center-readout {
+      position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center; display: flex; flex-direction: column; align-items: center;
+    }
+    .gauge-center-val { font-size: 3.5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .gauge-center-unit { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.2rem; }
+    .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
+    .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
+    @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
+
+    /* Live Status Strip */
+    .drive-status-strip {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr 0.9fr 0.9fr;
+      gap: 0.4rem;
       width: 100%;
-      max-width: 750px;
-      margin-left: auto;
-      margin-right: auto;
-      height: 320px;
-      max-height: 400px;
     }
-    @media (min-width: 768px) {
-      .chart-container {
-        height: 380px;
-      }
+    .status-pill-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 0.55rem 0.6rem; display: flex; flex-direction: column; justify-content: center;
+      align-items: center; gap: 0.15rem; backdrop-filter: blur(8px);
     }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .status-pill-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.25rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    
+    .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
+    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
+    .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
+    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
+
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); }
+
+    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
+    .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.18); }
+
+    /* Touch Metric Cards Grid */
+    .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+    .touch-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.85rem 1rem;
+      display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer;
+    }
+    .touch-card:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.9); }
+    .card-top { display: flex; justify-content: space-between; align-items: center; }
+    .card-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .card-toggle-hint { font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
+    .card-main { margin: 0.4rem 0; display: flex; align-items: baseline; gap: 0.35rem; }
+    .card-val { font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-unit { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+    .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
+    .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
+
+    /* Sections */
+    .disc-section {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem;
+      display: flex; flex-direction: column; gap: 0.75rem; backdrop-filter: blur(8px);
+    }
+    .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
+
+    /* Interactive Instruction Box */
+    .instruction-card {
+      background: rgba(2, 6, 23, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px;
+      padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem;
+    }
+    .inst-header { font-weight: 800; color: var(--amber); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.3rem; }
+    .inst-state { background: rgba(245, 158, 11, 0.15); border-left: 3px solid var(--amber); padding: 0.3rem 0.5rem; border-radius: 4px; color: #fff; font-weight: 600; }
+    .inst-steps { color: var(--text); line-height: 1.4; padding-left: 1rem; }
+
+    .btn-touch {
+      background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem;
+      border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
+    .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
+    .btn-touch.yamaha { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); }
+    .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
+    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; }
+
+    select, input[type="text"] {
+      background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.65rem;
+      border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 600;
+    }
+
+    .terminal-box {
+      background: #020617; border: 1px solid var(--card-border); border-radius: 10px; padding: 0.75rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.4; flex: 1;
+      max-height: calc(100vh - 380px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem;
+    }
+
+    .action-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem;
+    }
+
+    /* Bottom Touch Dock */
+    .touch-dock {
+      position: fixed; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; background: rgba(10, 15, 29, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 0.4rem 0.5rem; display: flex;
+      justify-content: space-between; align-items: center; gap: 0.25rem; backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); z-index: 100;
+    }
+    .dock-btn {
+      flex: 1; padding: 0.55rem 0.1rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      background: transparent; border: none; border-radius: 12px; color: var(--text-muted); cursor: pointer;
+    }
+    .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .dock-btn span { font-size: 0.62rem; font-weight: 700; }
+    .dock-btn:active { transform: scale(0.92); }
+    .dock-btn.active { color: var(--cyan); background: rgba(56, 189, 248, 0.12); }
+    .dock-action-btn {
+      padding: 0.6rem 0.85rem; border-radius: 12px; font-size: 0.75rem; font-weight: 800; border: none;
+      cursor: pointer; display: flex; align-items: center; gap: 0.3rem; background: var(--cyan); color: #05070e;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .dock-action-btn:active { transform: scale(0.94); }
+    .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35); }
+
+    #log {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); min-height: 40px;
+      max-height: 50px; overflow-y: auto; background: #020617; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--card-border);
+    }
   </style>
 </head>
-<!-- Chosen Palette: Slate Light & Precision Blue (Light Neutral Background: #f8fafc, Primary: #0284c7, Slate: #334155, Accent: #0d9488) -->
-<!-- Application Structure Plan: 
-  The SPA translates complex embedded ECU reverse-engineering documentation into five functional, interactive modules:
-  1. Executive Summary & Architecture Overview: Explains CAN bus specs, physical layer wiring, and the fundamental rejection of SAE J1979 in favor of ISO 14229 UDS Mode 21.
-  2. Master 21 01 Register Decoder & Live Calculator: An interactive playground where users can input raw hex frames or select pre-set telemetry states to see decoded metrics (RPM, Speed, MAP, ECT, APS, TPS, Gear, D-Mode, Brakes).
-  3. Drive-by-Wire & D-Mode Transfer Dynamics: Dynamic Chart.js visualization comparing Accelerator Pedal Request (APS) vs Throttle Plate Opening (TPS) across SPORT, TRAIL, and CRAWL modes.
-  4. Motorcycle Cross-Platform Mapping Matrix: A searchable, filterable table linking legacy Yamaha motorcycle dash codes (d:01 to d:64) from YZF-R1, MT-09, MT-07, and YXZ1000R directly to RMAX ECU registers.
-  5. Protocol Workbench & ISO-TP Defragmenter: Interactive tool to parse raw multi-frame string payloads into clean byte arrays and generate ELM327 initialization sequences.
--->
-<!-- Visualization & Content Choices: 
-  - Goal: Inform/Explain CAN Bus Architecture & Protocol -> Interactive Spec Cards + Callouts -> Clarifies ISO 15765-4 standard and physical pinouts.
-  - Goal: Compare Drive Mode Curves -> Chart.js Line Chart (Canvas) -> Displays non-linear DBW throttle mapping (SPORT vs TRAIL vs CRAWL) -> No SVG/Mermaid.
-  - Goal: Interactive Telemetry Decoding -> Dynamic Live Calculator with visual gauge cards and state badges -> Real-time JavaScript formula transformation.
-  - Goal: Organize Cross-Platform Knowledge -> Filterable Data Table + Search Filter -> Connects SxS registers to motorcycle diagnostic heritage.
--->
-<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+<body>
 
-  <!-- Top Header Navigation -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-lg bg-brand-500 flex items-center justify-center font-bold text-lg text-white shadow-sm">
-            ECU
-          </div>
-          <div>
-            <h1 class="text-base font-bold leading-none text-white">Yamaha RMAX 1000 Telemetry Deep Dive</h1>
-            <p class="text-xs text-slate-400 mt-1">ISO 14229 UDS Mode 21 & Motorcycle Firmware Cross-Mapping</p>
-          </div>
-        </div>
-        <div class="hidden md:flex items-center space-x-2 text-xs font-medium">
-          <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">CAN 2.0B 500kbaud</span>
-          <span class="px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">ISO 14229 UDS</span>
-          <span class="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">2020–2026+ Platforms</span>
-        </div>
+  <!-- Top HUD Header -->
+  <header>
+    <div class="brand-container">
+      <div class="brand-title">
+        <span class="brand-glow"></span>
+        RMAX MASTER SUITE
       </div>
+      <span class="version-tag" id="app-version-badge">v2.1.0</span>
+    </div>
+    <div class="hud-widgets">
+      <span id="status" class="status-badge">DISCONNECTED</span>
+      <a href="readme.html" class="btn-hud-icon" title="Open Documentation">📖</a>
+      <button class="btn-hud-icon" onclick="toggleSimulator()" title="Toggle Simulator">⚡</button>
+      <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
     </div>
   </header>
 
-  <!-- Navigation Bar -->
-  <nav class="bg-white border-b border-slate-200 sticky top-16 z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 scrollbar-none" id="nav-tabs">
-        <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn px-4 py-2 text-sm font-semibold rounded-md text-brand-600 bg-brand-50 whitespace-nowrap transition-colors">
-          1. Architecture & Protocols
-        </button>
-        <button onclick="switchTab('decoder')" id="tab-decoder" class="tab-btn px-4 py-2 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 whitespace-nowrap transition-colors">
-          2. Master LID 0x01 Decoder
-        </button>
-        <button onclick="switchTab('dbw')" id="tab-dbw" class="tab-btn px-4 py-2 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 whitespace-nowrap transition-colors">
-          3. D-Mode Throttle Dynamics
-        </button>
-        <button onclick="switchTab('motorcycle')" id="tab-motorcycle" class="tab-btn px-4 py-2 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 whitespace-nowrap transition-colors">
-          4. Motorcycle Cross-Mapping (d:01-d:64)
-        </button>
-        <button onclick="switchTab('workbench')" id="tab-workbench" class="tab-btn px-4 py-2 text-sm font-semibold rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 whitespace-nowrap transition-colors">
-          5. ISO-TP Workbench & Hardware
-        </button>
+  <!-- TAB 1: Advanced Cockpit Telemetry -->
+  <div id="tab-dash" class="view-panel" style="display: flex;">
+    
+    <!-- Hero Tachometer -->
+    <div class="cockpit-hero">
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="gauge-center-readout">
+          <span id="val-dash-rpm" class="gauge-center-val">--</span>
+          <span class="gauge-center-unit">RPM</span>
+        </div>
+        <div id="redline-alert" class="redline-indicator">REDLINE</div>
       </div>
     </div>
-  </nav>
 
-  <!-- Main Content Container -->
-  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-
-    <!-- TAB 1: ARCHITECTURE & PROTOCOLS -->
-    <section id="sec-overview" class="space-y-6">
-      <!-- Intro Paragraph -->
-      <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <h2 class="text-xl font-bold text-slate-900 mb-2">Embedded ECU Architecture & Network Topography</h2>
-        <p class="text-slate-600 text-sm leading-relaxed">
-          The Yamaha Wolverine RMAX 1000 engine management system leverages the proprietary Yamaha Engine Control (YEC) hardware architecture, engineered in collaboration with Mitsubishi Electric and Denso. This module shares direct microarchitecture, ADC transfer functions, and firmware strategies with Yamaha’s flagship supersport motorcycles (YZF-R1, YZF-R6), hyper-nakeds (MT-07, MT-09), and pure-sport SxS (YXZ1000R). Unlike standard automobiles, powersports machines do not mandate SAE J1979 emissions compliance, prompting Yamaha to utilize ISO 14229 Unified Diagnostic Services (UDS) Mode 21 routines.
-        </p>
+    <!-- Live Status Strip -->
+    <div class="drive-status-strip">
+      <div class="status-pill-box">
+        <span class="status-pill-label">Gear</span>
+        <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
       </div>
-
-      <!-- Quick Metrics Specs Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Bus Arbitration Speed</div>
-          <div class="text-2xl font-extrabold text-slate-900 mt-1">500 kbaud</div>
-          <div class="text-xs text-slate-500 mt-1">ISO 11898-2 High-Speed CAN</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">CAN Header Format</div>
-          <div class="text-2xl font-extrabold text-brand-600 mt-1">11-Bit Base</div>
-          <div class="text-xs text-slate-500 mt-1">Standard 2.0B Frame ID</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">ECU Physical Address</div>
-          <div class="text-2xl font-extrabold text-slate-900 mt-1">0x7E0 / 0x7E8</div>
-          <div class="text-xs text-slate-500 mt-1">Query: 0x7E0 &bull; ECU Reply: 0x7E8</div>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Primary Application Layer</div>
-          <div class="text-2xl font-extrabold text-emerald-600 mt-1">UDS Mode 21</div>
-          <div class="text-xs text-slate-500 mt-1">ISO 14229 Service 0x21 (LID 0x01)</div>
-        </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">D-Mode</span>
+        <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
       </div>
-
-      <!-- SAE J1979 Rejection vs UDS Mode 21 Callout -->
-      <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span class="inline-block px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-md mb-2">Crucial Diagnostic Obstacle</span>
-            <h3 class="text-lg font-bold text-amber-950">Why Generic Automotive OBD-II Scanners Fail</h3>
-            <p class="text-amber-900 text-sm mt-1 leading-relaxed">
-              When standard OBD-II apps (like Torque Pro or standard code readers) issue generic SAE J1979 requests (e.g., <code class="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded mono text-xs">01 0C</code> for Engine RPM) to arbitration ID <code class="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded mono text-xs">0x7DF</code>, the RMAX ECU immediately returns an ISO 14229 Negative Response Code (NRC):
-            </p>
-          </div>
-          <div class="bg-white p-4 rounded-lg border border-amber-300 min-w-[280px] text-center shadow-inner">
-            <div class="text-xs font-bold text-slate-400 uppercase">ECU Rejection Payload</div>
-            <div class="text-xl font-black text-rose-600 mono mt-1">7F 01 11</div>
-            <div class="text-xs text-slate-600 mt-1">NRC <code class="mono">0x11</code>: <span class="font-semibold text-rose-700">serviceNotSupported</span></div>
-          </div>
-        </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">P-Brake</span>
+        <span id="val-dash-pbrake" class="status-pill-val brake-off">OFF</span>
       </div>
-
-      <!-- Physical Harness Connector Table -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100">
-          <h3 class="text-lg font-bold text-slate-900">Physical Diagnostic Port Wiring & Pinout Specification</h3>
-          <p class="text-slate-500 text-xs mt-1">Sealed factory diagnostic connector located under the front electrical hood assembly or dash harness.</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-100 text-slate-700 uppercase text-xs font-bold">
-              <tr>
-                <th class="py-3 px-6">Signal Designation</th>
-                <th class="py-3 px-6">RMAX Harness Wire Color</th>
-                <th class="py-3 px-6">OBD-II Standard Pin</th>
-                <th class="py-3 px-6">Electrical Operating Parameters</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-600">
-              <tr class="hover:bg-slate-50">
-                <td class="py-3.5 px-6 font-semibold text-slate-900 mono">CAN_H</td>
-                <td class="py-3.5 px-6"><span class="inline-flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 border border-slate-300 mr-2"></span>White with Blue Stripe</span></td>
-                <td class="py-3.5 px-6 mono">Pin 6</td>
-                <td class="py-3.5 px-6">Dominant high @ 3.5V, Recessive baseline @ 2.5V</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3.5 px-6 font-semibold text-slate-900 mono">CAN_L</td>
-                <td class="py-3.5 px-6"><span class="inline-flex items-center"><span class="w-3 h-3 rounded-full bg-emerald-600 border border-slate-300 mr-2"></span>Green with Black Stripe</span></td>
-                <td class="py-3.5 px-6 mono">Pin 14</td>
-                <td class="py-3.5 px-6">Dominant low @ 1.5V, Recessive baseline @ 2.5V</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3.5 px-6 font-semibold text-slate-900 mono">+12V Unswitched</td>
-                <td class="py-3.5 px-6"><span class="inline-flex items-center"><span class="w-3 h-3 rounded-full bg-red-600 border border-slate-300 mr-2"></span>Red with White Stripe</span></td>
-                <td class="py-3.5 px-6 mono">Pin 16</td>
-                <td class="py-3.5 px-6">+12.0V to +14.8V continuous main battery rail</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3.5 px-6 font-semibold text-slate-900 mono">Chassis Ground</td>
-                <td class="py-3.5 px-6"><span class="inline-flex items-center"><span class="w-3 h-3 rounded-full bg-slate-900 border border-slate-300 mr-2"></span>Black with Brown Stripe</span></td>
-                <td class="py-3.5 px-6 mono">Pin 4 / Pin 5</td>
-                <td class="py-3.5 px-6">Direct low-resistance engine block ground reference</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: MASTER LID 0x01 DECODER -->
-    <section id="sec-decoder" class="space-y-6 hidden">
-      <!-- Section Overview -->
-      <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <h2 class="text-xl font-bold text-slate-900 mb-2">Master LID 0x01 Decoded Payload Matrix</h2>
-        <p class="text-slate-600 text-sm leading-relaxed">
-          Issuing UDS Service 21 query <code class="bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded mono text-xs font-semibold">21 01</code> to ECU ID <code class="bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded mono text-xs font-semibold">0x7E0</code> returns an atomic 26-byte payload (<code class="mono text-xs">B0</code> through <code class="mono text-xs">B25</code>). Use the interactive state selector or modify individual bytes to test transfer functions and physical unit conversions in real time.
-        </p>
-      </div>
-
-      <!-- Live Simulator Controls -->
-      <div class="bg-slate-900 text-white rounded-xl p-6 shadow-md border border-slate-800">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
-          <div>
-            <h3 class="text-base font-bold text-white flex items-center">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse mr-2"></span>
-              Interactive Telemetry State Preset Simulator
-            </h3>
-            <p class="text-xs text-slate-400 mt-1">Select a pre-configured vehicle operational scenario to populate raw hex registers:</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="applyPreset('idle')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition">Preset 1: Warm Idle (Neutral, Sport)</button>
-            <button onclick="applyPreset('trail_cruise')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition">Preset 2: Trail Cruising (35 MPH, High, Trail)</button>
-            <button onclick="applyPreset('crawl_climb')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition">Preset 3: Technical Rock Crawl (Low, Crawl)</button>
-          </div>
-        </div>
-
-        <!-- Dynamic Output Cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-center">
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Engine Speed</div>
-            <div id="disp-rpm" class="text-xl font-black text-brand-400 mono mt-1">1,250 RPM</div>
-          </div>
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Vehicle Speed</div>
-            <div id="disp-speed" class="text-xl font-black text-emerald-400 mono mt-1">0.0 MPH</div>
-          </div>
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Coolant Temp</div>
-            <div id="disp-ect" class="text-xl font-black text-amber-400 mono mt-1">75°C / 167°F</div>
-          </div>
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Intake Pressure</div>
-            <div id="disp-map" class="text-xl font-black text-sky-400 mono mt-1">210 mbar</div>
-          </div>
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Pedal (APS1)</div>
-            <div id="disp-aps" class="text-xl font-black text-purple-400 mono mt-1">0.0 %</div>
-          </div>
-          <div class="bg-slate-850 p-3 rounded-lg border border-slate-800">
-            <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Blade (TPS1)</div>
-            <div id="disp-tps" class="text-xl font-black text-teal-400 mono mt-1">0.0 %</div>
-          </div>
-        </div>
-
-        <!-- Discrete Status Badges -->
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800 text-xs">
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">Gear Gate:</span>
-            <span id="badge-gear" class="px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold mono">HIGH (0x82)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">D-Mode State:</span>
-            <span id="badge-dmode" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold mono">SPORT (0x80)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">Attitude / Roll:</span>
-            <span id="badge-roll" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold mono">UPRIGHT (0x04)</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">Foot Brake:</span>
-            <span id="badge-brake-foot" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold mono">OFF</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">Park Lever:</span>
-            <span id="badge-brake-park" class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold mono">OFF</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Master Byte Register Table -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 class="text-lg font-bold text-slate-900">26-Byte Powertrain Register Transfer Function Reference</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Fully decoded offsets from UDS Service 0x21 Local Identifier 0x01</p>
-          </div>
-          <div class="w-full md:w-64">
-            <input type="text" id="byte-search" onkeyup="filterByteTable()" placeholder="Search sensor or byte..." class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs" id="table-bytes">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-bold">
-              <tr>
-                <th class="py-3 px-4">Byte Offset</th>
-                <th class="py-3 px-4">Yamaha Code</th>
-                <th class="py-3 px-4">Sensor / Channel Parameter</th>
-                <th class="py-3 px-4">Raw Hex Range</th>
-                <th class="py-3 px-4">Transfer Function / Scaling Formula</th>
-                <th class="py-3 px-4">Engineering Units</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-600">
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 0, 1</td>
-                <td class="py-3 px-4 mono text-brand-600">Crankshaft</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Engine Speed (RPM)</td>
-                <td class="py-3 px-4 mono">0x0000 – 0x2500</td>
-                <td class="py-3 px-4 mono text-slate-800">RPM = (B0 * 256) + B1</td>
-                <td class="py-3 px-4">1.0 RPM direct integer</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 2, 3</td>
-                <td class="py-3 px-4 mono text-brand-600">d:07</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Vehicle Ground Speed</td>
-                <td class="py-3 px-4 mono">0x0000 – 0x03E8</td>
-                <td class="py-3 px-4 mono text-slate-800">Speed_kmh = ((B2 * 256) + B3) / 10</td>
-                <td class="py-3 px-4">0.1 km/h resolution (* 0.621371 for MPH)</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 4</td>
-                <td class="py-3 px-4 mono text-brand-600">d:06</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Engine Coolant Temp (ECT)</td>
-                <td class="py-3 px-4 mono">0x14 – 0x78</td>
-                <td class="py-3 px-4 mono text-slate-800">ECT_C = Byte 4</td>
-                <td class="py-3 px-4">1.0°C direct integer</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 5, 6</td>
-                <td class="py-3 px-4 mono text-brand-600">d:03</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Manifold Absolute Pressure (MAP)</td>
-                <td class="py-3 px-4 mono">0x0000 – 0x03FF</td>
-                <td class="py-3 px-4 mono text-slate-800">MAP_mbar = (B5 * 256) + B6</td>
-                <td class="py-3 px-4">1.0 mbar / hPa absolute pressure</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 7</td>
-                <td class="py-3 px-4 mono text-brand-600">APS 1</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Accelerator Pedal Position (Main)</td>
-                <td class="py-3 px-4 mono">0x23 – 0xC5</td>
-                <td class="py-3 px-4 mono text-slate-800">APS1% = ((B7 - 35) / 162) * 100</td>
-                <td class="py-3 px-4">0.0% – 100.0% linear travel</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 8</td>
-                <td class="py-3 px-4 mono text-brand-600">APS 2</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Accelerator Pedal Position (Sub)</td>
-                <td class="py-3 px-4 mono">0x06 – 0xA8</td>
-                <td class="py-3 px-4 mono text-slate-800">APS2% = ((B8 - 6) / 162) * 100</td>
-                <td class="py-3 px-4">Redundant safety check track</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 9</td>
-                <td class="py-3 px-4 mono text-brand-600">d:01 (TPS)</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Throttle Blade Position (Main)</td>
-                <td class="py-3 px-4 mono">0x21 – 0xD2</td>
-                <td class="py-3 px-4 mono text-slate-800">TPS1% = ((B9 - 33) / 177) * 100</td>
-                <td class="py-3 px-4">Motorized throttle butterfly angle</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 10</td>
-                <td class="py-3 px-4 mono text-brand-600">d:13 (TPS2)</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Throttle Blade Position (Sub)</td>
-                <td class="py-3 px-4 mono">0x00 – 0xB0</td>
-                <td class="py-3 px-4 mono text-slate-800">TPS2% = (B10 / 176) * 100</td>
-                <td class="py-3 px-4">Sub-potentiometer verification</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 11</td>
-                <td class="py-3 px-4 mono text-brand-600">d:08</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Tip-Over / Roll Attitude State</td>
-                <td class="py-3 px-4 mono">0x02 / 0x04</td>
-                <td class="py-3 px-4 mono text-slate-800">State <= 0x04 ? UPRIGHT : TILT</td>
-                <td class="py-3 px-4">Safety cutoff interlock check</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 13</td>
-                <td class="py-3 px-4 mono text-brand-600">d:09</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Regulated System Voltage Ref</td>
-                <td class="py-3 px-4 mono">0xCF</td>
-                <td class="py-3 px-4 mono text-slate-800">Static Reference Metric</td>
-                <td class="py-3 px-4">Internal ADC reference check</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 18</td>
-                <td class="py-3 px-4 mono text-brand-600">d:21</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Digital Switch Register</td>
-                <td class="py-3 px-4 mono">0xC0 – 0xC1</td>
-                <td class="py-3 px-4 mono text-slate-800">(B18 & 0x01) == 0x01</td>
-                <td class="py-3 px-4">Bit 0 high = Neutral Switch active</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 19</td>
-                <td class="py-3 px-4 mono text-brand-600">d:20</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Sub-Transmission Shifter Gate</td>
-                <td class="py-3 px-4 mono">0x80 / 0x81 / 0x82</td>
-                <td class="py-3 px-4 mono text-slate-800">0x82: HIGH, 0x81: LOW, 0x80: N/R</td>
-                <td class="py-3 px-4">Mechanical shift gate selection</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 20</td>
-                <td class="py-3 px-4 mono text-brand-600">D-MODE</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Yamaha Drive Mode Calibration</td>
-                <td class="py-3 px-4 mono">0x80 / 0x81 / 0x82</td>
-                <td class="py-3 px-4 mono text-slate-800">0x80: SPORT, 0x81: TRAIL, 0x82: CRAWL</td>
-                <td class="py-3 px-4">Dynamic DBW throttle map selection</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-slate-900 mono">Byte 21</td>
-                <td class="py-3 px-4 mono text-brand-600">Brakes</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Dual Brake Input Bitfield</td>
-                <td class="py-3 px-4 mono">Bitfield</td>
-                <td class="py-3 px-4 mono text-slate-800">Bit 2 (0x04): Hand | Bit 4 (0x10): Foot</td>
-                <td class="py-3 px-4">Independent brake switch tracking</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 3: D-MODE THROTTLE DYNAMICS -->
-    <section id="sec-dbw" class="space-y-6 hidden">
-      <!-- Section Intro -->
-      <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <h2 class="text-xl font-bold text-slate-900 mb-2">Drive-by-Wire (DBW) Non-Linear Throttle Mapping Analysis</h2>
-        <p class="text-slate-600 text-sm leading-relaxed">
-          The Yamaha RMAX 1000 utilizes an electronic drive-by-wire system. By comparing the accelerator pedal request (<code class="mono text-xs">APS_Track_1</code>, Byte 7) against the actual physical butterfly opening (<code class="mono text-xs">TPS_Main</code>, Byte 9), data logging reveals how the ECU alters throttle linearity across Yamaha’s three D-Mode selections (SPORT, TRAIL, CRAWL) to optimize traction and prevent shock loading.
-        </p>
-      </div>
-
-      <!-- Chart Container & Interactive Mode Toggle -->
-      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 class="text-base font-bold text-slate-900">Pedal Request (APS %) vs Throttle Plate Opening (TPS %)</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Calculated transfer curves extracted from baseline ECU mapping logs</p>
-          </div>
-          <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg">
-            <button onclick="updateChartMode('all')" id="btn-mode-all" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-slate-800 shadow-sm">Show All</button>
-            <button onclick="updateChartMode('sport')" id="btn-mode-sport" class="px-3 py-1 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900">SPORT</button>
-            <button onclick="updateChartMode('trail')" id="btn-mode-trail" class="px-3 py-1 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900">TRAIL</button>
-            <button onclick="updateChartMode('crawl')" id="btn-mode-crawl" class="px-3 py-1 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900">CRAWL</button>
-          </div>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="dmodeChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Mode Explanation Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-rose-50/50 border border-rose-200 rounded-xl p-5">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="font-bold text-rose-950">SPORT Mode (<code class="mono">0x80</code>)</h4>
-            <span class="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-bold rounded">1:1 Response</span>
-          </div>
-          <p class="text-xs text-rose-900 leading-relaxed">
-            The ECU tracks pedal travel with near perfect 1:1 linearity. Throttle butterfly response is aggressive and instantaneous, maximizing acceleration and power delivery for open high-speed trails.
-          </p>
-        </div>
-        <div class="bg-sky-50/50 border border-sky-200 rounded-xl p-5">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="font-bold text-sky-950">TRAIL Mode (<code class="mono">0x81</code>)</h4>
-            <span class="px-2 py-0.5 bg-sky-100 text-sky-800 text-[10px] font-bold rounded">Smooth Progressive</span>
-          </div>
-          <p class="text-xs text-sky-900 leading-relaxed">
-            Smooth, progressive transfer function. Initial 0–30% pedal movement produces a suppressed throttle opening to cushion low-speed trail bumps, blending into full 100% WOT at maximum pedal travel.
-          </p>
-        </div>
-        <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-5">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="font-bold text-amber-950">CRAWL Mode (<code class="mono">0x82</code>)</h4>
-            <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded">Technical Softened</span>
-          </div>
-          <p class="text-xs text-amber-900 leading-relaxed">
-            Highly softened initial opening curve. At 50% pedal travel, physical throttle opening is restricted to ~25%, eliminating erratic vehicle bucking and driveline shock-loading over extreme technical obstacles.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 4: MOTORCYCLE CROSS-MAPPING -->
-    <section id="sec-motorcycle" class="space-y-6 hidden">
-      <!-- Section Intro -->
-      <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <h2 class="text-xl font-bold text-slate-900 mb-2">Yamaha Motorcycle Onboard Diagnostic (<code class="mono text-sm">d:01</code> to <code class="mono text-sm">d:64</code>) Cross-Mapping</h2>
-        <p class="text-slate-600 text-sm leading-relaxed">
-          Yamaha’s powersports division uses unified software libraries across product families. In flagship motorcycle platforms (YZF-R1, YZF-R6, MT-07, MT-09), technicians enter onboard diagnostic mode via dash screen buttons, exposing internal memory registers labeled <code class="bg-slate-100 px-1.5 py-0.5 rounded mono text-xs">d:01</code> to <code class="bg-slate-100 px-1.5 py-0.5 rounded mono text-xs">d:64</code>. Comparative firmware analysis proves that the UDS Service 21 telemetry bytes in the RMAX ECU map directly to these standardized motorcycle diagnostic codes.
-        </p>
-      </div>
-
-      <!-- Motorcycle vs SxS Feature Matrix -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 class="text-lg font-bold text-slate-900">Diagnostic Memory Cross-Reference Table</h3>
-            <p class="text-slate-500 text-xs mt-0.5">Mapping legacy motorcycle dash codes to RMAX UDS telemetry channels</p>
-          </div>
-          <div class="w-full md:w-64">
-            <input type="text" id="moto-search" onkeyup="filterMotoTable()" placeholder="Search diagnostic code or sensor..." class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500">
-          </div>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs" id="table-moto">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-bold">
-              <tr>
-                <th class="py-3 px-4">Diag Code</th>
-                <th class="py-3 px-4">Legacy Motorcycle Function</th>
-                <th class="py-3 px-4">RMAX Equivalent Channel</th>
-                <th class="py-3 px-4">Operational Characteristics & Verification Range</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-600">
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:01</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Throttle Position Sensor 1</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 9 (TPS 1)</td>
-                <td class="py-3 px-4">Primary throttle blade angle. Calibrated baseline 12–21 (closed) to 96–106 (WOT) on dash displays.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:02</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Barometric Air Pressure</td>
-                <td class="py-3 px-4 mono text-slate-800">Auxiliary Memory Table</td>
-                <td class="py-3 px-4">Ambient atmospheric pressure sensor; provides elevation compensation for fuel tables.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:03</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Intake Air Absolute Pressure</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 5, 6 (MAP)</td>
-                <td class="py-3 px-4">Manifold absolute pressure in mbar; acts as primary load variable in speed-density fuel calculations.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:05</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Intake Air Temp (IAT)</td>
-                <td class="py-3 px-4 mono text-slate-800">Auxiliary LID Registry</td>
-                <td class="py-3 px-4">Thermistor inside air intake plenum; values scaled in direct integer Celsius.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:06</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Engine Coolant Temp (ECT)</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 4 (ECT)</td>
-                <td class="py-3 px-4">Engine thermal sensor; triggers radiator fan relay actuation and warm-up fuel enrichment.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:07</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Vehicle Speed Sensor Pulses</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 2, 3 (Speed)</td>
-                <td class="py-3 px-4">Countershaft pulse frequency; increments with physical driveline rotation at 0.1 km/h resolution.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:08</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Lean Angle / Drop Sensor</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 11 (Attitude)</td>
-                <td class="py-3 px-4">Safety interlock; detects motorcycle lay-down or SxS rollover to trigger emergency ignition cut.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:09</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Fuel Pump System Voltage</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 13 (Ref)</td>
-                <td class="py-3 px-4">Electrical rail check; confirms regulated voltage supply during engine cranking and operation.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:13</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Throttle Position Sensor 2</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 10 (TPS 2)</td>
-                <td class="py-3 px-4">Secondary potentiometer feedback channel for drive-by-wire electronic throttle error checking.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:20</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Side Stand / Interlock Switch</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 19 (Shift Gate)</td>
-                <td class="py-3 px-4">Repurposed interlock switch in SxS platforms to monitor sub-transmission High/Low shift gate position.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:21</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Transmission Neutral Switch</td>
-                <td class="py-3 px-4 mono text-slate-800">Payload Byte 18 (Switches)</td>
-                <td class="py-3 px-4">Binary switch confirmation verifying neutral disengagement before starter relay excitation.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">d:60</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">EEPROM System Fault History</td>
-                <td class="py-3 px-4 mono text-slate-800">UDS DTC Container</td>
-                <td class="py-3 px-4">Non-volatile flash error register storing historical cylinder misfires and electronic sensor faults.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Active Polling vs Passive Broadcast Box -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h4 class="font-bold text-slate-900 text-sm mb-2 flex items-center">
-            <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
-            Passive Broadcast Sniffing (CAN ID 0x201)
-          </h4>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            On platforms like the YZF-R1, MT-07, and YXZ1000R, the ECU continuously broadcasts cyclic CAN frames (ID <code class="mono">0x201</code>) at high rates (10–25 Hz) to feed the instrument cluster. Passive sniffing requires zero bus queries, eliminating diagnostic overhead for basic telemetry like Engine Speed and Wheel Pulses.
-          </p>
-        </div>
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <h4 class="font-bold text-slate-900 text-sm mb-2 flex items-center">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
-            Active UDS Diagnostic Polling (Mode 21)
-          </h4>
-          <p class="text-xs text-slate-600 leading-relaxed">
-            To extract deep state metrics (such as dual-track pedal errors, discrete differential lock states, and internal D-Mode registers), active interrogation via ISO 14229 Service <code class="mono">0x21</code> LID <code class="mono">0x01</code> is mandatory. Sample rates range between 5 Hz and 15 Hz over ISO-TP multi-frame transport.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 5: ISO-TP WORKBENCH & HARDWARE -->
-    <section id="sec-workbench" class="space-y-6 hidden">
-      <!-- Section Intro -->
-      <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-        <h2 class="text-xl font-bold text-slate-900 mb-2">ISO-TP Frame Defragmenter & Hardware Initialization</h2>
-        <p class="text-slate-600 text-sm leading-relaxed">
-          Because the 26-byte payload for LID <code class="mono text-xs">0x01</code> exceeds a single 8-byte CAN 2.0B frame limit, the transmission is governed by ISO 15765-2 transport network protocol (ISO-TP). Below is the required ELM327 initialization string and an interactive ISO-TP stream defragmenter.
-        </p>
-      </div>
-
-      <!-- ELM327 Command Generator -->
-      <div class="bg-slate-900 text-white rounded-xl p-6 shadow-md border border-slate-800">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-          <h3 class="text-sm font-bold text-white">ELM327 / STN Transceiver Optimization Command Sequence</h3>
-          <span class="text-xs text-slate-400">Copy &amp; paste into serial terminal</span>
-        </div>
-        <pre class="bg-slate-950 p-4 rounded-lg text-emerald-400 mono text-xs leading-relaxed overflow-x-auto border border-slate-800"><code>AT D          // Restore factory default settings
-AT Z          // Perform software cold reset
-AT E0         // Disable character command echo
-AT L0         // Suppress trailing linefeed characters
-AT S0         // Suppress inter-byte spaces to maximize serial throughput
-AT H0         // Suppress CAN header bytes in output stream
-AT AT 2       // Enable aggressive adaptive timing (prevents bus query timeouts)
-AT ST FF      // Set maximum transceiver wait timeout
-AT SP 6       // Lock physical protocol to ISO 15765-4 CAN (11-bit ID, 500 kbaud)
-AT SH 7E0     // Set transmission header ID to 0x7E0 (Physical Engine ECU target)</code></pre>
-      </div>
-
-      <!-- Interactive ISO-TP Parser -->
-      <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-        <h3 class="text-base font-bold text-slate-900 mb-2">Interactive ISO-TP Multi-Frame String Defragmenter</h3>
-        <p class="text-xs text-slate-500 mb-4">Paste raw multi-frame CAN responses from an ELM327 session (e.g. lines starting with <code class="mono">0:</code>, <code class="mono">1:</code>, <code class="mono">2:</code>, <code class="mono">3:</code>) to reconstruct the atomic 26-byte array.</p>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Raw CAN Response Stream</label>
-            <textarea id="isotp-input" rows="4" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-lg mono text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="01A 0:610104F90004&#10;1:2300C522052100&#10;2:0200CF75396C00&#10;3:C18082048000AA">01A 0:610104F90004
-1:2300C522052100
-2:0200CF75396C00
-3:C18082048000AA</textarea>
-          </div>
-          <div class="flex space-x-2">
-            <button onclick="parseRawISOTP()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg transition shadow-sm">Parse Raw Frames</button>
-            <button onclick="clearISOTP()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition">Clear</button>
-          </div>
-
-          <!-- Parsed Result Container -->
-          <div class="mt-4 p-4 bg-slate-900 text-white rounded-lg border border-slate-800">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Reconstructed 26-Byte Contiguous Hex Array</div>
-            <div id="isotp-output" class="mono text-sm text-emerald-400 break-all font-semibold">
-              Waiting for raw frame input...
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Auxiliary Identifiers Table -->
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100">
-          <h3 class="text-lg font-bold text-slate-900">Auxiliary Discovered UDS Identifiers & Chassis Subsystems</h3>
-          <p class="text-slate-500 text-xs mt-0.5">Extended query commands for differential lock states, BCU, and vehicle metadata</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-bold">
-              <tr>
-                <th class="py-3 px-4">Query Command</th>
-                <th class="py-3 px-4">Target Subsystem</th>
-                <th class="py-3 px-4">Positive Response Payload</th>
-                <th class="py-3 px-4">Functional Scope & Telemetry Purpose</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-600">
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">21 40</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Differential / Chassis MCU</td>
-                <td class="py-3 px-4 mono text-slate-800">61 40 00 80</td>
-                <td class="py-3 px-4">Real-time 4WD actuator motor engagement confirmation and transfer case status.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">21 41</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Body Control Unit (BCU)</td>
-                <td class="py-3 px-4 mono text-slate-800">61 41 00 80</td>
-                <td class="py-3 px-4">Lighting circuit relay monitoring, winch interlock state, and accessory rail draw.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">21 64</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">Drivetrain Actuation Matrix</td>
-                <td class="py-3 px-4 mono text-slate-800">61 64 00 48 00 1D ... (25 Bytes)</td>
-                <td class="py-3 px-4">Detailed status of front/rear diff locks: distinguishes Turf Mode, 2WD, 4WD, and Full Diff-Lock.</td>
-              </tr>
-              <tr class="hover:bg-slate-50">
-                <td class="py-3 px-4 font-bold text-brand-600 mono text-sm">22 F1 90</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">System Metadata Container</td>
-                <td class="py-3 px-4 mono text-slate-800">62 F1 90 [ASCII_VIN]</td>
-                <td class="py-3 px-4">Standard ISO 14229 Data Identifier (DID) delivering 17-character VIN and active ECU calibration ID.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Application Footer -->
-  <footer class="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 mt-auto py-6">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div>
-        <p class="font-semibold text-slate-300">Yamaha Wolverine RMAX 1000 ECU Telemetry & Diagnostic Project</p>
-        <p class="text-slate-500 mt-0.5">ISO 14229 UDS Service 0x21 & Cross-Platform Motorcycle Architecture Log</p>
-      </div>
-      <div class="flex items-center space-x-4">
-        <span>Target: 2020–2026+ RMAX 1000 / YXZ1000R</span>
-        <span>&bull;</span>
-        <span>Protocol: ISO 15765-4 CAN</span>
+      <div class="status-pill-box">
+        <span class="status-pill-label">Brake</span>
+        <span id="val-dash-brake" class="status-pill-val brake-off">OFF</span>
       </div>
     </div>
-  </footer>
 
-  <!-- Application JavaScript Logic -->
+    <div class="cockpit-grid">
+      <!-- Ground Speed -->
+      <div class="touch-card" onclick="toggleSpeedUnits()">
+        <div class="card-top">
+          <span class="card-label">Speed (d:07)</span>
+          <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-speed" class="card-val">--</span>
+          <span id="label-dash-speed-unit" class="card-unit">km/h</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-speed" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Coolant Temp (d:06) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Coolant (d:06)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-coolant" class="card-val">--</span>
+          <span class="card-unit">°C</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-coolant" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Spark Advance / Timing (Byte 17) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Spark Timing</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-timing" class="card-val">--</span>
+          <span class="card-unit">°BTDC</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-timing" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Barometric Pressure (Bytes 14 & 15) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Baro (d:02)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-baro" class="card-val">--</span>
+          <span class="card-unit">kPa</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-baro" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Gas Pedal / APS (Byte 7) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Gas Pedal (APS)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-pedal" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-pedal" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Throttle Blade / TPS (d:01) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Throttle Blade</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-throttle" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-throttle" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- ECU ADC Voltage (Byte 13) -->
+      <div class="touch-card" style="grid-column: span 2;">
+        <div class="card-top">
+          <span class="card-label">ECU Regulated Voltage (Byte 13 d:09)</span>
+          <span id="val-dash-atrv" style="font-size:0.75rem; color:var(--text-muted); font-family:'JetBrains Mono';">ATRV: --V</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-voltage" class="card-val">--</span>
+          <span class="card-unit">V</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-voltage" class="meter-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Guided Flight Recorder -->
+  <div id="tab-recorder" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Guided Test Flight Recorder</div>
+      
+      <div style="display:flex; flex-direction:column; gap:0.3rem;">
+        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT TARGET TEST:</label>
+        <select id="record-test-select" onchange="onTestSelectChanged()">
+          <option value="test_drive_mode_2140">1. 4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock) [Target: 21 40]</option>
+          <option value="test_diff_2164">2. Extended Diff & Chassis Sweep [Target: 21 64]</option>
+          <option value="test_reverse_2140">3. Reverse vs Neutral Isolation [Target: 21 40]</option>
+          <option value="test_handbrake_2101">4. Parking Brake Hand Lever [Target: 21 01]</option>
+          <option value="test_dmode_2101">5. D-Mode Switch (Crawling / Trail / Sport) [Target: 21 01]</option>
+          <option value="test_warmup_2101">6. Engine Warmup & MAP Blip [Target: 21 01]</option>
+        </select>
+      </div>
+
+      <div class="instruction-card" id="instruction-box">
+        <div class="inst-header">🔑 REQUIRED MACHINE STATE</div>
+        <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Machine stationary.</div>
+        <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 TEST PROCEDURE</div>
+        <ol class="inst-steps" id="inst-steps-list">
+          <li>Start with the rotary switch in <strong>Turf Mode</strong>.</li>
+          <li>Tap the <strong>🔴 Start Session Record</strong> button below.</li>
+          <li>Turn switch to <strong>2WD</strong> (pause 2s) &rarr; <strong>4WD</strong> (pause 2s) &rarr; <strong>Diff Lock</strong> (pause 2s).</li>
+          <li>Return switch back to <strong>Turf Mode</strong>.</li>
+          <li>Tap <strong>⏹️ Stop & Append to Master Log</strong>.</li>
+        </ol>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; margin-top:0.2rem;">
+        <button class="btn-touch record-btn" id="btn-record" style="flex:1;" onclick="toggleSessionRecording()">
+          🔴 Start Session Record
+        </button>
+      </div>
+      <div id="record-status-text" style="font-size:0.8rem; color:var(--cyan); font-weight:700;">Recorder Standby</div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Multi-ECU Module Scanner & DTCs -->
+  <div id="tab-modules" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Multi-ECU Network Gateway</div>
+      <div class="action-grid">
+        <button class="btn-touch yamaha" onclick="scanAllCANModules()">🔍 Ping All CAN Addresses (700-7E8)</button>
+        <button class="btn-touch secondary" onclick="queryYamahaDTCs()">Read DTCs (21 60 / 21 61)</button>
+        <button class="btn-touch secondary" onclick="queryECUIdentification()">Read OEM Part No & ROM ID</button>
+        <button class="btn-touch secondary" onclick="querySecondaryPowertrain()">Query 21 02 (O2 / Inj ms)</button>
+      </div>
+    </div>
+
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div class="disc-title">Module & Diagnostic Stream</div>
+      <div id="module-scan-results" class="terminal-box">
+        <div style="color:var(--text-muted);">Tap a tool above to query the network. Results log automatically to Master Report...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Master Cumulative Test Report -->
+  <div id="tab-master-log" class="view-panel">
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="disc-title">Accumulated Master Log (<span id="accumulated-count">0</span> Tests Logged)</div>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn-touch" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:rgba(74,222,128,0.25); border-color:var(--green); color:var(--green);" onclick="copyAccumulatedReport()">
+            📋 Copy Complete Master Report for AI
+          </button>
+          <button class="btn-touch secondary" style="padding:0.3rem 0.5rem; font-size:0.7rem;" onclick="clearAccumulatedReport()">
+            Clear
+          </button>
+        </div>
+      </div>
+      <div id="master-report-output" class="terminal-box">
+        <div style="color:var(--text-muted);">Every test run across all tabs accumulates here in sequence for one-click submission...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Bottom Log Strip -->
+  <div style="margin-top:0.75rem;">
+    <div id="log">System initialized. Touch Connect to start.</div>
+  </div>
+
+  <!-- Bottom Touch Dock -->
+  <div class="touch-dock">
+    <button class="dock-btn active" id="btn-tab-dash" onclick="switchTab('tab-dash')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+      <span>Cockpit</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-recorder" onclick="switchTab('tab-recorder')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      <span>Recorder</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-modules" onclick="switchTab('tab-modules')">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      <span>Modules</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-master-log" onclick="switchTab('tab-master-log')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span id="dock-log-label">Logs (0)</span>
+    </button>
+
+    <button id="btn-connect" class="dock-action-btn" onclick="handleConnectClick()">
+      <span>Connect</span>
+    </button>
+  </div>
+
   <script>
-    // Navigation Tab Switching Logic
-    function switchTab(tabId) {
-      const sections = ['overview', 'decoder', 'dbw', 'motorcycle', 'workbench'];
-      sections.forEach(id => {
-        const sec = document.getElementById(`sec-${id}`);
-        const btn = document.getElementById(`tab-${id}`);
-        if (id === tabId) {
-          sec.classList.remove('hidden');
-          btn.classList.add('text-brand-600', 'bg-brand-50');
-          btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
-        } else {
-          sec.classList.add('hidden');
-          btn.classList.remove('text-brand-600', 'bg-brand-50');
-          btn.classList.add('text-slate-600', 'hover:bg-slate-100');
-        }
-      });
+    /* ==========================================================
+       APP CONFIGURATION & VERSION
+       ========================================================== */
+    const APP_VERSION = "v2.1.0";
+    document.getElementById('app-version-badge').innerText = APP_VERSION;
 
-      if (tabId === 'dbw' && !dmodeChartInstance) {
-        initChart();
-      }
-    }
+    window.onerror = function(msg, url, line) {
+      log(`[ERROR] ${msg} (L${line})`);
+      return false;
+    };
 
-    // Telemetry Presets & Calculator Data
-    const presets = {
-      idle: {
-        rpm: [0x04, 0xE2],       // 1250 RPM
-        speed: [0x00, 0x00],     // 0 km/h
-        ect: 0x4B,               // 75°C (167°F)
-        map: [0x00, 0xD2],       // 210 mbar
-        aps1: 35,                // 0%
-        aps2: 6,                 // 0%
-        tps1: 33,                // 0%
-        tps2: 0,                 // 0%
-        roll: 0x04,              // Upright
-        gear: 0x82,              // HIGH
-        dmode: 0x80,             // SPORT
-        brake: 0x00              // None
+    /* ==========================================================
+       TEST DEFINITIONS & STEP-BY-STEP INSTRUCTIONS
+       ========================================================== */
+    const TEST_DEFINITIONS = {
+      test_drive_mode_2140: {
+        title: "4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock)",
+        targetCmd: "2140",
+        stateText: "Key ON, Engine OFF (or Idle). Machine stationary.",
+        steps: [
+          "Start with the rotary switch in <strong>Turf Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Switch to <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
+          "Rotate switch back to <strong>Turf Mode</strong>.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
       },
-      trail_cruise: {
-        rpm: [0x0D, 0x78],       // 3448 RPM
-        speed: [0x02, 0x33],     // 56.3 km/h (~35 MPH)
-        ect: 0x55,               // 85°C (185°F)
-        map: [0x02, 0xBC],       // 700 mbar
-        aps1: 100,               // 40% pedal
-        aps2: 71,
-        tps1: 90,                // ~32% throttle blade
-        tps2: 56,
-        roll: 0x04,
-        gear: 0x82,              // HIGH
-        dmode: 0x81,             // TRAIL
-        brake: 0x00
+      test_diff_2164: {
+        title: "Extended Diff & Chassis Sweep",
+        targetCmd: "2164",
+        stateText: "Key ON, Engine OFF. Machine stationary.",
+        steps: [
+          "Start with rotary switch in <strong>Turf Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Cycle through <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
       },
-      crawl_climb: {
-        rpm: [0x08, 0xFC],       // 2300 RPM
-        speed: [0x00, 0x50],     // 8.0 km/h (~5 MPH)
-        ect: 0x5D,               // 93°C (199°F)
-        map: [0x01, 0xF4],       // 500 mbar
-        aps1: 116,               // 50% pedal
-        aps2: 87,
-        tps1: 77,                // ~25% throttle blade (Softened Crawl map)
-        tps2: 44,
-        roll: 0x04,
-        gear: 0x81,              // LOW
-        dmode: 0x82,             // CRAWL
-        brake: 0x10              // Foot Brake Active
+      test_reverse_2140: {
+        title: "Reverse vs Neutral Isolation",
+        targetCmd: "2140",
+        stateText: "Key ON, Engine OFF. Foot holding Brake Pedal firmly.",
+        steps: [
+          "Start with shifter in <strong>Neutral (N)</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Shift to <strong>Reverse (R)</strong> and hold for 3 seconds.",
+          "Shift back to <strong>Neutral (N)</strong> and hold for 3 seconds.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_handbrake_2101: {
+        title: "Parking Brake Hand Lever",
+        targetCmd: "2101",
+        stateText: "Key ON, Engine OFF. Shifter in Neutral (N).",
+        steps: [
+          "Start with Parking Brake lever pulled <strong>ON / ENGAGED</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Release Parking Brake lever completely (pause 3s).",
+          "Pull Parking Brake lever firmly back <strong>ON</strong> (pause 3s).",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_dmode_2101: {
+        title: "D-Mode Switch (Crawling / Trail / Sport)",
+        targetCmd: "2101",
+        stateText: "Key ON, Engine OFF. In Neutral.",
+        steps: [
+          "Start in <strong>Crawl Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Switch to <strong>Trail Mode</strong> (hold 2s) &rarr; <strong>Sport Mode</strong> (hold 2s).",
+          "Return switch back to <strong>Crawl Mode</strong>.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_warmup_2101: {
+        title: "Engine Warmup & MAP Blip",
+        targetCmd: "2101",
+        stateText: "Engine RUNNING at Idle, In Neutral, Parking Brake ON.",
+        steps: [
+          "With engine idling, tap <strong>🔴 Start Session Record</strong>.",
+          "Let engine idle steadily for 10 seconds.",
+          "Smoothly blip accelerator pedal to ~2,500 RPM and release.",
+          "Let engine idle for 5 seconds.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
       }
     };
 
-    function applyPreset(key) {
-      const p = presets[key];
-      if (!p) return;
+    const SERVICE_UUIDS = [
+      '0000fff0-0000-1000-8000-00805f9b34fb',
+      '0000ffe0-0000-1000-8000-00805f9b34fb',
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    ];
 
-      // Calculate RPM
-      const rpm = (p.rpm[0] * 256) + p.rpm[1];
-      document.getElementById('disp-rpm').innerText = `${rpm.toLocaleString()} RPM`;
+    let bleDevice = null;
+    let writeChar = null;
+    let readChar = null;
+    let rxBuffer = '';
+    let isPolling = false;
+    let isSimulator = false;
+    let isRecordingSession = false;
+    let activeTab = 'tab-dash';
+    let speedUnit = 'kmh';
 
-      // Calculate Speed
-      const speedKmh = ((p.speed[0] * 256) + p.speed[1]) / 10;
-      const speedMph = speedKmh * 0.621371;
-      document.getElementById('disp-speed').innerText = `${speedMph.toFixed(1)} MPH`;
+    let recordedFrames = [];
+    let recordStartTime = null;
+    let accumulatedReports = [];
 
-      // Calculate Coolant Temp
-      const ectF = Math.round((p.ect * 9/5) + 32);
-      document.getElementById('disp-ect').innerText = `${p.ect}°C / ${ectF}°F`;
-
-      // Calculate MAP
-      const map = (p.map[0] * 256) + p.map[1];
-      document.getElementById('disp-map').innerText = `${map} mbar`;
-
-      // Calculate APS & TPS
-      const apsPct = Math.max(0, Math.min(100, ((p.aps1 - 35) / 162) * 100));
-      const tpsPct = Math.max(0, Math.min(100, ((p.tps1 - 33) / 177) * 100));
-      document.getElementById('disp-aps').innerText = `${apsPct.toFixed(1)} %`;
-      document.getElementById('disp-tps').innerText = `${tpsPct.toFixed(1)} %`;
-
-      // Update Badges
-      const gearBadge = document.getElementById('badge-gear');
-      if (p.gear === 0x82) { gearBadge.innerText = 'HIGH (0x82)'; gearBadge.className = 'px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-bold mono'; }
-      else if (p.gear === 0x81) { gearBadge.innerText = 'LOW (0x81)'; gearBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold mono'; }
-      else { gearBadge.innerText = 'N / R (0x80)'; gearBadge.className = 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold mono'; }
-
-      const dmodeBadge = document.getElementById('badge-dmode');
-      if (p.dmode === 0x80) { dmodeBadge.innerText = 'SPORT (0x80)'; dmodeBadge.className = 'px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold mono'; }
-      else if (p.dmode === 0x81) { dmodeBadge.innerText = 'TRAIL (0x81)'; dmodeBadge.className = 'px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold mono'; }
-      else { dmodeBadge.innerText = 'CRAWL (0x82)'; dmodeBadge.className = 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold mono'; }
-
-      const footBadge = document.getElementById('badge-brake-foot');
-      if ((p.brake & 0x10) === 0x10) { footBadge.innerText = 'ACTIVE'; footBadge.className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold mono'; }
-      else { footBadge.innerText = 'OFF'; footBadge.className = 'px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold mono'; }
+    function log(msg) {
+      const el = document.getElementById('log');
+      if (el) el.innerText = msg;
     }
 
-    // Table Search Filters
-    function filterByteTable() {
-      const input = document.getElementById('byte-search').value.toLowerCase();
-      const rows = document.querySelectorAll('#table-bytes tbody tr');
-      rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(input) ? '' : 'none';
+    window.onTestSelectChanged = function() {
+      const testKey = document.getElementById('record-test-select').value;
+      const def = TEST_DEFINITIONS[testKey];
+      if (!def) return;
+
+      document.getElementById('inst-state-text').innerText = def.stateText;
+      const listEl = document.getElementById('inst-steps-list');
+      listEl.innerHTML = def.steps.map(s => `<li>${s}</li>`).join('');
+    };
+
+    window.switchTab = function(tabId) {
+      activeTab = tabId;
+      const tabs = ['tab-dash', 'tab-recorder', 'tab-modules', 'tab-master-log'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        if (btn) btn.classList.toggle('active', t === tabId);
+
+        const panel = document.getElementById(t);
+        if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
-    }
 
-    function filterMotoTable() {
-      const input = document.getElementById('moto-search').value.toLowerCase();
-      const rows = document.querySelectorAll('#table-moto tbody tr');
-      rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(input) ? '' : 'none';
-      });
-    }
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
+        startPolling();
+      }
+    };
 
-    // ISO-TP Multi-Frame Defragmenter JS Logic
-    function parseRawISOTP() {
-      const rawText = document.getElementById('isotp-input').value;
-      const lines = rawText.split(/[\r\n]+/);
-      let contiguousHex = '';
+    window.toggleSpeedUnits = function() {
+      speedUnit = (speedUnit === 'kmh') ? 'mph' : 'kmh';
+      document.getElementById('speed-unit-tag').innerText = speedUnit.toUpperCase();
+      document.getElementById('label-dash-speed-unit').innerText = (speedUnit === 'kmh') ? 'km/h' : 'mph';
+      log(`Speed units: ${speedUnit.toUpperCase()}`);
+    };
 
-      lines.forEach(line => {
-        const clean = line.replace(/\s+/g, '');
-        const match = clean.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
-        if (match && match[1]) {
-          contiguousHex += match[1];
+    window.toggleFullscreen = function() {
+      const doc = document;
+      const docEl = doc.documentElement;
+      const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFs = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isFs = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      if (requestFs && exitFs) {
+        try {
+          if (!isFs) {
+            const p = requestFs.call(docEl);
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            const p = exitFs.call(doc);
+            if (p && p.catch) p.catch(() => {});
+          }
+        } catch (err) {}
+      }
+    };
+
+    /* Bluetooth Communication Engine */
+    window.handleConnectClick = async function() {
+      if (bleDevice?.gatt?.connected) disconnect();
+      else await connect();
+    };
+
+    async function connect() {
+      if (isSimulator) toggleSimulator();
+      try {
+        if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable. Open in Bluefy.");
+
+        log("Opening Bluetooth pairing prompt...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        log("Connecting to GATT server...");
+        const server = await bleDevice.gatt.connect();
+        await new Promise(r => setTimeout(r, 300));
+
+        let service = null;
+        for (const uuid of SERVICE_UUIDS) {
+          try {
+            service = await server.getPrimaryService(uuid);
+            if (service) break;
+          } catch (e) {}
         }
-      });
+        if (!service) throw new Error("No UART BLE service found.");
 
-      const outElem = document.getElementById('isotp-output');
-      if (contiguousHex.length > 0) {
-        // Format as spaced hex pairs
-        const pairs = contiguousHex.match(/.{1,2}/g) || [];
-        outElem.innerText = pairs.join(' ');
-      } else {
-        outElem.innerText = 'Error: Invalid ISO-TP frame format. Expected lines like "0:6101...", "1:...", "2:..."';
+        await new Promise(r => setTimeout(r, 200));
+        const chars = await service.getCharacteristics();
+        writeChar = null; readChar = null;
+
+        for (const char of chars) {
+          if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
+          if (char.properties.notify || char.properties.indicate) readChar = char;
+        }
+
+        if (!writeChar || !readChar) throw new Error("TX/RX characteristics not resolved.");
+
+        await readChar.startNotifications();
+        readChar.addEventListener('characteristicvaluechanged', handleNotification);
+
+        const statusEl = document.getElementById('status');
+        const btnConnect = document.getElementById('btn-connect');
+        if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
+        if (btnConnect) { btnConnect.innerText = "Disconnect"; btnConnect.classList.add("disconnect"); }
+
+        await initYamahaELM327();
+        startPolling();
+
+      } catch (err) {
+        log("BLE Error: " + err.message);
+        disconnect();
       }
     }
 
-    function clearISOTP() {
-      document.getElementById('isotp-input').value = '';
-      document.getElementById('isotp-output').innerText = 'Waiting for raw frame input...';
+    function disconnect() {
+      if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
+      onDisconnected();
     }
 
-    // Chart.js Setup for D-Mode Throttle Dynamic Transfer Curves
-    let dmodeChartInstance = null;
-    function initChart() {
-      const ctx = document.getElementById('dmodeChart').getContext('2d');
-      
-      const pedalPoints = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-      const sportCurve = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]; // 1:1
-      const trailCurve = [0, 5, 12, 22, 34, 48, 62, 75, 86, 94, 100]; // Smooth progressive
-      const crawlCurve = [0, 2, 6, 11, 18, 26, 36, 50, 68, 85, 100];  // Softened initial
+    function onDisconnected() {
+      isPolling = false;
+      isRecordingSession = false;
+      const statusEl = document.getElementById('status');
+      const btnConnect = document.getElementById('btn-connect');
+      if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+      if (btnConnect) { btnConnect.innerText = "Connect"; btnConnect.classList.remove("disconnect"); }
+      log("Disconnected.");
+    }
 
-      dmodeChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: pedalPoints.map(p => `${p}%`),
-          datasets: [
-            {
-              label: 'SPORT Mode (0x80)',
-              data: sportCurve,
-              borderColor: '#f43f5e',
-              backgroundColor: 'rgba(244, 63, 94, 0.1)',
-              borderWidth: 3,
-              tension: 0.1,
-              fill: false
-            },
-            {
-              label: 'TRAIL Mode (0x81)',
-              data: trailCurve,
-              borderColor: '#0284c7',
-              backgroundColor: 'rgba(2, 132, 199, 0.1)',
-              borderWidth: 3,
-              tension: 0.3,
-              fill: false
-            },
-            {
-              label: 'CRAWL Mode (0x82)',
-              data: crawlCurve,
-              borderColor: '#d97706',
-              backgroundColor: 'rgba(217, 119, 6, 0.1)',
-              borderWidth: 3,
-              tension: 0.3,
-              fill: false
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: {
-            mode: 'index',
-            intersect: false,
-          },
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                font: { family: 'Inter', size: 12, weight: '600' },
-                usePointStyle: true,
-                padding: 15
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return `${context.dataset.label}: ${context.raw}% Throttle Opening`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Accelerator Pedal Position (APS 1 %)',
-                font: { family: 'Inter', size: 12, weight: '700' },
-                color: '#475569'
-              },
-              grid: { color: '#f1f5f9' }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Physical Throttle Blade Opening (TPS 1 %)',
-                font: { family: 'Inter', size: 12, weight: '700' },
-                color: '#475569'
-              },
-              min: 0,
-              max: 100,
-              grid: { color: '#e2e8f0' }
-            }
-          }
+    let responseResolver = null;
+    function handleNotification(event) {
+      const chunk = new TextDecoder().decode(event.target.value);
+      rxBuffer += chunk;
+
+      if (rxBuffer.includes('>')) {
+        if (responseResolver) {
+          const res = rxBuffer.replace(/>/g, '').trim();
+          rxBuffer = '';
+          responseResolver(res);
+          responseResolver = null;
+        }
+      }
+    }
+
+    async function writeBLE(data) {
+      if (!writeChar) return;
+      if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
+        await writeChar.writeValueWithoutResponse(data);
+      } else if (writeChar.writeValueWithResponse) {
+        await writeChar.writeValueWithResponse(data);
+      } else {
+        await writeChar.writeValue(data);
+      }
+    }
+
+    async function sendCommand(cmd, timeoutMs = 2500) {
+      if (isSimulator) {
+        return new Promise(resolve => {
+          setTimeout(() => resolve(getSimulatedResponse(cmd)), 35);
+        });
+      }
+
+      return new Promise(async (resolve) => {
+        rxBuffer = '';
+
+        const timer = setTimeout(() => {
+          responseResolver = null;
+          resolve("TIMEOUT");
+        }, timeoutMs);
+
+        responseResolver = (response) => {
+          clearTimeout(timer);
+          resolve(response);
+        };
+
+        const enc = new TextEncoder().encode(cmd + '\r');
+        try {
+          await writeBLE(enc);
+        } catch (e) {
+          clearTimeout(timer);
+          responseResolver = null;
+          resolve("WRITE_ERR");
         }
       });
     }
 
-    function updateChartMode(mode) {
-      if (!dmodeChartInstance) return;
+    /* Yamaha Init Sequence */
+    async function initYamahaELM327() {
+      await writeBLE(new TextEncoder().encode('\r\r\r'));
+      await new Promise(r => setTimeout(r, 200));
 
-      const buttons = ['all', 'sport', 'trail', 'crawl'];
-      buttons.forEach(b => {
-        const btn = document.getElementById(`btn-mode-${b}`);
-        if (b === mode) {
-          btn.className = 'px-3 py-1 text-xs font-bold rounded-md bg-white text-slate-800 shadow-sm';
+      await sendCommand("ATD", 1500);
+      await sendCommand("ATZ", 3000);
+      await new Promise(r => setTimeout(r, 600));
+
+      await sendCommand("ATE0", 1500);
+      await sendCommand("ATL0", 1500);
+      await sendCommand("ATS0", 1500);
+      await sendCommand("ATH0", 1500);
+      await sendCommand("ATAT2", 1500);
+      await sendCommand("ATSTFF", 1500);
+      await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
+      await sendCommand("ATSH7E0", 1500); // Yamaha Engine ECU
+
+      log("Connected to Yamaha RMAX! Live telemetry active.");
+    }
+
+    /* Continuous Live Polling Loop */
+    async function startPolling() {
+      if (isPolling) return;
+      isPolling = true;
+
+      while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
+        let targetCmd = '2101';
+        if (isRecordingSession) {
+          const testKey = document.getElementById('record-test-select').value;
+          const def = TEST_DEFINITIONS[testKey];
+          if (def) targetCmd = def.targetCmd;
+        }
+
+        const startT = performance.now();
+        const rawRes = await sendCommand(targetCmd, 1200);
+        const rtt = Math.round(performance.now() - startT);
+
+        parseYamahaPayload(rawRes, targetCmd);
+
+        // Update Voltage via ATRV
+        const voltRes = await sendCommand("ATRV", 800);
+        const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
+        if (m && m[1]) {
+          const atrvEl = document.getElementById('val-dash-atrv');
+          if (atrvEl) atrvEl.innerText = `ATRV: ${m[1]}V`;
+        }
+
+        const rpmVal = document.getElementById('val-dash-rpm').innerText;
+        const gearVal = document.getElementById('val-dash-gear').innerText;
+        log(`⚡ RMAX: ${gearVal} | RPM ${rpmVal} | ${rtt}ms`);
+
+        await new Promise(r => setTimeout(r, 35));
+      }
+      isPolling = false;
+    }
+
+    /* ==========================================================
+       YAMAHA RMAX 21 01 EXTENDED SENSOR DECODER
+       ========================================================== */
+    function parseYamahaPayload(raw, targetCmd) {
+      if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
+
+      let hexStream = '';
+      const lines = raw.split(/[\r\n]+/);
+
+      for (const line of lines) {
+        const cleanLine = line.replace(/\s+/g, '');
+        const match = cleanLine.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+        if (match && match[1]) {
+          hexStream += match[1];
+        } else if (!cleanLine.match(/^[0-9A-Fa-f]{3}$/)) {
+          hexStream += cleanLine;
+        }
+      }
+
+      const expectedHeader = "61" + targetCmd.substring(2);
+      if (!hexStream.includes(expectedHeader)) return;
+
+      const payloadHex = hexStream.substring(hexStream.indexOf(expectedHeader) + expectedHeader.length);
+      const bytes = [];
+      for (let i = 0; i < payloadHex.length; i += 2) {
+        bytes.push(parseInt(payloadHex.substr(i, 2), 16));
+      }
+
+      if (bytes.length < 2) return;
+
+      if (isRecordingSession) {
+        const elapsed = ((Date.now() - recordStartTime) / 1000).toFixed(2);
+        recordedFrames.push({ time: elapsed, bytes: [...bytes] });
+        document.getElementById('record-status-text').innerText = `🔴 Recording [${targetCmd}]: ${recordedFrames.length} frames (${elapsed}s)`;
+      }
+
+      if (targetCmd === '2101' && bytes.length >= 18) {
+        // 1. Engine RPM (Bytes 0 & 1)
+        const rpm = (bytes[0] * 256) + bytes[1];
+        if (!isNaN(rpm) && rpm <= 10000) {
+          document.getElementById('val-dash-rpm').innerText = rpm;
+          updateTachometer(rpm);
+        }
+
+        // 2. Speed (Bytes 2 & 3)
+        let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
+        if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
+        document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
+        const speedBar = document.getElementById('bar-speed');
+        if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
+
+        // 3. Coolant (Byte 4) -> d:06
+        const coolant = bytes[4];
+        document.getElementById('val-dash-coolant').innerText = coolant;
+        const coolantBar = document.getElementById('bar-coolant');
+        if (coolantBar) {
+          coolantBar.style.width = Math.min(100, (coolant / 120) * 100) + '%';
+          coolantBar.style.background = coolant > 105 ? 'var(--red)' : coolant > 95 ? 'var(--amber)' : 'var(--cyan)';
+        }
+
+        // 4. Gas Pedal / APS (Byte 7)
+        const rawAPS = bytes[7];
+        const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
+        document.getElementById('val-dash-pedal').innerText = pedalPct;
+        const pedalBar = document.getElementById('bar-pedal');
+        if (pedalBar) pedalBar.style.width = pedalPct + '%';
+
+        // 5. Throttle Blade / TPS (Byte 9)
+        const rawTPS = bytes[9];
+        const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
+        document.getElementById('val-dash-throttle').innerText = tpsPct;
+        const tpsBar = document.getElementById('bar-throttle');
+        if (tpsBar) tpsBar.style.width = tpsPct + '%';
+
+        // 6. ECU Sensor / Regulated Voltage (Byte 13 -> d:09): (B13 * 0.0706)
+        const ecuVolt = (bytes[13] * 0.0706).toFixed(1);
+        document.getElementById('val-dash-voltage').innerText = ecuVolt;
+        const voltBar = document.getElementById('bar-voltage');
+        if (voltBar) voltBar.style.width = Math.min(100, Math.max(0, ((parseFloat(ecuVolt) - 10) / 5) * 100)) + '%';
+
+        // 7. Barometric Pressure (Bytes 14 & 15 -> d:02)
+        const baro = Math.round(((bytes[14] * 256) + bytes[15]) / 10);
+        document.getElementById('val-dash-baro').innerText = baro > 50 && baro < 150 ? baro : (bytes[14] + 30);
+        const baroBar = document.getElementById('bar-baro');
+        if (baroBar) baroBar.style.width = Math.min(100, (baro / 115) * 100) + '%';
+
+        // 8. Spark Advance / Timing (Byte 17)
+        const timing = (bytes[17] > 128 ? bytes[17] - 256 : bytes[17]) / 2;
+        document.getElementById('val-dash-timing').innerText = timing >= -10 && timing <= 50 ? timing.toFixed(1) : (bytes[17] / 2).toFixed(1);
+        const timingBar = document.getElementById('bar-timing');
+        if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timing / 45) * 100)) + '%';
+
+        // 9. Transmission Gear (Byte 19)
+        const b19 = bytes[19];
+        const gearNibble = b19 & 0x0F;
+        const gearEl = document.getElementById('val-dash-gear');
+        let gearText = 'N';
+        let gearClass = 'gear-n';
+
+        if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+        else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+        else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
+
+        gearEl.className = `status-pill-val ${gearClass}`;
+        gearEl.innerText = gearText;
+
+        // 10. D-MODE Selector (Byte 20)
+        const b20 = bytes[20];
+        const dmodeEl = document.getElementById('val-dash-dmode');
+        if (b20 === 0x82) { dmodeEl.innerText = 'CRAWL'; dmodeEl.className = 'status-pill-val dmode-crawl'; }
+        else if (b20 === 0x81) { dmodeEl.innerText = 'TRAIL'; dmodeEl.className = 'status-pill-val dmode-trail'; }
+        else if (b20 === 0x80) { dmodeEl.innerText = 'SPORT'; dmodeEl.className = 'status-pill-val dmode-sport'; }
+
+        // 11. Parking Brake (Byte 21 Bit 2: 0x04)
+        const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+        const pbrakeEl = document.getElementById('val-dash-pbrake');
+        pbrakeEl.innerText = isPBrakeOn ? 'PARK' : 'OFF';
+        pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'brake-off'}`;
+
+        // 12. Foot Brake (Byte 21 Bit 4: 0x10)
+        const isBrakeOn = (bytes[21] & 0x10) === 0x10;
+        const brakeEl = document.getElementById('val-dash-brake');
+        brakeEl.innerText = isBrakeOn ? 'ON' : 'OFF';
+        brakeEl.className = `status-pill-val ${isBrakeOn ? 'brake-on' : 'brake-off'}`;
+      }
+    }
+
+    function updateTachometer(rpm) {
+      const maxRPM = 9000;
+      const arcLength = 293.2;
+      const pct = Math.min(1, Math.max(0, rpm / maxRPM));
+      const offset = arcLength - (pct * arcLength);
+
+      const bar = document.getElementById('gauge-rpm-bar');
+      const redlineEl = document.getElementById('redline-alert');
+
+      if (bar) {
+        bar.style.strokeDashoffset = offset;
+        if (rpm >= 7800) {
+          bar.style.stroke = 'var(--redline)';
+          bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
+          if (redlineEl) redlineEl.classList.add('active');
+        } else if (rpm >= 5500) {
+          bar.style.stroke = 'var(--amber)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
+          if (redlineEl) redlineEl.classList.remove('active');
         } else {
-          btn.className = 'px-3 py-1 text-xs font-bold rounded-md text-slate-600 hover:text-slate-900';
+          bar.style.stroke = 'var(--cyan)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--cyan))';
+          if (redlineEl) redlineEl.classList.remove('active');
         }
-      });
-
-      dmodeChartInstance.data.datasets.forEach((ds, idx) => {
-        if (mode === 'all') {
-          ds.hidden = false;
-        } else if (mode === 'sport') {
-          ds.hidden = idx !== 0;
-        } else if (mode === 'trail') {
-          ds.hidden = idx !== 1;
-        } else if (mode === 'crawl') {
-          ds.hidden = idx !== 2;
-        }
-      });
-      dmodeChartInstance.update();
+      }
     }
 
-    // Initialize Default State
-    window.addEventListener('DOMContentLoaded', () => {
-      applyPreset('idle');
-    });
+    /* ==========================================================
+       CENTRAL MASTER LOGGING ENGINE
+       ========================================================== */
+    function appendToMasterReport(title, details, rawResultText) {
+      let block = `\n========================================\n`;
+      block += `[TEST RUN #${accumulatedReports.length + 1}]: ${title}\n`;
+      block += `Timestamp: ${new Date().toISOString()}\n`;
+      if (details) block += `Details: ${details}\n`;
+      block += `Data / Results:\n${rawResultText}\n`;
+
+      accumulatedReports.push(block);
+      updateMasterReportUI();
+    }
+
+    function updateMasterReportUI() {
+      const outBox = document.getElementById('master-report-output');
+      const countEl = document.getElementById('accumulated-count');
+      const dockLabel = document.getElementById('dock-log-label');
+      
+      countEl.innerText = accumulatedReports.length;
+      dockLabel.innerText = `Logs (${accumulatedReports.length})`;
+
+      let master = `=== YAMAHA RMAX MASTER BATCH TEST REPORT ===\n`;
+      master += `App Version: ${APP_VERSION} | Total Accumulated Test Runs: ${accumulatedReports.length}\n`;
+      master += `Exported: ${new Date().toISOString()}\n`;
+      master += accumulatedReports.join('\n');
+      master += `\n=== END OF MASTER BATCH REPORT ===`;
+
+      outBox.innerText = master;
+    }
+
+    window.copyAccumulatedReport = function() {
+      if (!accumulatedReports.length) return alert("No tests logged yet. Run a test first!");
+      const outBox = document.getElementById('master-report-output');
+      navigator.clipboard.writeText(outBox.innerText)
+        .then(() => alert("Master batch report copied! Paste it in the chat."))
+        .catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = outBox.innerText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          alert("Master batch report copied! Paste it in the chat.");
+        });
+    };
+
+    window.clearAccumulatedReport = function() {
+      accumulatedReports = [];
+      document.getElementById('accumulated-count').innerText = '0';
+      document.getElementById('dock-log-label').innerText = 'Logs (0)';
+      document.getElementById('master-report-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run tests to accumulate reports...</div>';
+      log("Master log reset.");
+    };
+
+    /* Session Flight Recorder Engine */
+    window.toggleSessionRecording = function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+
+      const btn = document.getElementById('btn-record');
+      const statusBadge = document.getElementById('status');
+      const testKey = document.getElementById('record-test-select').value;
+      const def = TEST_DEFINITIONS[testKey];
+
+      if (!isRecordingSession) {
+        isRecordingSession = true;
+        recordedFrames = [];
+        recordStartTime = Date.now();
+
+        btn.innerText = "⏹️ Stop & Append to Master Log";
+        btn.classList.add('recording');
+        statusBadge.innerText = "RECORDING";
+        statusBadge.className = "status-badge recording";
+
+        document.getElementById('record-status-text').innerText = `🔴 Recording Active: ${def.title}`;
+      } else {
+        isRecordingSession = false;
+        btn.innerText = "🔴 Start Session Record";
+        btn.classList.remove('recording');
+        statusBadge.innerText = "CONNECTED";
+        statusBadge.className = "status-badge connected";
+
+        processFlightRecording(def);
+      }
+    };
+
+    function processFlightRecording(def) {
+      if (!recordedFrames.length) {
+        document.getElementById('record-status-text').innerText = "No frames captured.";
+        return;
+      }
+
+      const totalFrames = recordedFrames.length;
+      const durationSec = recordedFrames[totalFrames - 1].time;
+      const numBytes = recordedFrames[0].bytes.length;
+
+      let logBody = `Target Command: ${def.targetCmd} (${numBytes} Bytes Payload)\n`;
+      logBody += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
+      logBody += `Machine State: ${def.stateText}\n\n`;
+      logBody += `--- BYTE VARIANCE ANALYSIS ---\n`;
+
+      for (let b = 0; b < numBytes; b++) {
+        const values = recordedFrames.map(f => f.bytes[b]);
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const delta = max - min;
+        const startVal = values[0];
+        const endVal = values[values.length - 1];
+
+        const minHex = min.toString(16).toUpperCase().padStart(2, '0');
+        const maxHex = max.toString(16).toUpperCase().padStart(2, '0');
+        const dHex = delta.toString(16).toUpperCase().padStart(2, '0');
+
+        let indicator = (delta > 0) ? `🎯 ACTIVE (Δ = ${delta} / 0x${dHex})` : `⚪ Static (0x${minHex})`;
+        logBody += `Byte [${String(b).padStart(2, '0')}]: Range [0x${minHex}..0x${maxHex}] | Start: 0x${startVal.toString(16).toUpperCase().padStart(2, '0')} ➜ End: 0x${endVal.toString(16).toUpperCase().padStart(2, '0')} | ${indicator}\n`;
+      }
+
+      logBody += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
+      const step = Math.max(1, Math.floor(totalFrames / 6));
+      for (let i = 0; i < totalFrames; i += step) {
+        const f = recordedFrames[i];
+        const hexDump = f.bytes.map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+        logBody += `T+${f.time.padStart(5, ' ')}s: ${hexDump}\n`;
+      }
+
+      appendToMasterReport(def.title, def.stateText, logBody);
+      document.getElementById('record-status-text').innerText = `✅ Appended to Master Log! Total tests: ${accumulatedReports.length}`;
+    }
+
+    /* Multi-ECU & Diagnostics Logging */
+    window.scanAllCANModules = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Scanning CAN Node IDs 0x700 to 0x7E8...</div>';
+
+      const scanAddresses = ["7E0", "760", "7A0", "7D0", "750", "7E2", "7E3", "7E4", "7E5", "730", "740"];
+      let foundCount = 0;
+      let scanLog = '';
+
+      for (const addr of scanAddresses) {
+        await sendCommand(`ATSH${addr}`, 1000);
+        const res = await sendCommand("2101", 1500);
+        const clean = res.replace(/[\s\r\n>]/g, '');
+
+        if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT") && clean.length > 4) {
+          foundCount++;
+          term.innerHTML += `<div style="color:var(--green); font-weight:700;">🎯 [ACTIVE NODE] 0x${addr} ➜ ${res}</div>`;
+          scanLog += `Active Node 0x${addr} ➜ ${res}\n`;
+        } else {
+          scanLog += `Node 0x${addr} ➜ ${clean || 'No response'}\n`;
+        }
+        term.scrollTop = term.scrollHeight;
+        await new Promise(r => setTimeout(r, 40));
+      }
+
+      await sendCommand("ATSH7E0", 1000);
+      term.innerHTML += `<div style="color:var(--amber); font-weight:700;">Scan Complete! Found ${foundCount} active CAN nodes. Restored header to 0x7E0.</div>`;
+
+      appendToMasterReport("CAN Bus Multi-Module Address Ping", `Scanned 11 Target Addresses`, scanLog);
+    };
+
+    window.queryYamahaDTCs = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying Active (21 60) and Historic (21 61) DTCs...</div>';
+
+      const activeRes = await sendCommand("2160", 2500);
+      term.innerHTML += `<div><strong>Active DTCs (21 60):</strong> ${activeRes}</div>`;
+
+      const histRes = await sendCommand("2161", 2500);
+      term.innerHTML += `<div><strong>Historic Memory (21 61):</strong> ${histRes}</div>`;
+
+      let dtcLog = `Active DTCs (21 60 / d:60): ${activeRes}\nHistoric DTCs (21 61 / d:61): ${histRes}`;
+      appendToMasterReport("Yamaha Fault Code & DTC Query", "Checked Active and Stored Diagnostic Memory", dtcLog);
+    };
+
+    window.queryECUIdentification = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying OEM Part Number & ROM Calibration ID...</div>';
+
+      const partRes = await sendCommand("22F187", 2500);
+      term.innerHTML += `<div><strong>OEM Part Number (22 F1 87):</strong> ${partRes}</div>`;
+
+      const romRes = await sendCommand("22F188", 2500);
+      term.innerHTML += `<div><strong>ROM Version (22 F1 88):</strong> ${romRes}</div>`;
+
+      const cvnRes = await sendCommand("22F189", 2500);
+      term.innerHTML += `<div><strong>CVN (22 F1 89):</strong> ${cvnRes}</div>`;
+
+      let idLog = `Part No (22F187): ${partRes}\nROM Version (22F188): ${romRes}\nCVN (22F189): ${cvnRes}`;
+      appendToMasterReport("ECU OEM Identification & Calibration", "Hardware and Software Version Inquiry", idLog);
+    };
+
+    window.querySecondaryPowertrain = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const term = document.getElementById('module-scan-results');
+      term.innerHTML = '<div style="color:var(--cyan);">Querying Secondary Powertrain Telemetry (21 02 & 21 03)...</div>';
+
+      const p2 = await sendCommand("2102", 2500);
+      term.innerHTML += `<div><strong>LID 21 02 (O2/Inj):</strong> ${p2}</div>`;
+
+      const p3 = await sendCommand("2103", 2500);
+      term.innerHTML += `<div><strong>LID 21 03 (Lambda/Trim):</strong> ${p3}</div>`;
+
+      let powLog = `LID 21 02 (Injector ms / O2 Volts): ${p2}\nLID 21 03 (Closed-Loop Status): ${p3}`;
+      appendToMasterReport("Secondary Powertrain Telemetry", "LID 2102 and 2103 Inquiry", powLog);
+    };
+
+    /* Simulation Mode */
+    window.toggleSimulator = function() {
+      isSimulator = !isSimulator;
+      const statusEl = document.getElementById('status');
+
+      if (isSimulator) {
+        if (bleDevice?.gatt?.connected) disconnect();
+        if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
+        log("Simulator active: Generating dynamic RMAX telemetry.");
+        startPolling();
+      } else {
+        isPolling = false;
+        if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+        log("Simulator deactivated.");
+      }
+    };
+
+    function getSimulatedResponse(cmd) {
+      if (cmd.startsWith("AT")) {
+        if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
+        if (cmd === "ATRV") return "14.2V";
+        return "OK";
+      }
+      if (cmd === "2101") {
+        const time = Date.now() / 1000;
+        const rpm = Math.round(1320 + Math.sin(time * 0.9) * 4500);
+        const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
+        const coolant = Math.round(45 + Math.sin(time * 0.1) * 15);
+        const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
+        const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
+        const timing = Math.round(15 + Math.sin(time * 0.5) * 10);
+        const brake = Math.sin(time * 0.5) > 0 ? 0x14 : 0x00;
+        
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF6346${timing.toString(16).padStart(2,'0')}00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
+      }
+      if (cmd === "2140") return Math.sin(Date.now() / 3000) > 0 ? "61 40 00 80" : "61 40 00 81";
+      if (cmd === "2164") return "03E 0:61640048001D 1:00020000000000 2:00000100000000 3:00000000000700 4:00000000000000 5:00030011000300 6:0000000005000C 7:00030000000100 8:03000500000000";
+      if (cmd === "2160") return "61 60 00 00 00 00 (No Active Fault Codes)";
+      if (cmd === "2161") return "61 61 00 15 00 21 00 00 (Historical Codes Logged)";
+      if (cmd === "22F187") return "62 F1 87 42 34 53 2D 38 35 39 31 41 2D 30 30 (B4S-8591A-00)";
+      return "OK";
+    }
+
+    onTestSelectChanged();
   </script>
 </body>
 </html>
