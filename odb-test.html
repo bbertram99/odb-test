@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>OBD-II Pro Suite</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --green: #4ade80;
+      --red: #f87171;
+      --amber: #fbbf24;
+      --purple: #c084fc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 0.75rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 { font-size: 1.1rem; font-weight: 700; }
+
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      background: #334155;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .status-badge.connected { background: rgba(74, 222, 128, 0.2); color: var(--green); }
+    .status-badge.simulated { background: rgba(192, 132, 252, 0.2); color: var(--purple); }
+
+    /* Tabs Navigation */
+    .tabs {
+      display: flex;
+      gap: 0.35rem;
+      background: #1e293b;
+      padding: 0.3rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 0.6rem 0.2rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); background: #334155; }
+    .tab-btn.active {
+      background: var(--accent) !important;
+      color: #0b1120 !important;
+      font-weight: 700;
+    }
+
+    /* Panels */
+    .view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Dashboard Cards */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card.full-width { grid-column: span 2; }
+    .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .value-container { margin-top: 0.3rem; display: flex; align-items: baseline; gap: 0.3rem; }
+    .value { font-size: 1.8rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+    .card.full-width .value { font-size: 2.6rem; }
+    .unit { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* Category View */
+    .category-pills {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding-bottom: 0.3rem;
+      scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar { display: none; }
+    .pill {
+      white-space: nowrap;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      background: #1e293b;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+    }
+    .pill:hover { color: var(--text); }
+    .pill.active { background: var(--purple) !important; color: #0b1120 !important; border-color: var(--purple); font-weight: 700; }
+    .filter-bar { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); }
+    .pid-table { display: flex; flex-direction: column; gap: 0.5rem; max-height: 50vh; overflow-y: auto; }
+    .pid-row {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
+      padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;
+    }
+    .pid-row.unsupported { opacity: 0.35; }
+    .pid-info { display: flex; flex-direction: column; gap: 0.15rem; }
+    .pid-code { font-family: monospace; font-size: 0.75rem; color: var(--accent); font-weight: 700; }
+    .pid-name { font-size: 0.85rem; font-weight: 500; }
+    .pid-val-box { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+    .pid-val { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+    .pid-unit { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* Discovery & Dev Sections */
+    .disc-section {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+      padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;
+    }
+    .disc-title { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+    .terminal-row { display: flex; gap: 0.5rem; }
+    input[type="text"] {
+      flex: 1; background: #0b1120; border: 1px solid var(--card-border); color: var(--text);
+      padding: 0.5rem; border-radius: 6px; font-family: monospace; text-transform: uppercase;
+      user-select: text;
+    }
+    .btn-secondary {
+      background: #334155; color: var(--text); padding: 0.5rem 0.85rem; border-radius: 6px;
+      border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer;
+    }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Controls Area */
+    .controls { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; position: relative; z-index: 10; }
+    .button-group { display: flex; gap: 0.5rem; }
+    button.primary-btn {
+      flex: 2; padding: 0.8rem; font-size: 0.95rem; font-weight: 600; border: none;
+      border-radius: 8px; cursor: pointer; background-color: var(--accent); color: #0b1120;
+    }
+    button.sim-btn {
+      flex: 1; padding: 0.8rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--purple);
+      border-radius: 8px; cursor: pointer; background: transparent; color: var(--purple);
+    }
+    button.sim-btn.active { background: var(--purple); color: #0b1120; }
+    button.disconnect { background: var(--red); color: white; }
+
+    #log {
+      font-family: monospace; font-size: 0.75rem; color: var(--text-muted);
+      min-height: 40px; max-height: 60px; overflow-y: auto; background: #020617;
+      padding: 0.4rem; border-radius: 6px; border: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>OBD-II Pro Suite</h1>
+    <span id="status" class="status-badge">Disconnected</span>
+  </header>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs">
+    <button class="tab-btn active" id="btn-tab-dash" onclick="switchTab('tab-dash')">Dashboard</button>
+    <button class="tab-btn" id="btn-tab-categories" onclick="switchTab('tab-categories')">Categories</button>
+    <button class="tab-btn" id="btn-tab-discovery" onclick="switchTab('tab-discovery')">Discovery</button>
+    <button class="tab-btn" id="btn-tab-dev" onclick="switchTab('tab-dev')">Dev & Logs</button>
+  </div>
+
+  <!-- TAB 1: Live Dashboard -->
+  <div id="tab-dash" class="view-panel" style="display: flex;">
+    <div class="grid">
+      <div class="card full-width">
+        <span class="label">Engine RPM</span>
+        <div class="value-container">
+          <span id="val-dash-010C" class="value">--</span>
+          <span class="unit">RPM</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="label">Vehicle Speed</span>
+        <div class="value-container">
+          <span id="val-dash-010D" class="value">--</span>
+          <span class="unit">km/h</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="label">Coolant Temp</span>
+        <div class="value-container">
+          <span id="val-dash-0105" class="value">--</span>
+          <span class="unit">°C</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="label">Engine Load</span>
+        <div class="value-container">
+          <span id="val-dash-0104" class="value">--</span>
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="label">Throttle Pos</span>
+        <div class="value-container">
+          <span id="val-dash-0111" class="value">--</span>
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="card full-width">
+        <span class="label">Control Module Voltage</span>
+        <div class="value-container">
+          <span id="val-dash-ATRV" class="value">--</span>
+          <span class="unit">V</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Categories Tab -->
+  <div id="tab-categories" class="view-panel">
+    <div class="category-pills">
+      <button class="pill active" onclick="filterCategory('all', event)">All PIDs</button>
+      <button class="pill" onclick="filterCategory('engine', event)">Engine</button>
+      <button class="pill" onclick="filterCategory('air', event)">Air & Boost</button>
+      <button class="pill" onclick="filterCategory('fuel', event)">Fuel System</button>
+      <button class="pill" onclick="filterCategory('temp', event)">Temperatures</button>
+      <button class="pill" onclick="filterCategory('o2', event)">O2 & Exhaust</button>
+      <button class="pill" onclick="filterCategory('trip', event)">Trip & Electrical</button>
+    </div>
+
+    <div class="filter-bar">
+      <span id="cat-count">Showing 0 PIDs</span>
+      <label style="cursor: pointer;">
+        <input type="checkbox" id="chk-supported-only" onchange="renderCategoryList()" /> Supported Only
+      </label>
+    </div>
+
+    <div id="category-pid-list" class="pid-table"></div>
+  </div>
+
+  <!-- TAB 3: Discovery Tab -->
+  <div id="tab-discovery" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Vehicle Metadata</div>
+      <button class="btn-secondary" onclick="scanVehicleInfo()">Query VIN & Protocol</button>
+      <div style="font-size:0.8rem; line-height:1.5;">
+        <div><strong>VIN:</strong> <span id="info-vin" style="font-family: monospace;">--</span></div>
+        <div><strong>Protocol:</strong> <span id="info-proto">--</span></div>
+      </div>
+    </div>
+
+    <div class="disc-section">
+      <div class="disc-title">ECU PID Scanner</div>
+      <button class="btn-secondary" onclick="scanSupportedPIDs()">Scan Supported Bitmasks</button>
+      <div style="font-size:0.8rem;">
+        <div><strong>Supported Count:</strong> <span id="disc-count">0</span> PIDs confirmed by ECU</div>
+      </div>
+    </div>
+
+    <div class="disc-section">
+      <div class="disc-title">Direct Command Terminal</div>
+      <div class="terminal-row">
+        <input type="text" id="manual-cmd" placeholder="e.g. 010F or ATRV" />
+        <button class="btn-secondary" onclick="sendManualCommand()">Send</button>
+      </div>
+      <div style="font-size:0.8rem;"><strong>Response:</strong> <span id="manual-res" style="font-family: monospace; color:var(--accent);">--</span></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Dev & Logs Tab -->
+  <div id="tab-dev" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Automated PID Sweep & Audit</div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn-secondary" style="flex:1;" onclick="runPIDAudit()">Run Full Audit</button>
+        <button class="btn-secondary" style="flex:1;" id="btn-export-csv" onclick="exportAuditCSV()" disabled>Export CSV</button>
+      </div>
+      <div id="audit-progress" style="font-size:0.75rem; color:var(--accent);">Ready for audit</div>
+    </div>
+
+    <div class="disc-section">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="disc-title">Raw TX / RX Packet Sniffer</div>
+        <button class="btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="clearPacketLog()">Clear</button>
+      </div>
+      <div id="packet-sniffer" style="background:#020617; border-radius:6px; padding:0.5rem; font-family:monospace; font-size:0.7rem; max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:0.2rem;">
+        <div style="color:var(--text-muted);">Sniffer ready. Traffic will appear here...</div>
+      </div>
+    </div>
+
+    <div class="disc-section">
+      <div class="disc-title">Audit Results Summary (<span id="audit-count">0</span> verified)</div>
+      <div id="audit-table" class="pid-table" style="max-height:160px;">
+        <div style="color:var(--text-muted); font-size:0.75rem;">Run the audit to see verified PIDs...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Area -->
+  <div class="controls">
+    <div class="button-group">
+      <button id="btn-connect" class="primary-btn" onclick="handleConnectClick()">Connect BLE OBD-II</button>
+      <button id="btn-sim" class="sim-btn" onclick="toggleSimulator()">Simulation</button>
+    </div>
+    <div id="log">Ready to connect...</div>
+  </div>
+
+  <script>
+    // Global Error Logger for UI Display
+    window.onerror = function(msg, url, line) {
+      const logBox = document.getElementById('log');
+      if (logBox) logBox.innerText = 'Error: ' + msg + ' (line ' + line + ')';
+      return false;
+    };
+
+    const PID_REGISTRY = {
+      // ENGINE
+      "0104": { cat: "engine", name: "Calculated Engine Load", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "010C": { cat: "engine", name: "Engine Speed (RPM)", unit: "RPM", parse: (b) => Math.round(((b[0] * 256) + b[1]) / 4) },
+      "010E": { cat: "engine", name: "Timing Advance", unit: "°", parse: (b) => ((b[0] - 128) / 2).toFixed(1) },
+      "0111": { cat: "engine", name: "Throttle Position", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "0145": { cat: "engine", name: "Relative Throttle Position", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "0149": { cat: "engine", name: "Pedal Position D", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "014A": { cat: "engine", name: "Pedal Position E", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "014C": { cat: "engine", name: "Commanded Throttle Actuator", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "011F": { cat: "engine", name: "Engine Run Time", unit: "sec", parse: (b) => (b[0] * 256) + b[1] },
+
+      // AIR & BOOST
+      "010B": { cat: "air", name: "Intake Manifold Pressure (MAP)", unit: "kPa", parse: (b) => b[0] },
+      "0110": { cat: "air", name: "Mass Air Flow (MAF) Rate", unit: "g/s", parse: (b) => (((b[0] * 256) + b[1]) / 100).toFixed(2) },
+      "0133": { cat: "air", name: "Absolute Barometric Pressure", unit: "kPa", parse: (b) => b[0] },
+      "0170": { cat: "air", name: "Boost Pressure Control", unit: "kPa", parse: (b) => (((b[0] * 256) + b[1]) / 32).toFixed(1) },
+
+      // FUEL SYSTEM
+      "0106": { cat: "fuel", name: "Short Term Fuel Trim (Bank 1)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
+      "0107": { cat: "fuel", name: "Long Term Fuel Trim (Bank 1)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
+      "0108": { cat: "fuel", name: "Short Term Fuel Trim (Bank 2)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
+      "0109": { cat: "fuel", name: "Long Term Fuel Trim (Bank 2)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
+      "010A": { cat: "fuel", name: "Fuel Pressure (Gauge)", unit: "kPa", parse: (b) => b[0] * 3 },
+      "0122": { cat: "fuel", name: "Fuel Rail Pressure (Manifold)", unit: "kPa", parse: (b) => (((b[0] * 256) + b[1]) * 0.079).toFixed(1) },
+      "0123": { cat: "fuel", name: "Fuel Rail Pressure (Direct)", unit: "bar", parse: (b) => ((((b[0] * 256) + b[1]) * 10) / 100).toFixed(1) },
+      "012F": { cat: "fuel", name: "Fuel Tank Level Input", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "015E": { cat: "fuel", name: "Engine Fuel Rate", unit: "L/h", parse: (b) => (((b[0] * 256) + b[1]) * 0.05).toFixed(2) },
+
+      // TEMPERATURES
+      "0105": { cat: "temp", name: "Engine Coolant Temp", unit: "°C", parse: (b) => b[0] - 40 },
+      "010F": { cat: "temp", name: "Intake Air Temperature", unit: "°C", parse: (b) => b[0] - 40 },
+      "0146": { cat: "temp", name: "Ambient Air Temperature", unit: "°C", parse: (b) => b[0] - 40 },
+      "015C": { cat: "temp", name: "Engine Oil Temperature", unit: "°C", parse: (b) => b[0] - 40 },
+
+      // O2 & EXHAUST
+      "0114": { cat: "o2", name: "O2 Sensor 1 Voltage", unit: "V", parse: (b) => (b[0] / 200).toFixed(3) },
+      "0115": { cat: "o2", name: "O2 Sensor 2 Voltage", unit: "V", parse: (b) => (b[0] / 200).toFixed(3) },
+      "0124": { cat: "o2", name: "O2 Sensor 1 Equiv Ratio", unit: "λ", parse: (b) => (((b[0] * 256) + b[1]) * 2 / 65536).toFixed(3) },
+      "013C": { cat: "o2", name: "Catalyst Temp (Bank 1)", unit: "°C", parse: (b) => ((((b[0] * 256) + b[1]) / 10) - 40).toFixed(0) },
+      "013D": { cat: "o2", name: "Catalyst Temp (Bank 2)", unit: "°C", parse: (b) => ((((b[0] * 256) + b[1]) / 10) - 40).toFixed(0) },
+
+      // TRIP & ELECTRICAL
+      "010D": { cat: "trip", name: "Vehicle Speed", unit: "km/h", parse: (b) => b[0] },
+      "0121": { cat: "trip", name: "Distance with MIL On", unit: "km", parse: (b) => (b[0] * 256) + b[1] },
+      "0131": { cat: "trip", name: "Distance Since Codes Cleared", unit: "km", parse: (b) => (b[0] * 256) + b[1] },
+      "0142": { cat: "trip", name: "Control Module Voltage", unit: "V", parse: (b) => (((b[0] * 256) + b[1]) / 1000).toFixed(2) },
+      "015B": { cat: "trip", name: "Hybrid Battery Life", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
+      "ATRV": { cat: "trip", name: "Adapter Voltage", unit: "V", parse: (raw) => {
+        const m = String(raw).match(/([0-9]+\.?[0-9]*)/);
+        return m ? m[1] : '--';
+      }}
+    };
+
+    let bleDevice = null;
+    let writeChar = null;
+    let readChar = null;
+    let rxBuffer = '';
+    let isPolling = false;
+    let isSimulator = false;
+    let activeTab = 'tab-dash';
+    let currentCategory = 'all';
+    let supportedPIDs = new Set(["010C", "010D", "0105", "0104", "0111", "ATRV"]);
+    let auditResults = [];
+
+    const SERVICE_UUIDS = ['6e400001-b5a3-f393-e0a9-e50e24dcca9e', 0xFFF0, 0xFFE0];
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      if (el) el.innerText = msg;
+      console.log(msg);
+    }
+
+    // Direct, explicit tab switching
+    window.switchTab = function(tabId) {
+      activeTab = tabId;
+
+      // 1. Update tab button styles
+      const tabs = ['tab-dash', 'tab-categories', 'tab-discovery', 'tab-dev'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        if (btn) {
+          if (t === tabId) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+
+      // 2. Explicitly toggle visibility
+      tabs.forEach(t => {
+        const panel = document.getElementById(t);
+        if (panel) {
+          panel.style.display = (t === tabId) ? 'flex' : 'none';
+        }
+      });
+
+      log("Switched to tab: " + tabId.replace('tab-', ''));
+
+      if (tabId === 'tab-categories') renderCategoryList();
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && (tabId === 'tab-dash' || tabId === 'tab-categories')) {
+        startPolling();
+      }
+    };
+
+    window.filterCategory = function(cat, evt) {
+      currentCategory = cat;
+      document.querySelectorAll('.category-pills .pill').forEach(p => p.classList.remove('active'));
+      if (evt && evt.target) evt.target.classList.add('active');
+      renderCategoryList();
+    };
+
+    window.renderCategoryList = function() {
+      const container = document.getElementById('category-pid-list');
+      if (!container) return;
+      const chk = document.getElementById('chk-supported-only');
+      const supportedOnly = chk ? chk.checked : false;
+      container.innerHTML = '';
+
+      let count = 0;
+      for (const [cmd, def] of Object.entries(PID_REGISTRY)) {
+        if (currentCategory !== 'all' && def.cat !== currentCategory) continue;
+        const isSupp = supportedPIDs.has(cmd);
+        if (supportedOnly && !isSupp) continue;
+
+        count++;
+        const row = document.createElement('div');
+        row.className = 'pid-row ' + (!isSupp ? 'unsupported' : '');
+        row.innerHTML = `
+          <div class="pid-info">
+            <span class="pid-code">${cmd}</span>
+            <span class="pid-name">${def.name}</span>
+          </div>
+          <div class="pid-val-box">
+            <span class="pid-val" id="val-cat-${cmd}">--</span>
+            <span class="pid-unit">${def.unit}</span>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+      const countEl = document.getElementById('cat-count');
+      if (countEl) countEl.innerText = `Showing ${count} PIDs`;
+    };
+
+    window.handleConnectClick = async function() {
+      if (bleDevice?.gatt?.connected) disconnect();
+      else await connect();
+    };
+
+    async function connect() {
+      if (isSimulator) toggleSimulator();
+      try {
+        if (!navigator.bluetooth) {
+          throw new Error("Web Bluetooth not available in this browser. Use Bluefy on iOS or Chrome with experimental flags.");
+        }
+
+        log("Requesting BLE OBD-II device...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        log("Connecting to GATT server...");
+        const server = await bleDevice.gatt.connect();
+
+        let service;
+        for (const uuid of SERVICE_UUIDS) {
+          try { service = await server.getPrimaryService(uuid); if (service) break; } catch (e) {}
+        }
+        if (!service) throw new Error("No UART service found.");
+
+        const chars = await service.getCharacteristics();
+        for (const char of chars) {
+          if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
+          if (char.properties.notify || char.properties.indicate) readChar = char;
+        }
+
+        if (!writeChar || !readChar) throw new Error("UART TX/RX characteristics not found.");
+
+        await readChar.startNotifications();
+        readChar.addEventListener('characteristicvaluechanged', handleNotification);
+
+        const statusEl = document.getElementById('status');
+        const btnConnect = document.getElementById('btn-connect');
+        if (statusEl) { statusEl.innerText = "Connected"; statusEl.className = "status-badge connected"; }
+        if (btnConnect) { btnConnect.innerText = "Disconnect"; btnConnect.classList.add("disconnect"); }
+
+        log("Initializing ELM327 protocol...");
+        await initELM327();
+        startPolling();
+
+      } catch (err) {
+        log("Error: " + err.message);
+        disconnect();
+      }
+    }
+
+    function disconnect() {
+      if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
+      onDisconnected();
+    }
+
+    function onDisconnected() {
+      isPolling = false;
+      const statusEl = document.getElementById('status');
+      const btnConnect = document.getElementById('btn-connect');
+      if (statusEl) { statusEl.innerText = "Disconnected"; statusEl.className = "status-badge"; }
+      if (btnConnect) { btnConnect.innerText = "Connect BLE OBD-II"; btnConnect.classList.remove("disconnect"); }
+      log("Disconnected.");
+    }
+
+    let responseResolver = null;
+    function handleNotification(event) {
+      const chunk = new TextDecoder().decode(event.target.value);
+      rxBuffer += chunk;
+      if (rxBuffer.includes('>')) {
+        if (responseResolver) {
+          const res = rxBuffer.replace(/>/g, '').trim();
+          rxBuffer = '';
+          responseResolver(res);
+          responseResolver = null;
+        }
+      }
+    }
+
+    async function sendCommand(cmd, timeoutMs = 2500) {
+      if (isSimulator) {
+        return new Promise(resolve => {
+          setTimeout(() => resolve(getSimulatedResponse(cmd)), 40);
+        });
+      }
+
+      return new Promise(async (resolve) => {
+        const timer = setTimeout(() => {
+          responseResolver = null;
+          resolve("TIMEOUT");
+        }, timeoutMs);
+
+        responseResolver = (response) => {
+          clearTimeout(timer);
+          resolve(response);
+        };
+
+        const enc = new TextEncoder().encode(cmd + '\r');
+        await writeChar.writeValue(enc);
+      });
+    }
+
+    async function sendCommandWithLog(cmd, timeoutMs = 2500) {
+      const startTime = performance.now();
+      logPacket('TX', cmd);
+      const rawRes = await sendCommand(cmd, timeoutMs);
+      const rtt = Math.round(performance.now() - startTime);
+      logPacket('RX', `${rawRes} (${rtt}ms)`);
+      return { raw: rawRes, rtt };
+    }
+
+    window.logPacket = function(dir, msg) {
+      const sniffer = document.getElementById('packet-sniffer');
+      if (!sniffer) return;
+      const time = new Date().toISOString().substring(11, 23);
+      const entry = document.createElement('div');
+      entry.style.color = dir === 'TX' ? 'var(--accent)' : 'var(--green)';
+      entry.innerText = `[${time}] ${dir === 'TX' ? '➜ TX' : '🠔 RX'}: ${msg}`;
+      sniffer.appendChild(entry);
+      sniffer.scrollTop = sniffer.scrollHeight;
+    };
+
+    window.clearPacketLog = function() {
+      const sniffer = document.getElementById('packet-sniffer');
+      if (sniffer) sniffer.innerHTML = '';
+    };
+
+    async function initELM327() {
+      await sendCommand("ATZ");
+      await sendCommand("ATE0");
+      await sendCommand("ATL0");
+      await sendCommand("ATH0");
+      await sendCommand("ATSP0");
+    }
+
+    async function startPolling() {
+      if (isPolling) return;
+      isPolling = true;
+
+      while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
+        if (activeTab === 'tab-dash') {
+          const dashPIDs = ["010C", "010D", "0105", "0104", "0111", "ATRV"];
+          for (const cmd of dashPIDs) {
+            if (!isPolling || activeTab !== 'tab-dash') break;
+            const res = await sendCommand(cmd);
+            updatePIDValue(cmd, res, 'dash');
+          }
+        } else if (activeTab === 'tab-categories') {
+          for (const [cmd, def] of Object.entries(PID_REGISTRY)) {
+            if (!isPolling || activeTab !== 'tab-categories') break;
+            if (currentCategory !== 'all' && def.cat !== currentCategory) continue;
+            if (!supportedPIDs.has(cmd)) continue;
+
+            const res = await sendCommand(cmd);
+            updatePIDValue(cmd, res, 'cat');
+          }
+        }
+        await new Promise(r => setTimeout(r, 60));
+      }
+      isPolling = false;
+    }
+
+    function updatePIDValue(cmd, raw, prefix) {
+      const def = PID_REGISTRY[cmd];
+      if (!def) return;
+
+      let val = '--';
+      if (cmd === 'ATRV') {
+        val = def.parse(raw);
+      } else {
+        const clean = String(raw).replace(/\s+/g, '');
+        const header = "41" + cmd.substring(2);
+        const idx = clean.indexOf(header);
+        if (idx !== -1) {
+          const hexPayload = clean.substring(idx + header.length);
+          const bytes = [];
+          for (let i = 0; i < hexPayload.length; i += 2) {
+            bytes.push(parseInt(hexPayload.substr(i, 2), 16));
+          }
+          try { val = def.parse(bytes); } catch (e) {}
+        }
+      }
+
+      const el = document.getElementById(`val-${prefix}-${cmd}`);
+      if (el && !isNaN(val)) el.innerText = val;
+    }
+
+    window.scanSupportedPIDs = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
+      isPolling = false;
+
+      log("Scanning ECU supported PID bitmasks...");
+      const scanBases = ["0100", "0120", "0140", "0160"];
+      supportedPIDs.clear();
+      supportedPIDs.add("ATRV");
+
+      for (const baseCmd of scanBases) {
+        log(`Querying ${baseCmd}...`);
+        const res = await sendCommand(baseCmd);
+        const clean = res.replace(/\s+/g, '');
+        const header = "41" + baseCmd.substring(2);
+        const idx = clean.indexOf(header);
+        if (idx === -1) break;
+
+        const hexMask = clean.substring(idx + 4, idx + 12);
+        if (hexMask.length < 8) break;
+
+        const baseNum = parseInt(baseCmd.substring(2), 16);
+        const binaryString = parseInt(hexMask, 16).toString(2).padStart(32, '0');
+
+        for (let i = 0; i < 32; i++) {
+          if (binaryString[i] === '1') {
+            const hex = (baseNum + i + 1).toString(16).toUpperCase().padStart(2, '0');
+            supportedPIDs.add(`01${hex}`);
+          }
+        }
+        if (binaryString[31] === '0') break;
+      }
+
+      const discCountEl = document.getElementById('disc-count');
+      if (discCountEl) discCountEl.innerText = supportedPIDs.size;
+      log(`Discovered ${supportedPIDs.size} ECU supported PIDs.`);
+      renderCategoryList();
+    };
+
+    window.scanVehicleInfo = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
+      isPolling = false;
+
+      log("Querying VIN & protocol...");
+      const protoRes = await sendCommand("ATDP");
+      const protoEl = document.getElementById('info-proto');
+      if (protoEl) protoEl.innerText = protoRes.replace(/[\r\n]/g, ' ') || 'Unknown';
+
+      const vinRes = await sendCommand("0902");
+      const vin = parseVIN(vinRes);
+      const vinEl = document.getElementById('info-vin');
+      if (vinEl) vinEl.innerText = vin || "VIN PID not supported by vehicle.";
+      log("Vehicle query complete.");
+    };
+
+    function parseVIN(raw) {
+      const clean = raw.replace(/[\r\n\s>]/g, '');
+      const match = clean.match(/49020[1-5]([0-9A-F]+)/gi);
+      if (!match) {
+        const idx = clean.indexOf("4902");
+        if (idx === -1) return null;
+        let hex = clean.substring(idx + 4), str = '';
+        for (let i = 0; i < hex.length; i += 2) {
+          const code = parseInt(hex.substr(i, 2), 16);
+          if (code >= 32 && code <= 126) str += String.fromCharCode(code);
+        }
+        return str.replace(/[^A-HJ-NPR-Z0-9]/gi, '');
+      }
+
+      let hexPayload = match.map(m => m.substring(6)).join('');
+      let vin = '';
+      for (let i = 0; i < hexPayload.length; i += 2) {
+        const code = parseInt(hexPayload.substr(i, 2), 16);
+        if (code >= 32 && code <= 126) vin += String.fromCharCode(code);
+      }
+      return vin;
+    }
+
+    window.sendManualCommand = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
+      const input = document.getElementById('manual-cmd');
+      if (!input) return;
+      const cmd = input.value.trim().toUpperCase();
+      if (!cmd) return;
+
+      isPolling = false;
+      log(`Sending: ${cmd}`);
+      const res = await sendCommand(cmd);
+      const resEl = document.getElementById('manual-res');
+      if (resEl) resEl.innerText = res;
+    };
+
+    window.runPIDAudit = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
+      isPolling = false;
+
+      auditResults = [];
+      const progressEl = document.getElementById('audit-progress');
+      const tableEl = document.getElementById('audit-table');
+      const exportBtn = document.getElementById('btn-export-csv');
+
+      if (tableEl) tableEl.innerHTML = '';
+      if (exportBtn) exportBtn.disabled = true;
+
+      const pidsToTest = Object.keys(PID_REGISTRY);
+      let passedCount = 0;
+
+      for (let i = 0; i < pidsToTest.length; i++) {
+        const cmd = pidsToTest[i];
+        const def = PID_REGISTRY[cmd];
+        if (progressEl) progressEl.innerText = `Testing ${i + 1}/${pidsToTest.length}: ${cmd}...`;
+
+        const { raw, rtt } = await sendCommandWithLog(cmd);
+        let status = 'NO DATA / ERROR';
+        let parsedVal = '--';
+        const clean = raw.replace(/\s+/g, '');
+        const header = cmd === 'ATRV' ? 'V' : "41" + cmd.substring(2);
+
+        if (cmd === 'ATRV' && raw.match(/[0-9]+\.[0-9]+/)) {
+          status = 'SUCCESS';
+          parsedVal = def.parse(raw);
+          passedCount++;
+        } else if (clean.includes(header)) {
+          const idx = clean.indexOf(header);
+          const hexPayload = clean.substring(idx + header.length);
+          const bytes = [];
+          for (let j = 0; j < hexPayload.length; j += 2) {
+            bytes.push(parseInt(hexPayload.substr(j, 2), 16));
+          }
+          try {
+            parsedVal = def.parse(bytes);
+            status = isNaN(parsedVal) ? 'PARSING_ERROR' : 'SUCCESS';
+            if (status === 'SUCCESS') passedCount++;
+          } catch (err) {
+            status = 'PARSING_EXCEPTION';
+          }
+        }
+
+        const record = {
+          pid: cmd,
+          name: def.name,
+          status: status,
+          rawHex: raw.replace(/[\r\n]/g, ' ').trim(),
+          decodedValue: parsedVal,
+          unit: def.unit,
+          rttMs: rtt
+        };
+        auditResults.push(record);
+
+        if (tableEl) {
+          const row = document.createElement('div');
+          row.className = 'pid-row';
+          row.innerHTML = `
+            <div class="pid-info">
+              <div><strong style="color:var(--accent); font-family:monospace;">${cmd}</strong> ${def.name}</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">RAW: ${record.rawHex} | ${rtt}ms</div>
+            </div>
+            <div class="pid-val-box">
+              <span class="pid-val" style="color:${status === 'SUCCESS' ? 'var(--green)' : 'var(--red)'}; font-size:0.9rem;">
+                ${status === 'SUCCESS' ? `${parsedVal} ${def.unit}` : status}
+              </span>
+            </div>
+          `;
+          tableEl.appendChild(row);
+        }
+        await new Promise(r => setTimeout(r, 40));
+      }
+
+      if (progressEl) progressEl.innerText = `Audit Complete! ${passedCount}/${pidsToTest.length} PIDs operational.`;
+      const auditCountEl = document.getElementById('audit-count');
+      if (auditCountEl) auditCountEl.innerText = `${passedCount}/${pidsToTest.length}`;
+      if (exportBtn) exportBtn.disabled = false;
+    };
+
+    window.exportAuditCSV = function() {
+      if (!auditResults.length) return alert("Run an audit first!");
+      const headers = ["PID", "Name", "Status", "Decoded Value", "Unit", "Raw Response", "Latency (ms)"];
+      const rows = auditResults.map(r => [
+        `"${r.pid}"`, `"${r.name}"`, `"${r.status}"`, `"${r.decodedValue}"`, `"${r.unit}"`, `"${r.rawHex}"`, r.rttMs
+      ]);
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", `obd2_audit_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    window.toggleSimulator = function() {
+      isSimulator = !isSimulator;
+      const statusEl = document.getElementById('status');
+      const btnSim = document.getElementById('btn-sim');
+
+      if (isSimulator) {
+        if (bleDevice?.gatt?.connected) disconnect();
+        if (statusEl) { statusEl.innerText = "Simulated"; statusEl.className = "status-badge simulated"; }
+        if (btnSim) btnSim.classList.add("active");
+        log("Simulator active: Generating synthetic ECU data.");
+        Object.keys(PID_REGISTRY).forEach(pid => supportedPIDs.add(pid));
+        renderCategoryList();
+        startPolling();
+      } else {
+        isPolling = false;
+        if (statusEl) { statusEl.innerText = "Disconnected"; statusEl.className = "status-badge"; }
+        if (btnSim) btnSim.classList.remove("active");
+        log("Simulator deactivated.");
+      }
+    };
+
+    function getSimulatedResponse(cmd) {
+      if (cmd.startsWith("AT")) {
+        if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
+        if (cmd === "ATRV") return (13.4 + Math.sin(Date.now() / 3000) * 0.4).toFixed(1) + "V";
+        return "OK";
+      }
+      if (cmd === "0902") return "49 02 01 31 46 41 46 50 35 33 55 31 38 41 31 30 39 30 38 31";
+      if (cmd === "0100") return "41 00 BE 3E B8 11";
+      if (cmd === "0120") return "41 20 80 07 E0 11";
+      if (cmd === "0140") return "41 40 7A D0 00 00";
+
+      const time = Date.now() / 1000;
+      switch (cmd) {
+        case "010C": {
+          const rpm = Math.round(1800 + Math.sin(time) * 1000);
+          const raw = rpm * 4;
+          const a = (raw >> 8) & 0xFF, b = raw & 0xFF;
+          return `41 0C ${a.toString(16).padStart(2,'0')} ${b.toString(16).padStart(2,'0')}`;
+        }
+        case "010D": {
+          const speed = Math.round(50 + Math.sin(time * 0.5) * 35);
+          return `41 0D ${speed.toString(16).padStart(2,'0')}`;
+        }
+        case "0105": {
+          const temp = Math.round(90 + Math.sin(time * 0.1) * 2) + 40;
+          return `41 05 ${temp.toString(16).padStart(2,'0')}`;
+        }
+        case "0104": {
+          const load = Math.round((45 + Math.sin(time * 0.8) * 20) * 255 / 100);
+          return `41 04 ${load.toString(16).padStart(2,'0')}`;
+        }
+        case "0111": {
+          const thr = Math.round((25 + Math.sin(time * 0.8) * 15) * 255 / 100);
+          return `41 11 ${thr.toString(16).padStart(2,'0')}`;
+        }
+        default: {
+          const pseudoA = Math.round(100 + Math.sin(time) * 30);
+          const pseudoB = Math.round(50 + Math.cos(time) * 20);
+          return `41 ${cmd.substring(2)} ${pseudoA.toString(16).padStart(2,'0')} ${pseudoB.toString(16).padStart(2,'0')}`;
+        }
+      }
+    }
+
+    // Initial render
+    renderCategoryList();
+  </script>
+</body>
+</html>
