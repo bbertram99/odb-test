@@ -113,7 +113,7 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
     @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
 
-    /* Gear & Drive Status Strip */
+    /* Live Gear Strip */
     .drive-status-strip {
       display: flex;
       gap: 0.5rem;
@@ -131,9 +131,11 @@
       backdrop-filter: blur(8px);
     }
     .status-pill-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .status-pill-val { font-size: 1.4rem; font-weight: 800; color: var(--cyan); }
-    .status-pill-val.reverse { color: var(--amber); text-shadow: 0 0 8px var(--amber); }
-    .status-pill-val.neutral { color: var(--green); text-shadow: 0 0 8px var(--green); }
+    .status-pill-val { font-size: 1.5rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    .status-pill-val.gear-r { color: var(--red); text-shadow: 0 0 12px var(--red); }
+    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
+    .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
+    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
 
     /* Touch Metric Cards */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
@@ -229,7 +231,7 @@
         <span class="brand-glow"></span>
         RMAX COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.3.5</span>
+      <span class="version-tag" id="app-version-badge">v1.3.6</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -260,11 +262,11 @@
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
-        <span id="val-dash-gear" class="status-pill-val neutral">N</span>
+        <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
       </div>
       <div class="status-pill-box">
         <span class="status-pill-label">Drive Mode</span>
-        <span id="val-dash-drive" class="status-pill-val">2WD</span>
+        <span id="val-dash-drive" class="status-pill-val">TURF / 2WD</span>
       </div>
     </div>
 
@@ -347,16 +349,29 @@
     <div class="disc-section">
       <div class="disc-title">Session Flight Recorder</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Tag your test action (e.g. 2WD / 4WD / Diff-Lock switch or brake press) and capture delta frames.
+        Select target LID and tag your test to capture differential register movements.
       </p>
-      <div style="display:flex; flex-direction:column; gap:0.4rem;">
-        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">TEST ACTION TAG:</label>
-        <select id="record-tag">
-          <option value="2WD / 4WD / Diff-Lock Switching">2WD / 4WD / Diff-Lock Switching</option>
-          <option value="Brake Pedal Press & Release">Brake Pedal Press & Release</option>
-          <option value="Cold Start & Engine Warmup">Cold Start & Engine Warmup</option>
-          <option value="Ground Speed Acceleration (0 - 20 MPH)">Ground Speed Acceleration (0 - 20 MPH)</option>
-        </select>
+      
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.4rem;">
+        <div>
+          <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TARGET PAYLOAD:</label>
+          <select id="record-payload-target" style="width:100%;">
+            <option value="2101">21 01 (Engine/Transmission)</option>
+            <option value="2140">21 40 (Chassis/Diff Unit)</option>
+            <option value="2141">21 41 (Body Control Unit)</option>
+            <option value="2164">21 64 (Extended Status Block)</option>
+            <option value="2165">21 65 (Switch Matrix Block)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TEST ACTION TAG:</label>
+          <select id="record-tag" style="width:100%;">
+            <option value="Turf -> 2WD -> 4WD -> Diff-Lock">Turf -> 2WD -> 4WD -> Diff-Lock</option>
+            <option value="Gear Shift Cycle (N -> R -> N -> H -> L)">Gear Shift Cycle (N -> R -> N -> H -> L)</option>
+            <option value="Brake Pedal Press & Release">Brake Pedal Press & Release</option>
+            <option value="Ground Speed Acceleration">Ground Speed Acceleration</option>
+          </select>
+        </div>
       </div>
 
       <div style="display:flex; gap:0.5rem; margin-top:0.2rem;">
@@ -424,7 +439,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.3.5";
+    const APP_VERSION = "v1.3.6";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -447,6 +462,7 @@
     let isRecordingSession = false;
     let activeTab = 'tab-dash';
     let speedUnit = 'kmh';
+    let currentPollingCommand = '2101';
 
     let lastBytes = [];
     let recordedFrames = [];
@@ -498,6 +514,7 @@
       });
 
       if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
+        currentPollingCommand = '2101';
         startPolling();
       }
     };
@@ -695,11 +712,14 @@
       isPolling = true;
 
       while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
+        const targetCmd = isRecordingSession ? 
+          document.getElementById('record-payload-target').value : '2101';
+
         const startT = performance.now();
-        const rawRes = await sendCommand("2101", 1200);
+        const rawRes = await sendCommand(targetCmd, 1200);
         const rtt = Math.round(performance.now() - startT);
 
-        parseYamahaPayload(rawRes);
+        parseYamahaPayload(rawRes, targetCmd);
 
         // Update Voltage
         const voltRes = await sendCommand("ATRV", 800);
@@ -707,7 +727,7 @@
 
         const rpmVal = document.getElementById('val-dash-rpm').innerText;
         const gearVal = document.getElementById('val-dash-gear').innerText;
-        log(`⚡ RMAX: ${gearVal} | RPM ${rpmVal} | ${rtt}ms`);
+        log(`⚡ RMAX: Gear [${gearVal}] | RPM ${rpmVal} | ${rtt}ms`);
 
         await new Promise(r => setTimeout(r, 35));
       }
@@ -715,9 +735,9 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED SENSOR DECODER
+       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED GEAR DECODER
        ========================================================== */
-    function parseYamahaPayload(raw) {
+    function parseYamahaPayload(raw, targetCmd) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
 
       let hexStream = '';
@@ -733,15 +753,16 @@
         }
       }
 
-      if (!hexStream.includes("6101")) return;
+      const expectedHeader = "61" + targetCmd.substring(2);
+      if (!hexStream.includes(expectedHeader)) return;
 
-      const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
+      const payloadHex = hexStream.substring(hexStream.indexOf(expectedHeader) + expectedHeader.length);
       const bytes = [];
       for (let i = 0; i < payloadHex.length; i += 2) {
         bytes.push(parseInt(payloadHex.substr(i, 2), 16));
       }
 
-      if (bytes.length < 5) return;
+      if (bytes.length < 2) return;
 
       // Session Recording Hook
       if (isRecordingSession) {
@@ -750,76 +771,85 @@
         document.getElementById('record-status-text').innerText = `🔴 Recording: ${recordedFrames.length} frames (${elapsed}s)`;
       }
 
-      renderByteMatrix(bytes);
+      if (targetCmd === '2101') {
+        renderByteMatrix(bytes);
 
-      // --- 1. Engine RPM (Bytes 0 & 1) ---
-      const rpm = (bytes[0] * 256) + bytes[1];
-      if (!isNaN(rpm) && rpm <= 10000) {
-        document.getElementById('val-dash-rpm').innerText = rpm;
-        updateTachometer(rpm);
-      }
-
-      // --- 2. Ground Speed (Bytes 2 & 3) ---
-      let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
-      if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
-      document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
-      const speedBar = document.getElementById('bar-speed');
-      if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
-
-      // --- 3. Coolant Temperature (Byte 4) -> Diagnostic Item d:06 ---
-      if (bytes.length >= 5) {
-        const coolant = bytes[4];
-        document.getElementById('val-dash-coolant').innerText = coolant;
-        const coolantBar = document.getElementById('bar-coolant');
-        if (coolantBar) {
-          coolantBar.style.width = Math.min(100, (coolant / 120) * 100) + '%';
-          coolantBar.style.background = coolant > 105 ? 'var(--red)' : coolant > 95 ? 'var(--amber)' : 'var(--cyan)';
-        }
-      }
-
-      // --- 4. Gas Pedal / APS (Byte 7): 0x23 (35) -> 0xC5 (197) ---
-      if (bytes.length >= 8) {
-        const rawAPS = bytes[7];
-        const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
-        document.getElementById('val-dash-pedal').innerText = pedalPct;
-        const pedalBar = document.getElementById('bar-pedal');
-        if (pedalBar) pedalBar.style.width = pedalPct + '%';
-      }
-
-      // --- 5. Throttle Blade / TPS (Byte 9): 0x21 (33) -> 0xD2 (210) -> Diagnostic d:01 ---
-      if (bytes.length >= 10) {
-        const rawTPS = bytes[9];
-        const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
-        document.getElementById('val-dash-throttle').innerText = tpsPct;
-        const tpsBar = document.getElementById('bar-throttle');
-        if (tpsBar) tpsBar.style.width = tpsPct + '%';
-      }
-
-      // --- 6. Calibrated Transmission Gear Selector (Byte 19) ---
-      if (bytes.length >= 20) {
-        const b19 = bytes[19];
-        const gearCode = b19 & 0x0F;
-        const gearEl = document.getElementById('val-dash-gear');
-        
-        let gearText = 'N';
-        gearEl.className = 'status-pill-val';
-
-        if (gearCode === 0x00) {
-          gearText = 'N';
-          gearEl.classList.add('neutral');
-        } else if (gearCode === 0x02) {
-          gearText = 'R';
-          gearEl.classList.add('reverse');
-        } else if (gearCode === 0x01) {
-          gearText = 'H';
-        } else if (gearCode === 0x03) {
-          gearText = 'L';
+        // --- 1. Engine RPM (Bytes 0 & 1) ---
+        const rpm = (bytes[0] * 256) + bytes[1];
+        if (!isNaN(rpm) && rpm <= 10000) {
+          document.getElementById('val-dash-rpm').innerText = rpm;
+          updateTachometer(rpm);
         }
 
-        gearEl.innerText = gearText;
-      }
+        // --- 2. Speed (Bytes 2 & 3) ---
+        let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
+        if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
+        document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
+        const speedBar = document.getElementById('bar-speed');
+        if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-      lastBytes = [...bytes];
+        // --- 3. Coolant (Byte 4) -> d:06 ---
+        if (bytes.length >= 5) {
+          const coolant = bytes[4];
+          document.getElementById('val-dash-coolant').innerText = coolant;
+          const coolantBar = document.getElementById('bar-coolant');
+          if (coolantBar) {
+            coolantBar.style.width = Math.min(100, (coolant / 120) * 100) + '%';
+            coolantBar.style.background = coolant > 105 ? 'var(--red)' : coolant > 95 ? 'var(--amber)' : 'var(--cyan)';
+          }
+        }
+
+        // --- 4. Gas Pedal / APS (Byte 7): 0x23 (35) -> 0xC5 (197) ---
+        if (bytes.length >= 8) {
+          const rawAPS = bytes[7];
+          const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
+          document.getElementById('val-dash-pedal').innerText = pedalPct;
+          const pedalBar = document.getElementById('bar-pedal');
+          if (pedalBar) pedalBar.style.width = pedalPct + '%';
+        }
+
+        // --- 5. Throttle Blade / TPS (Byte 9): 0x21 (33) -> 0xD2 (210) -> d:01 ---
+        if (bytes.length >= 10) {
+          const rawTPS = bytes[9];
+          const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
+          document.getElementById('val-dash-throttle').innerText = tpsPct;
+          const tpsBar = document.getElementById('bar-throttle');
+          if (tpsBar) tpsBar.style.width = tpsPct + '%';
+        }
+
+        // --- 6. CORRECTED RMAX TRANSMISSION GEAR DECODER ---
+        if (bytes.length >= 20) {
+          const b18 = bytes[18];
+          const b19 = bytes[19];
+          const gearNibble = b19 & 0x0F;
+          const isNeutralSwitch = (b18 & 0x01) === 1;
+
+          const gearEl = document.getElementById('val-dash-gear');
+          let gearText = 'N';
+          let gearClass = 'gear-n';
+
+          if (gearNibble === 0x02) {
+            gearText = 'H';
+            gearClass = 'gear-h';
+          } else if (gearNibble === 0x01) {
+            gearText = 'L';
+            gearClass = 'gear-l';
+          } else if (gearNibble === 0x00) {
+            if (isNeutralSwitch) {
+              gearText = 'N';
+              gearClass = 'gear-n';
+            } else {
+              gearText = 'R';
+              gearClass = 'gear-r';
+            }
+          }
+
+          gearEl.className = `status-pill-val ${gearClass}`;
+          gearEl.innerText = gearText;
+        }
+
+        lastBytes = [...bytes];
+      }
     }
 
     function renderByteMatrix(bytes) {
@@ -887,6 +917,7 @@
       const btn = document.getElementById('btn-record');
       const statusBadge = document.getElementById('status');
       const tag = document.getElementById('record-tag').value;
+      const targetPayload = document.getElementById('record-payload-target').value;
 
       if (!isRecordingSession) {
         isRecordingSession = true;
@@ -898,8 +929,8 @@
         statusBadge.innerText = "RECORDING";
         statusBadge.className = "status-badge recording";
 
-        document.getElementById('record-status-text').innerText = `🔴 Recording Active: Perform [${tag}]`;
-        document.getElementById('recorder-output').innerHTML = `<div style="color:var(--cyan);">Recording live frames for: ${tag}...</div>`;
+        document.getElementById('record-status-text').innerText = `🔴 Recording [${targetPayload}]: ${tag}`;
+        document.getElementById('recorder-output').innerHTML = `<div style="color:var(--cyan);">Capturing frames for ${targetPayload} (${tag})...</div>`;
       } else {
         isRecordingSession = false;
         btn.innerText = "🔴 Start Session Record";
@@ -907,11 +938,11 @@
         statusBadge.innerText = "CONNECTED";
         statusBadge.className = "status-badge connected";
 
-        generateSessionReport(tag);
+        generateSessionReport(tag, targetPayload);
       }
     };
 
-    function generateSessionReport(tag) {
+    function generateSessionReport(tag, targetPayload) {
       if (!recordedFrames.length) {
         document.getElementById('record-status-text').innerText = "No frames captured.";
         return;
@@ -923,8 +954,8 @@
 
       let report = `=== YAMAHA RMAX TELEMETRY SESSION REPORT ===\n`;
       report += `Test Action Tag: ${tag}\n`;
+      report += `Target Command: ${targetPayload} (${numBytes} Bytes Payload)\n`;
       report += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
-      report += `ECU Command: 21 01 (26 Bytes Multi-Frame Payload)\n`;
       report += `Timestamp: ${new Date().toISOString()}\n\n`;
 
       report += `--- BYTE VARIANCE ANALYSIS (Which bytes moved?) ---\n`;
