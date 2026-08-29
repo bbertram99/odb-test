@@ -3,84 +3,114 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>OBD-II Pro Suite</title>
+  <title>OBD-II Digital Cockpit</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
     :root {
-      --bg: #0b1120;
-      --card-bg: #1e293b;
-      --card-border: #334155;
+      --bg: #05070e;
+      --card-bg: rgba(16, 23, 41, 0.75);
+      --card-border: rgba(56, 189, 248, 0.15);
+      --card-glow: rgba(56, 189, 248, 0.05);
       --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
+      --text-muted: #64748b;
+      --cyan: #38bdf8;
       --green: #4ade80;
-      --red: #f87171;
-      --amber: #fbbf24;
+      --red: #ef4444;
+      --amber: #f59e0b;
       --purple: #c084fc;
+      --redline: #ff0055;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #070b14 0%, #030408 100%);
       color: var(--text);
-      padding: 0.75rem;
+      padding: 0.75rem 0.75rem 5.5rem 0.75rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       user-select: none;
     }
 
+    /* Top HUD Header */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      padding: 0.25rem 0.25rem 0.75rem 0.25rem;
     }
 
-    h1 { font-size: 1.1rem; font-weight: 700; }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .brand-glow {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    .hud-widgets {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
     .status-badge {
+      font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 9999px;
-      background: #334155;
-      color: var(--text-muted);
-      font-weight: 600;
-    }
-    .status-badge.connected { background: rgba(74, 222, 128, 0.2); color: var(--green); }
-    .status-badge.simulated { background: rgba(192, 132, 252, 0.2); color: var(--purple); }
-
-    /* Tabs Navigation */
-    .tabs {
-      display: flex;
-      gap: 0.35rem;
-      background: #1e293b;
-      padding: 0.3rem;
-      border-radius: 8px;
-      margin-bottom: 0.75rem;
-      position: relative;
-      z-index: 10;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.6rem 0.2rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid transparent;
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: center;
-      transition: background 0.15s, color 0.15s;
-    }
-    .tab-btn:hover { color: var(--text); background: #334155; }
-    .tab-btn.active {
-      background: var(--accent) !important;
-      color: #0b1120 !important;
       font-weight: 700;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      transition: all 0.3s ease;
     }
+    .status-badge.connected {
+      background: rgba(74, 222, 128, 0.15);
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+    }
+    .status-badge.simulated {
+      background: rgba(192, 132, 252, 0.15);
+      border-color: var(--purple);
+      color: var(--purple);
+      box-shadow: 0 0 12px rgba(192, 132, 252, 0.25);
+    }
+
+    .btn-hud-icon {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-hud-icon:active { transform: scale(0.92); }
 
     /* Panels */
     .view-panel {
@@ -88,170 +118,508 @@
       flex-direction: column;
       gap: 0.75rem;
       flex: 1;
-      position: relative;
-      z-index: 1;
+      animation: fadeIn 0.2s ease-out;
     }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Dashboard Cards */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
-    .card {
+    /* ========================================================
+       DASHBOARD COCKPIT (GAUGES & METERS)
+       ======================================================== */
+    .cockpit-hero {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 0.85rem;
+      border-radius: 18px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow);
+      backdrop-filter: blur(12px);
+    }
+
+    /* SVG Radial Tachometer */
+    .gauge-wrapper {
+      position: relative;
+      width: 240px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gauge-svg {
+      width: 240px;
+      height: 200px;
+      transform: rotate(-30deg);
+    }
+
+    .gauge-bg-track {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.06);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-dasharray: 293.2;
+      stroke-dashoffset: 0;
+    }
+
+    .gauge-val-track {
+      fill: none;
+      stroke: var(--cyan);
+      stroke-width: 14;
+      stroke-linecap: round;
+      stroke-dasharray: 293.2;
+      stroke-dashoffset: 293.2;
+      transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease;
+      filter: drop-shadow(0 0 8px var(--cyan));
+    }
+
+    .gauge-center-readout {
+      position: absolute;
+      top: 55%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .gauge-center-val {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .gauge-center-unit {
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .redline-indicator {
+      position: absolute;
+      bottom: 8px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      color: var(--redline);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .redline-indicator.active {
+      opacity: 1;
+      animation: pulseGlow 0.4s infinite alternate;
+    }
+    @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
+
+    /* Touch Metric Cards Grid */
+    .cockpit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .touch-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
     }
-    .card.full-width { grid-column: span 2; }
-    .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-    .value-container { margin-top: 0.3rem; display: flex; align-items: baseline; gap: 0.3rem; }
-    .value { font-size: 1.8rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-    .card.full-width .value { font-size: 2.6rem; }
-    .unit { font-size: 0.8rem; color: var(--text-muted); }
+    .touch-card:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.9); }
 
-    /* Category View */
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .card-toggle-hint {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .card-main {
+      margin: 0.4rem 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .card-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+
+    .card-unit {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Live Progress Bar for Touch Cards */
+    .meter-bar-track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-top: 0.2rem;
+    }
+
+    .meter-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--cyan);
+      border-radius: 9999px;
+      transition: width 0.15s linear, background 0.25s ease;
+      box-shadow: 0 0 6px var(--cyan);
+    }
+
+    /* ========================================================
+       CATEGORIES VIEW
+       ======================================================== */
     .category-pills {
       display: flex;
       gap: 0.4rem;
       overflow-x: auto;
-      padding-bottom: 0.3rem;
+      padding-bottom: 0.2rem;
       scrollbar-width: none;
     }
     .category-pills::-webkit-scrollbar { display: none; }
+
     .pill {
       white-space: nowrap;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.75rem;
-      font-weight: 600;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
       border-radius: 9999px;
-      background: #1e293b;
+      background: rgba(30, 41, 59, 0.8);
       color: var(--text-muted);
       border: 1px solid var(--card-border);
       cursor: pointer;
     }
-    .pill:hover { color: var(--text); }
-    .pill.active { background: var(--purple) !important; color: #0b1120 !important; border-color: var(--purple); font-weight: 700; }
-    .filter-bar { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); }
-    .pid-table { display: flex; flex-direction: column; gap: 0.5rem; max-height: 50vh; overflow-y: auto; }
-    .pid-row {
-      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
-      padding: 0.75rem; display: flex; justify-content: space-between; align-items: center;
+    .pill:active { transform: scale(0.95); }
+    .pill.active {
+      background: var(--purple) !important;
+      color: #0b1120 !important;
+      border-color: var(--purple);
+      box-shadow: 0 0 14px rgba(192, 132, 252, 0.4);
     }
-    .pid-row.unsupported { opacity: 0.35; }
-    .pid-info { display: flex; flex-direction: column; gap: 0.15rem; }
-    .pid-code { font-family: monospace; font-size: 0.75rem; color: var(--accent); font-weight: 700; }
-    .pid-name { font-size: 0.85rem; font-weight: 500; }
-    .pid-val-box { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-    .pid-val { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
-    .pid-unit { font-size: 0.7rem; color: var(--text-muted); }
 
-    /* Discovery & Dev Sections */
-    .disc-section {
-      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-      padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem;
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding: 0 0.25rem;
     }
-    .disc-title { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+
+    .pid-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: calc(100vh - 280px);
+      overflow-y: auto;
+    }
+
+    .pid-row {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+    .pid-row.unsupported { opacity: 0.3; }
+
+    .pid-info { display: flex; flex-direction: column; gap: 0.15rem; }
+    .pid-code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--cyan); font-weight: 700; }
+    .pid-name { font-size: 0.95rem; font-weight: 600; }
+    .pid-val-box { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+    .pid-val { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
+    .pid-unit { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+
+    /* ========================================================
+       DISCOVERY & DEV SECTIONS
+       ======================================================== */
+    .disc-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      backdrop-filter: blur(8px);
+    }
+    .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.05em; }
+
     .terminal-row { display: flex; gap: 0.5rem; }
     input[type="text"] {
-      flex: 1; background: #0b1120; border: 1px solid var(--card-border); color: var(--text);
-      padding: 0.5rem; border-radius: 6px; font-family: monospace; text-transform: uppercase;
+      flex: 1;
+      background: #020617;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      text-transform: uppercase;
       user-select: text;
     }
-    .btn-secondary {
-      background: #334155; color: var(--text); padding: 0.5rem 0.85rem; border-radius: 6px;
-      border: none; font-weight: 600; font-size: 0.8rem; cursor: pointer;
-    }
-    .btn-secondary:hover { background: #475569; }
 
-    /* Controls Area */
-    .controls { margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; position: relative; z-index: 10; }
-    .button-group { display: flex; gap: 0.5rem; }
-    button.primary-btn {
-      flex: 2; padding: 0.8rem; font-size: 0.95rem; font-weight: 600; border: none;
-      border-radius: 8px; cursor: pointer; background-color: var(--accent); color: #0b1120;
+    .btn-touch {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid var(--cyan);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
     }
-    button.sim-btn {
-      flex: 1; padding: 0.8rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--purple);
-      border-radius: 8px; cursor: pointer; background: transparent; color: var(--purple);
+    .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
+    .btn-touch.secondary {
+      background: #1e293b;
+      border-color: rgba(255,255,255,0.1);
+      color: var(--text);
     }
-    button.sim-btn.active { background: var(--purple); color: #0b1120; }
-    button.disconnect { background: var(--red); color: white; }
 
+    /* ========================================================
+       BOTTOM COCKPIT TOUCH DOCK (TESLA/APPLE CARPLAY STYLE)
+       ======================================================== */
+    .touch-dock {
+      position: fixed;
+      bottom: 0.75rem;
+      left: 0.75rem;
+      right: 0.75rem;
+      background: rgba(10, 15, 29, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 0.4rem 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.3rem;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      z-index: 100;
+    }
+
+    .dock-btn {
+      flex: 1;
+      padding: 0.6rem 0.2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .dock-btn svg { width: 20px; height: 20px; fill: currentColor; }
+    .dock-btn span { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+    .dock-btn:active { transform: scale(0.92); }
+    .dock-btn.active {
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.12);
+    }
+
+    .dock-action-btn {
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--cyan);
+      color: #05070e;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .dock-action-btn:active { transform: scale(0.94); }
+    .dock-action-btn.disconnect {
+      background: var(--red);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+    }
+
+    /* Live Traffic Terminal */
     #log {
-      font-family: monospace; font-size: 0.75rem; color: var(--text-muted);
-      min-height: 40px; max-height: 60px; overflow-y: auto; background: #020617;
-      padding: 0.4rem; border-radius: 6px; border: 1px solid var(--card-border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      min-height: 40px;
+      max-height: 55px;
+      overflow-y: auto;
+      background: #020617;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
     }
   </style>
 </head>
 <body>
 
+  <!-- Top HUD Header -->
   <header>
-    <h1>OBD-II Pro Suite</h1>
-    <span id="status" class="status-badge">Disconnected</span>
+    <div class="brand-title">
+      <span class="brand-glow"></span>
+      OBD-II COCKPIT
+    </div>
+    <div class="hud-widgets">
+      <span id="status" class="status-badge">DISCONNECTED</span>
+      <button class="btn-hud-icon" onclick="toggleSimulator()" title="Toggle Simulator">⚡</button>
+      <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+    </div>
   </header>
 
-  <!-- Tabs Navigation -->
-  <div class="tabs">
-    <button class="tab-btn active" id="btn-tab-dash" onclick="switchTab('tab-dash')">Dashboard</button>
-    <button class="tab-btn" id="btn-tab-categories" onclick="switchTab('tab-categories')">Categories</button>
-    <button class="tab-btn" id="btn-tab-discovery" onclick="switchTab('tab-discovery')">Discovery</button>
-    <button class="tab-btn" id="btn-tab-dev" onclick="switchTab('tab-dev')">Dev & Logs</button>
-  </div>
-
-  <!-- TAB 1: Live Dashboard -->
+  <!-- ========================================================
+       TAB 1: DIGITAL COCKPIT DASHBOARD
+       ======================================================== -->
   <div id="tab-dash" class="view-panel" style="display: flex;">
-    <div class="grid">
-      <div class="card full-width">
-        <span class="label">Engine RPM</span>
-        <div class="value-container">
-          <span id="val-dash-010C" class="value">--</span>
-          <span class="unit">RPM</span>
+    
+    <!-- Hero Tachometer -->
+    <div class="cockpit-hero">
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="gauge-center-readout">
+          <span id="val-dash-010C" class="gauge-center-val">--</span>
+          <span class="gauge-center-unit">RPM</span>
+        </div>
+        <div id="redline-alert" class="redline-indicator">REDLINE</div>
+      </div>
+    </div>
+
+    <!-- 4 High-Priority Touch Cards -->
+    <div class="cockpit-grid">
+      <!-- Speed (Tap to Toggle Units) -->
+      <div class="touch-card" onclick="toggleSpeedUnits()">
+        <div class="card-top">
+          <span class="card-label">Vehicle Speed</span>
+          <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-010D" class="card-val">--</span>
+          <span id="label-dash-speed-unit" class="card-unit">km/h</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-speed" class="meter-bar-fill"></div>
         </div>
       </div>
-      <div class="card">
-        <span class="label">Vehicle Speed</span>
-        <div class="value-container">
-          <span id="val-dash-010D" class="value">--</span>
-          <span class="unit">km/h</span>
+
+      <!-- Coolant Temp -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Coolant Temp</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-0105" class="card-val">--</span>
+          <span class="card-unit">°C</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-coolant" class="meter-bar-fill"></div>
         </div>
       </div>
-      <div class="card">
-        <span class="label">Coolant Temp</span>
-        <div class="value-container">
-          <span id="val-dash-0105" class="value">--</span>
-          <span class="unit">°C</span>
+
+      <!-- Calculated Engine Load -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Engine Load</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-0104" class="card-val">--</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-load" class="meter-bar-fill"></div>
         </div>
       </div>
-      <div class="card">
-        <span class="label">Engine Load</span>
-        <div class="value-container">
-          <span id="val-dash-0104" class="value">--</span>
-          <span class="unit">%</span>
+
+      <!-- Throttle Position -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Throttle</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-0111" class="card-val">--</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-throttle" class="meter-bar-fill"></div>
         </div>
       </div>
-      <div class="card">
-        <span class="label">Throttle Pos</span>
-        <div class="value-container">
-          <span id="val-dash-0111" class="value">--</span>
-          <span class="unit">%</span>
+
+      <!-- Battery Voltage (Full-Width) -->
+      <div class="touch-card" style="grid-column: span 2;">
+        <div class="card-top">
+          <span class="card-label">ECU / Battery Voltage</span>
         </div>
-      </div>
-      <div class="card full-width">
-        <span class="label">Control Module Voltage</span>
-        <div class="value-container">
-          <span id="val-dash-ATRV" class="value">--</span>
-          <span class="unit">V</span>
+        <div class="card-main">
+          <span id="val-dash-ATRV" class="card-val">--</span>
+          <span class="card-unit">V</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-voltage" class="meter-bar-fill"></div>
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- TAB 2: Categories Tab -->
+  <!-- ========================================================
+       TAB 2: SENSOR CATEGORIES
+       ======================================================== -->
   <div id="tab-categories" class="view-panel">
     <div class="category-pills">
-      <button class="pill active" onclick="filterCategory('all', event)">All PIDs</button>
+      <button class="pill active" onclick="filterCategory('all', event)">All Sensors</button>
       <button class="pill" onclick="filterCategory('engine', event)">Engine</button>
       <button class="pill" onclick="filterCategory('air', event)">Air & Boost</button>
       <button class="pill" onclick="filterCategory('fuel', event)">Fuel System</button>
@@ -262,7 +630,7 @@
 
     <div class="filter-bar">
       <span id="cat-count">Showing 0 PIDs</span>
-      <label style="cursor: pointer;">
+      <label style="cursor: pointer; display:flex; align-items:center; gap:0.3rem;">
         <input type="checkbox" id="chk-supported-only" onchange="renderCategoryList()" /> Supported Only
       </label>
     </div>
@@ -270,81 +638,112 @@
     <div id="category-pid-list" class="pid-table"></div>
   </div>
 
-  <!-- TAB 3: Discovery Tab -->
+  <!-- ========================================================
+       TAB 3: DISCOVERY & VEHICLE INFO
+       ======================================================== -->
   <div id="tab-discovery" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Vehicle Metadata</div>
-      <button class="btn-secondary" onclick="scanVehicleInfo()">Query VIN & Protocol</button>
-      <div style="font-size:0.8rem; line-height:1.5;">
-        <div><strong>VIN:</strong> <span id="info-vin" style="font-family: monospace;">--</span></div>
+      <button class="btn-touch" onclick="scanVehicleInfo()">Read VIN & Protocol</button>
+      <div style="font-size:0.9rem; line-height:1.6;">
+        <div><strong>VIN:</strong> <span id="info-vin" style="font-family:'JetBrains Mono'; color:var(--cyan);">--</span></div>
         <div><strong>Protocol:</strong> <span id="info-proto">--</span></div>
       </div>
     </div>
 
     <div class="disc-section">
-      <div class="disc-title">ECU PID Scanner</div>
-      <button class="btn-secondary" onclick="scanSupportedPIDs()">Scan Supported Bitmasks</button>
-      <div style="font-size:0.8rem;">
-        <div><strong>Supported Count:</strong> <span id="disc-count">0</span> PIDs confirmed by ECU</div>
+      <div class="disc-title">Supported PID Bitmasks</div>
+      <button class="btn-touch secondary" onclick="scanSupportedPIDs()">Query ECU Bitmasks</button>
+      <div style="font-size:0.85rem;">
+        <div><strong>Supported Count:</strong> <span id="disc-count" style="font-weight:700; color:var(--green);">0</span> PIDs confirmed by ECU</div>
       </div>
     </div>
 
     <div class="disc-section">
-      <div class="disc-title">Direct Command Terminal</div>
+      <div class="disc-title">Raw Command Terminal</div>
       <div class="terminal-row">
         <input type="text" id="manual-cmd" placeholder="e.g. 010F or ATRV" />
-        <button class="btn-secondary" onclick="sendManualCommand()">Send</button>
+        <button class="btn-touch" onclick="sendManualCommand()">Send</button>
       </div>
-      <div style="font-size:0.8rem;"><strong>Response:</strong> <span id="manual-res" style="font-family: monospace; color:var(--accent);">--</span></div>
+      <div style="font-size:0.85rem;"><strong>Response:</strong> <span id="manual-res" style="font-family:'JetBrains Mono'; color:var(--cyan);">--</span></div>
     </div>
   </div>
 
-  <!-- TAB 4: Dev & Logs Tab -->
+  <!-- ========================================================
+       TAB 4: DEV & DIAGNOSTIC AUDIT
+       ======================================================== -->
   <div id="tab-dev" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Automated PID Sweep & Audit</div>
       <div style="display: flex; gap: 0.5rem;">
-        <button class="btn-secondary" style="flex:1;" onclick="runPIDAudit()">Run Full Audit</button>
-        <button class="btn-secondary" style="flex:1;" id="btn-export-csv" onclick="exportAuditCSV()" disabled>Export CSV</button>
+        <button class="btn-touch" style="flex:1;" onclick="runPIDAudit()">Run Full Audit</button>
+        <button class="btn-touch secondary" style="flex:1;" id="btn-export-csv" onclick="exportAuditCSV()" disabled>Export CSV</button>
       </div>
-      <div id="audit-progress" style="font-size:0.75rem; color:var(--accent);">Ready for audit</div>
+      <div id="audit-progress" style="font-size:0.8rem; color:var(--cyan);">Ready for audit</div>
     </div>
 
     <div class="disc-section">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <div class="disc-title">Raw TX / RX Packet Sniffer</div>
-        <button class="btn-secondary" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="clearPacketLog()">Clear</button>
+        <button class="btn-touch secondary" style="padding:0.3rem 0.6rem; font-size:0.75rem;" onclick="clearPacketLog()">Clear</button>
       </div>
-      <div id="packet-sniffer" style="background:#020617; border-radius:6px; padding:0.5rem; font-family:monospace; font-size:0.7rem; max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:0.2rem;">
+      <div id="packet-sniffer" style="background:#020617; border-radius:8px; padding:0.6rem; font-family:'JetBrains Mono'; font-size:0.75rem; max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:0.25rem;">
         <div style="color:var(--text-muted);">Sniffer ready. Traffic will appear here...</div>
       </div>
     </div>
 
     <div class="disc-section">
-      <div class="disc-title">Audit Results Summary (<span id="audit-count">0</span> verified)</div>
+      <div class="disc-title">Audit Results (<span id="audit-count">0</span> verified)</div>
       <div id="audit-table" class="pid-table" style="max-height:160px;">
-        <div style="color:var(--text-muted); font-size:0.75rem;">Run the audit to see verified PIDs...</div>
+        <div style="color:var(--text-muted); font-size:0.8rem;">Run the audit to see verified PIDs...</div>
       </div>
     </div>
   </div>
 
-  <!-- Controls Area -->
-  <div class="controls">
-    <div class="button-group">
-      <button id="btn-connect" class="primary-btn" onclick="handleConnectClick()">Connect BLE OBD-II</button>
-      <button id="btn-sim" class="sim-btn" onclick="toggleSimulator()">Simulation</button>
-    </div>
-    <div id="log">Ready to connect...</div>
+  <!-- Real-time Live Log Box -->
+  <div style="margin-top:0.75rem;">
+    <div id="log">System initialized. Touch Connect to start.</div>
+  </div>
+
+  <!-- ========================================================
+       BOTTOM COCKPIT TOUCH DOCK
+       ======================================================== -->
+  <div class="touch-dock">
+    <!-- Dock Navigation Items -->
+    <button class="dock-btn active" id="btn-tab-dash" onclick="switchTab('tab-dash')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+      <span>Cockpit</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-categories" onclick="switchTab('tab-categories')">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+      <span>Sensors</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-discovery" onclick="switchTab('tab-discovery')">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      <span>Discovery</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-dev" onclick="switchTab('tab-dev')">
+      <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+      <span>Dev & Logs</span>
+    </button>
+
+    <!-- Connect Action Button -->
+    <button id="btn-connect" class="dock-action-btn" onclick="handleConnectClick()">
+      <span>Connect</span>
+    </button>
   </div>
 
   <script>
-    // Global Error Logger for UI Display
+    // Global Error Handler
     window.onerror = function(msg, url, line) {
       const logBox = document.getElementById('log');
-      if (logBox) logBox.innerText = 'Error: ' + msg + ' (line ' + line + ')';
+      if (logBox) logBox.innerText = 'Error: ' + msg + ' (L' + line + ')';
       return false;
     };
 
+    /* ==========================================================
+       PID REGISTRY & FORMULAS
+       ========================================================== */
     const PID_REGISTRY = {
       // ENGINE
       "0104": { cat: "engine", name: "Calculated Engine Load", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
@@ -399,6 +798,7 @@
       }}
     };
 
+    /* State Variables */
     let bleDevice = null;
     let writeChar = null;
     let readChar = null;
@@ -407,6 +807,7 @@
     let isSimulator = false;
     let activeTab = 'tab-dash';
     let currentCategory = 'all';
+    let speedUnit = 'kmh'; // 'kmh' or 'mph'
     let supportedPIDs = new Set(["010C", "010D", "0105", "0104", "0111", "ATRV"]);
     let auditResults = [];
 
@@ -418,29 +819,18 @@
       console.log(msg);
     }
 
-    // Direct, explicit tab switching
+    /* Tab Switching */
     window.switchTab = function(tabId) {
       activeTab = tabId;
-
-      // 1. Update tab button styles
       const tabs = ['tab-dash', 'tab-categories', 'tab-discovery', 'tab-dev'];
+      
       tabs.forEach(t => {
         const btn = document.getElementById('btn-' + t);
-        if (btn) {
-          if (t === tabId) btn.classList.add('active');
-          else btn.classList.remove('active');
-        }
-      });
+        if (btn) btn.classList.toggle('active', t === tabId);
 
-      // 2. Explicitly toggle visibility
-      tabs.forEach(t => {
         const panel = document.getElementById(t);
-        if (panel) {
-          panel.style.display = (t === tabId) ? 'flex' : 'none';
-        }
+        if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
-
-      log("Switched to tab: " + tabId.replace('tab-', ''));
 
       if (tabId === 'tab-categories') renderCategoryList();
       if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && (tabId === 'tab-dash' || tabId === 'tab-categories')) {
@@ -448,6 +838,24 @@
       }
     };
 
+    /* Speed Unit Toggle */
+    window.toggleSpeedUnits = function() {
+      speedUnit = (speedUnit === 'kmh') ? 'mph' : 'kmh';
+      document.getElementById('speed-unit-tag').innerText = speedUnit.toUpperCase();
+      document.getElementById('label-dash-speed-unit').innerText = (speedUnit === 'kmh') ? 'km/h' : 'mph';
+      log(`Speed units changed to: ${speedUnit.toUpperCase()}`);
+    };
+
+    /* Fullscreen Toggle */
+    window.toggleFullscreen = function() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
+
+    /* Category Rendering */
     window.filterCategory = function(cat, evt) {
       currentCategory = cat;
       document.querySelectorAll('.category-pills .pill').forEach(p => p.classList.remove('active'));
@@ -487,6 +895,7 @@
       if (countEl) countEl.innerText = `Showing ${count} PIDs`;
     };
 
+    /* Bluetooth Engine */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -496,7 +905,7 @@
       if (isSimulator) toggleSimulator();
       try {
         if (!navigator.bluetooth) {
-          throw new Error("Web Bluetooth not available in this browser. Use Bluefy on iOS or Chrome with experimental flags.");
+          throw new Error("Web Bluetooth unavailable. Use Bluefy on iOS or Chrome with Web Bluetooth enabled.");
         }
 
         log("Requesting BLE OBD-II device...");
@@ -513,7 +922,7 @@
         for (const uuid of SERVICE_UUIDS) {
           try { service = await server.getPrimaryService(uuid); if (service) break; } catch (e) {}
         }
-        if (!service) throw new Error("No UART service found.");
+        if (!service) throw new Error("No UART BLE service found.");
 
         const chars = await service.getCharacteristics();
         for (const char of chars) {
@@ -521,14 +930,14 @@
           if (char.properties.notify || char.properties.indicate) readChar = char;
         }
 
-        if (!writeChar || !readChar) throw new Error("UART TX/RX characteristics not found.");
+        if (!writeChar || !readChar) throw new Error("UART characteristics not resolved.");
 
         await readChar.startNotifications();
         readChar.addEventListener('characteristicvaluechanged', handleNotification);
 
         const statusEl = document.getElementById('status');
         const btnConnect = document.getElementById('btn-connect');
-        if (statusEl) { statusEl.innerText = "Connected"; statusEl.className = "status-badge connected"; }
+        if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
         if (btnConnect) { btnConnect.innerText = "Disconnect"; btnConnect.classList.add("disconnect"); }
 
         log("Initializing ELM327 protocol...");
@@ -550,8 +959,8 @@
       isPolling = false;
       const statusEl = document.getElementById('status');
       const btnConnect = document.getElementById('btn-connect');
-      if (statusEl) { statusEl.innerText = "Disconnected"; statusEl.className = "status-badge"; }
-      if (btnConnect) { btnConnect.innerText = "Connect BLE OBD-II"; btnConnect.classList.remove("disconnect"); }
+      if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+      if (btnConnect) { btnConnect.innerText = "Connect"; btnConnect.classList.remove("disconnect"); }
       log("Disconnected.");
     }
 
@@ -572,7 +981,7 @@
     async function sendCommand(cmd, timeoutMs = 2500) {
       if (isSimulator) {
         return new Promise(resolve => {
-          setTimeout(() => resolve(getSimulatedResponse(cmd)), 40);
+          setTimeout(() => resolve(getSimulatedResponse(cmd)), 35);
         });
       }
 
@@ -606,7 +1015,7 @@
       if (!sniffer) return;
       const time = new Date().toISOString().substring(11, 23);
       const entry = document.createElement('div');
-      entry.style.color = dir === 'TX' ? 'var(--accent)' : 'var(--green)';
+      entry.style.color = dir === 'TX' ? 'var(--cyan)' : 'var(--green)';
       entry.innerText = `[${time}] ${dir === 'TX' ? '➜ TX' : '🠔 RX'}: ${msg}`;
       sniffer.appendChild(entry);
       sniffer.scrollTop = sniffer.scrollHeight;
@@ -625,6 +1034,7 @@
       await sendCommand("ATSP0");
     }
 
+    /* Continuous Polling Engine */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
@@ -647,11 +1057,12 @@
             updatePIDValue(cmd, res, 'cat');
           }
         }
-        await new Promise(r => setTimeout(r, 60));
+        await new Promise(r => setTimeout(r, 45));
       }
       isPolling = false;
     }
 
+    /* Live Telemetry Value Updates & Gauge Animation */
     function updatePIDValue(cmd, raw, prefix) {
       const def = PID_REGISTRY[cmd];
       if (!def) return;
@@ -673,10 +1084,75 @@
         }
       }
 
+      if (val === '--' || isNaN(val)) return;
+
+      // Update Text Readout
+      let displayVal = val;
+      if (cmd === '010D' && speedUnit === 'mph') {
+        displayVal = Math.round(val * 0.621371);
+      }
+
       const el = document.getElementById(`val-${prefix}-${cmd}`);
-      if (el && !isNaN(val)) el.innerText = val;
+      if (el) el.innerText = displayVal;
+
+      // Update Visual Meters on Cockpit Tab
+      if (prefix === 'dash') {
+        if (cmd === '010C') { // RPM Tachometer
+          updateTachometer(val);
+        } else if (cmd === '010D') { // Speed Bar
+          const pct = Math.min(100, (val / 220) * 100);
+          const bar = document.getElementById('bar-speed');
+          if (bar) bar.style.width = pct + '%';
+        } else if (cmd === '0105') { // Coolant Bar
+          const pct = Math.min(100, Math.max(0, (val / 120) * 100));
+          const bar = document.getElementById('bar-coolant');
+          if (bar) {
+            bar.style.width = pct + '%';
+            bar.style.background = val > 105 ? 'var(--red)' : val > 95 ? 'var(--amber)' : 'var(--cyan)';
+          }
+        } else if (cmd === '0104') { // Engine Load Bar
+          const bar = document.getElementById('bar-load');
+          if (bar) bar.style.width = val + '%';
+        } else if (cmd === '0111') { // Throttle Bar
+          const bar = document.getElementById('bar-throttle');
+          if (bar) bar.style.width = val + '%';
+        } else if (cmd === 'ATRV') { // Voltage Bar
+          const numV = parseFloat(val);
+          const pct = Math.min(100, Math.max(0, ((numV - 10) / 5) * 100));
+          const bar = document.getElementById('bar-voltage');
+          if (bar) bar.style.width = pct + '%';
+        }
+      }
     }
 
+    function updateTachometer(rpm) {
+      const maxRPM = 7000;
+      const arcLength = 293.2; // Circumference slice for 240 deg arc
+      const pct = Math.min(1, Math.max(0, rpm / maxRPM));
+      const offset = arcLength - (pct * arcLength);
+
+      const bar = document.getElementById('gauge-rpm-bar');
+      const redlineEl = document.getElementById('redline-alert');
+
+      if (bar) {
+        bar.style.strokeDashoffset = offset;
+        if (rpm >= 5800) {
+          bar.style.stroke = 'var(--redline)';
+          bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
+          if (redlineEl) redlineEl.classList.add('active');
+        } else if (rpm >= 4200) {
+          bar.style.stroke = 'var(--amber)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
+          if (redlineEl) redlineEl.classList.remove('active');
+        } else {
+          bar.style.stroke = 'var(--cyan)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--cyan))';
+          if (redlineEl) redlineEl.classList.remove('active');
+        }
+      }
+    }
+
+    /* Discovery & Scanning */
     window.scanSupportedPIDs = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
       isPolling = false;
@@ -727,7 +1203,7 @@
       const vinRes = await sendCommand("0902");
       const vin = parseVIN(vinRes);
       const vinEl = document.getElementById('info-vin');
-      if (vinEl) vinEl.innerText = vin || "VIN PID not supported by vehicle.";
+      if (vinEl) vinEl.innerText = vin || "VIN not broadcasted by vehicle.";
       log("Vehicle query complete.");
     };
 
@@ -768,6 +1244,7 @@
       if (resEl) resEl.innerText = res;
     };
 
+    /* Dev & Audit Sweep */
     window.runPIDAudit = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect or enable Simulation first.");
       isPolling = false;
@@ -830,11 +1307,11 @@
           row.className = 'pid-row';
           row.innerHTML = `
             <div class="pid-info">
-              <div><strong style="color:var(--accent); font-family:monospace;">${cmd}</strong> ${def.name}</div>
-              <div style="font-size:0.7rem; color:var(--text-muted); font-family:monospace;">RAW: ${record.rawHex} | ${rtt}ms</div>
+              <div><strong style="color:var(--cyan); font-family:'JetBrains Mono';">${cmd}</strong> ${def.name}</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); font-family:'JetBrains Mono';">RAW: ${record.rawHex} | ${rtt}ms</div>
             </div>
             <div class="pid-val-box">
-              <span class="pid-val" style="color:${status === 'SUCCESS' ? 'var(--green)' : 'var(--red)'}; font-size:0.9rem;">
+              <span class="pid-val" style="color:${status === 'SUCCESS' ? 'var(--green)' : 'var(--red)'}; font-size:0.95rem;">
                 ${status === 'SUCCESS' ? `${parsedVal} ${def.unit}` : status}
               </span>
             </div>
@@ -865,23 +1342,21 @@
       document.body.removeChild(link);
     };
 
+    /* Simulation Mode */
     window.toggleSimulator = function() {
       isSimulator = !isSimulator;
       const statusEl = document.getElementById('status');
-      const btnSim = document.getElementById('btn-sim');
 
       if (isSimulator) {
         if (bleDevice?.gatt?.connected) disconnect();
-        if (statusEl) { statusEl.innerText = "Simulated"; statusEl.className = "status-badge simulated"; }
-        if (btnSim) btnSim.classList.add("active");
-        log("Simulator active: Generating synthetic ECU data.");
+        if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
+        log("Simulator active: Streaming dynamic test telemetry.");
         Object.keys(PID_REGISTRY).forEach(pid => supportedPIDs.add(pid));
         renderCategoryList();
         startPolling();
       } else {
         isPolling = false;
-        if (statusEl) { statusEl.innerText = "Disconnected"; statusEl.className = "status-badge"; }
-        if (btnSim) btnSim.classList.remove("active");
+        if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
         log("Simulator deactivated.");
       }
     };
@@ -889,7 +1364,7 @@
     function getSimulatedResponse(cmd) {
       if (cmd.startsWith("AT")) {
         if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
-        if (cmd === "ATRV") return (13.4 + Math.sin(Date.now() / 3000) * 0.4).toFixed(1) + "V";
+        if (cmd === "ATRV") return (13.6 + Math.sin(Date.now() / 2500) * 0.4).toFixed(1) + "V";
         return "OK";
       }
       if (cmd === "0902") return "49 02 01 31 46 41 46 50 35 33 55 31 38 41 31 30 39 30 38 31";
@@ -900,25 +1375,25 @@
       const time = Date.now() / 1000;
       switch (cmd) {
         case "010C": {
-          const rpm = Math.round(1800 + Math.sin(time) * 1000);
+          const rpm = Math.round(2600 + Math.sin(time * 0.9) * 2200);
           const raw = rpm * 4;
           const a = (raw >> 8) & 0xFF, b = raw & 0xFF;
           return `41 0C ${a.toString(16).padStart(2,'0')} ${b.toString(16).padStart(2,'0')}`;
         }
         case "010D": {
-          const speed = Math.round(50 + Math.sin(time * 0.5) * 35);
+          const speed = Math.round(65 + Math.sin(time * 0.4) * 45);
           return `41 0D ${speed.toString(16).padStart(2,'0')}`;
         }
         case "0105": {
-          const temp = Math.round(90 + Math.sin(time * 0.1) * 2) + 40;
+          const temp = Math.round(92 + Math.sin(time * 0.1) * 4) + 40;
           return `41 05 ${temp.toString(16).padStart(2,'0')}`;
         }
         case "0104": {
-          const load = Math.round((45 + Math.sin(time * 0.8) * 20) * 255 / 100);
+          const load = Math.round((55 + Math.sin(time * 0.7) * 25) * 255 / 100);
           return `41 04 ${load.toString(16).padStart(2,'0')}`;
         }
         case "0111": {
-          const thr = Math.round((25 + Math.sin(time * 0.8) * 15) * 255 / 100);
+          const thr = Math.round((35 + Math.sin(time * 0.7) * 25) * 255 / 100);
           return `41 11 ${thr.toString(16).padStart(2,'0')}`;
         }
         default: {
