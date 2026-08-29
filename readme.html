@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yamaha RMAX 1000 CAN Telemetry & ECU Reverse-Engineering Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #38bdf8;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --purple: #c084fc;
+      --code-bg: #030712;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 0.75rem;
+    }
+
+    .meta {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #fff;
+      border-left: 4px solid var(--accent);
+      padding-left: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 1.5rem 0 0.75rem 0;
+    }
+
+    p { margin-bottom: 1rem; color: #d1d5db; }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      background: var(--card-bg);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+
+    th {
+      background: #1f2937;
+      color: #fff;
+      font-weight: 700;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--card-border);
+      color: #e5e7eb;
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Code & Blocks */
+    pre, code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent);
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: #e5e7eb;
+      margin: 1rem 0;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .callout.warn { border-left-color: var(--amber); }
+    .callout.success { border-left-color: var(--green); }
+    .callout-title { font-weight: 700; margin-bottom: 0.35rem; color: #fff; font-size: 0.95rem; }
+
+    /* Key-Value Specs */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .spec-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .spec-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .spec-val { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
+
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding-top: 2rem;
+      margin-top: 4rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <span class="badge">Official Protocol & Telemetry Documentation</span>
+      <h1>2025 Yamaha Wolverine RMAX 1000<br>ECU Telemetry & Reverse-Engineering Guide</h1>
+      <div class="meta">
+        <div><strong>Author:</strong> Research & Engineering Log</div>
+        <div><strong>Target:</strong> Yamaha RMAX 1000 (Mitsubishi/Denso ECU)</div>
+        <div><strong>Protocol:</strong> ISO 15765-4 CAN (11-bit / 500kbaud)</div>
+        <div><strong>Diagnostic Layer:</strong> UDS / ISO 14229 (Mode 21)</div>
+      </div>
+    </header>
+
+    <!-- SECTION 1: Architecture -->
+    <section>
+      <h2>1. Architecture & Diagnostic Layer Overview</h2>
+      <p>
+        Standard passenger cars mandate <strong>SAE J1979 Service 01</strong> for emissions reporting. 
+        Powersports vehicles like the <strong>Yamaha Wolverine RMAX 1000</strong> are not bound by automotive OBD-II rules and will reject generic automotive broadcast requests:
+      </p>
+      
+      <div class="callout warn">
+        <div class="callout-title">⚠️ Why Standard Automotive OBD-II Apps Fail on Yamaha</div>
+        When querying standard passenger car Mode 01 (e.g. <code>01 0C</code> for RPM), the Yamaha ECU responds with:
+        <br><code>7F 01 11</code> &rarr; <strong>Negative Response (NRC 0x11: serviceNotSupported)</strong>.
+        <br>Yamaha ECUs communicate via <strong>UDS (ISO 14229) Service 21 (ReadDataByLocalIdentifier)</strong> with physical header addressing.
+      </div>
+
+      <div class="spec-grid">
+        <div class="spec-card">
+          <div class="spec-label">CAN Bus Standard</div>
+          <div class="spec-val">ISO 15765-4 (CAN 11/500)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">Engine ECU Address</div>
+          <div class="spec-val">0x7E0 (Header: ATSH 7E0)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">Primary Telemetry LID</div>
+          <div class="spec-val">Service 21 (LID 0x01)</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">Payload Size</div>
+          <div class="spec-val">26 Bytes (Multi-Frame)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: ELM327 Config -->
+    <section>
+      <h2>2. ELM327 / BLE Adapter Configuration</h2>
+      <p>
+        To communicate with the Yamaha RMAX via an ELM327 BLE dongle, send this initialization sequence to lock the baud rate, configure direct ECU addressing, and optimize buffer timing:
+      </p>
+
+      <pre><code>// 1. Flush & Reset
+AT D          // Restore Factory Defaults
+AT Z          // Cold Reset (Wait 500ms for MCU reboot)
+
+// 2. Formatting & Optimization
+AT E0         // Echo Off
+AT L0         // Linefeeds Off
+AT S0         // Spaces Off (Produces contiguous hex output)
+AT H0         // Headers Off
+AT AT 2       // Adaptive Timing Level 2 (Aggressive, prevents timeouts)
+AT ST FF      // Maximum Internal ELM327 Timeout
+
+// 3. Yamaha Protocol & Physical Addressing
+AT SP 6       // Set Protocol to ISO 15765-4 CAN (11-bit ID, 500 kbaud)
+AT SH 7E0     // Set Transmit Header to 7E0 (Direct Engine ECU Address)</code></pre>
+    </section>
+
+    <!-- SECTION 3: Multi-Frame ISO-TP -->
+    <section>
+      <h2>3. ISO-TP Multi-Frame Defragmentation</h2>
+      <p>
+        When you query <code>21 01</code>, the Yamaha ECU returns a 26-byte payload. Because standard CAN frames hold a maximum of 8 bytes, the ELM327 delivers the response formatted into <strong>ISO-TP consecutive multi-frame lines</strong>:
+      </p>
+
+      <pre><code>// Raw multi-frame response from Yamaha ECU:
+01A 0:610104F90004 1:2300C522052100 2:0200CF75396C00 3:C18082048000AA
+
+// Frame Breakdown:
+01A               -> PCI Length (0x1A = 26 Bytes Total Payload)
+0: 61 01 04 F9 00 04  -> First Frame (Service 0x61, LID 0x01 + First 4 Bytes)
+1: 23 00 C5 22 05 21 00 -> Consecutive Frame 1 (7 Bytes)
+2: 02 00 CF 75 39 6C 00 -> Consecutive Frame 2 (7 Bytes)
+3: C1 80 82 04 80 00 AA -> Consecutive Frame 3 (7 Bytes)</code></pre>
+
+      <h3>Defragmentation Logic (JavaScript)</h3>
+      <pre><code>function defragmentISOTP(rawResponse) {
+  let hexStream = '';
+  const lines = rawResponse.split(/[\r\n]+/);
+  
+  for (const line of lines) {
+    const clean = line.replace(/\s+/g, '');
+    const match = clean.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+    if (match && match[1]) {
+      hexStream += match[1];
+    }
+  }
+  
+  // Extract 26 bytes following the 6101 response header
+  const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
+  const bytes = [];
+  for (let i = 0; i < payloadHex.length; i += 2) {
+    bytes.push(parseInt(payloadHex.substr(i, 2), 16));
+  }
+  return bytes; // Returns Array[0..25]
+}</code></pre>
+    </section>
+
+    <!-- SECTION 4: The Master Byte Map -->
+    <section>
+      <h2>4. Master Decoded Telemetry Map (Payload `21 01`)</h2>
+      <p>
+        Every byte in the 26-byte payload correlates with Yamaha's factory diagnostic registers (<code>d:01</code> to <code>d:64</code>). Here are the verified offsets, physical units, and scaling formulas:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Byte Offset</th>
+              <th>Yamaha Item</th>
+              <th>Sensor / Metric Name</th>
+              <th>Raw Range</th>
+              <th>Decoded Physical Value / Formula</th>
+              <th>Notes / Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Byte 0 & 1</code></td>
+              <td><code>Engine RPM</code></td>
+              <td>Crankshaft Engine Speed</td>
+              <td><code>0x0000..0x2500</code></td>
+              <td><code>(B0 * 256) + B1</code> (RPM)</td>
+              <td>1:1 RPM. Captured 1,273 RPM at warm idle; 3,320 RPM on throttle blip.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 2 & 3</code></td>
+              <td><code>d:07</code></td>
+              <td>Ground Speed / Wheel Pulses</td>
+              <td><code>0x0000..0x03E8</code></td>
+              <td><code>((B2 * 256) + B3) / 10</code> (km/h)</td>
+              <td>Divide by 10 for km/h; multiply by 0.621371 for MPH.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 4</code></td>
+              <td><code>d:06</code></td>
+              <td>Engine Coolant Temp (ECT)</td>
+              <td><code>0x14..0x78</code></td>
+              <td><code>B4</code> (°C)</td>
+              <td>Direct Celsius. <code>0x23</code> = 35°C (warmup), climbing to <code>0x47</code> = 71°C.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 5 & 6</code></td>
+              <td><code>d:03</code></td>
+              <td>Intake Manifold Pressure (MAP)</td>
+              <td><code>0x0000..0x03FF</code></td>
+              <td><code>(B5 * 256) + B6</code> (mbar / kPa)</td>
+              <td>Engine vacuum drops to ~190–200 mbar at idle; spikes on throttle blip.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 7</code></td>
+              <td><code>APS Track 1</code></td>
+              <td>Accelerator Gas Pedal Position</td>
+              <td><code>0x23..0xC5</code></td>
+              <td><code>((B7 - 35) / 162) * 100</code> (%)</td>
+              <td>Dual-channel DBW. <code>0x23</code> = 0.0% (released), <code>0xC5</code> = 100.0% (WOT).</td>
+            </tr>
+            <tr>
+              <td><code>Byte 8</code></td>
+              <td><code>APS Track 2</code></td>
+              <td>Accelerator Pedal Sub-Track</td>
+              <td><code>0x06..0xA8</code></td>
+              <td><code>((B8 - 6) / 162) * 100</code> (%)</td>
+              <td>Redundant safety channel for throttle pedal validation.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 9</code></td>
+              <td><code>d:01 (TPS)</code></td>
+              <td>Electronic Throttle Body Blade</td>
+              <td><code>0x21..0xD2</code></td>
+              <td><code>((B9 - 33) / 177) * 100</code> (%)</td>
+              <td>Motorized throttle plate angle. <code>0x21</code> (33) = idle, <code>0xD2</code> (210) = wide open.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 10</code></td>
+              <td><code>d:13 (TPS 2)</code></td>
+              <td>Throttle Body Sub-Position</td>
+              <td><code>0x00..0xB0</code></td>
+              <td><code>((B10 - 0) / 176) * 100</code> (%)</td>
+              <td>Sub-channel throttle blade verification.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 11</code></td>
+              <td><code>d:08</code></td>
+              <td>Tip-Over / Roll Sensor</td>
+              <td><code>0x02 / 0x04</code></td>
+              <td>Angle State</td>
+              <td><code>0x02/0x04</code> = Machine upright / normal.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 13</code></td>
+              <td><code>d:09</code></td>
+              <td>ECU Reference Sensor</td>
+              <td><code>0xCF</code></td>
+              <td>Internal Constant</td>
+              <td>Static <code>0xCF</code> reference voltage marker.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 18</code></td>
+              <td><code>Switches</code></td>
+              <td>Master Switch Register</td>
+              <td><code>0xC1</code></td>
+              <td>Bitmask (Brake / Neutral)</td>
+              <td>Bit 0 (<code>0x01</code>) = Neutral Switch input active.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 19</code></td>
+              <td><code>d:20 (Gear)</code></td>
+              <td>Transmission Shifter Position</td>
+              <td><code>0x80 / 0x81 / 0x82</code></td>
+              <td>
+                <code>0x82</code> = <strong>High (H)</strong><br>
+                <code>0x81</code> = <strong>Low (L)</strong><br>
+                <code>0x80</code> = <strong>Neutral (N) / Reverse (R)</strong>
+              </td>
+              <td>Verified across multiple shifter cycles on 2025 RMAX.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 20</code></td>
+              <td><code>D-MODE</code></td>
+              <td>Yamaha D-Mode Drive Selector</td>
+              <td><code>0x80 / 0x81 / 0x82</code></td>
+              <td>
+                <code>0x82</code> = <span style="color:var(--amber); font-weight:700;">CRAWL</span><br>
+                <code>0x81</code> = <span style="color:var(--cyan); font-weight:700;">TRAIL</span><br>
+                <code>0x80</code> = <span style="color:var(--red); font-weight:700;">SPORT</span>
+              </td>
+              <td>Exact match during dash switch sweeps.</td>
+            </tr>
+            <tr>
+              <td><code>Byte 21</code></td>
+              <td><code>Brakes</code></td>
+              <td>Dual Brake Status Register</td>
+              <td><code>Bit 2 & Bit 4</code></td>
+              <td>
+                <code>(B21 & 0x04) == 0x04</code> &rarr; <strong>P-Brake Hand Lever ON</strong><br>
+                <code>(B21 & 0x10) == 0x10</code> &rarr; <strong>Foot Brake Pedal ON</strong>
+              </td>
+              <td>Captures both the mechanical handbrake and hydraulic foot switch independently.</td>
+            </tr>
+            <tr>
+              <td><code>ATRV</code></td>
+              <td><code>Battery</code></td>
+              <td>ELM327 Voltage Sense</td>
+              <td><code>12.0V..15.2V</code></td>
+              <td>Direct ADC Voltage (V)</td>
+              <td>13.8V key ON; 15.0V with engine alternator charging.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 5: Auxiliary DIDs -->
+    <section>
+      <h2>5. Auxiliary Discovered Payloads</h2>
+      <p>
+        In addition to <code>21 01</code>, our investigation identified these active UDS Local Identifiers and Data Identifiers:
+      </p>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>ECU Module</th>
+              <th>Discovered Raw Payload</th>
+              <th>Function / Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>21 40</code></td>
+              <td>Differential / Chassis MCU</td>
+              <td><code>61 40 00 80</code></td>
+              <td>Chassis / 4WD differential controller status.</td>
+            </tr>
+            <tr>
+              <td><code>21 41</code></td>
+              <td>Body Control Unit</td>
+              <td><code>61 41 00 80</code></td>
+              <td>Lighting / Accessory circuit states.</td>
+            </tr>
+            <tr>
+              <td><code>21 64</code></td>
+              <td>Extended Status Matrix</td>
+              <td><code>61 64 00 48 00 1D ... (25 Bytes)</code></td>
+              <td>Multi-byte differential locker status block (Turf Mode, 4WD, Diff-Lock).</td>
+            </tr>
+            <tr>
+              <td><code>22 F1 90</code></td>
+              <td>Vehicle Metadata</td>
+              <td><code>62 F1 90 00 00 ...</code></td>
+              <td>UDS Standard VIN / Calibration ID Container.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 6: Methodology -->
+    <section>
+      <h2>6. Delta-Testing Reverse Engineering Methodology</h2>
+      <p>
+        To discover and verify unknown byte offsets on any powersports vehicle:
+      </p>
+      
+      <ol style="padding-left: 1.5rem; color: #d1d5db; line-height: 1.8;">
+        <li><strong>Isolate One Variable at a Time:</strong> Keep the vehicle stationary and change only one input (e.g. step on the gas pedal with engine off, pull the handbrake, or shift one gear).</li>
+        <li><strong>Sample at Constant Rate:</strong> Capture consecutive frames at 5–10 FPS using the Flight Recorder.</li>
+        <li><strong>Run Variance Analysis:</strong> Calculate $\Delta = \text{Max} - \text{Min}$ across all byte offsets. Any byte with $\Delta = 0$ is static; bytes with $\Delta > 0$ correlate directly with your action.</li>
+        <li><strong>Normalize Scale:</strong> Use the minimum observed byte value as 0% and maximum observed byte value as 100%:
+          <br><code>Percentage = ((RawByte - MinValue) / (MaxValue - MinValue)) * 100</code>
+        </li>
+      </ol>
+    </section>
+
+    <!-- SECTION 7: Setup Guide -->
+    <section>
+      <h2>7. Web Bluetooth & iOS Bluefy Setup</h2>
+      <div class="callout success">
+        <div class="callout-title">📱 Zero-Install iOS Web App Deployment</div>
+        This architecture runs entirely in client-side HTML5/JavaScript hosted on <strong>GitHub Pages over HTTPS</strong> and connects directly to BLE dongles through the <strong>Bluefy browser</strong> on iPhone/iPad.
+      </div>
+
+      <pre><code>// Essential Web Bluetooth requestDevice configuration for Bluefy compatibility:
+const bleDevice = await navigator.bluetooth.requestDevice({
+  acceptAllDevices: true,
+  optionalServices: [
+    '0000fff0-0000-1000-8000-00805f9b34fb', // Veepeak BLE
+    '0000ffe0-0000-1000-8000-00805f9b34fb', // Vgate iCar BLE
+    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'  // Nordic UART Service (NUS)
+  ]
+});
+
+// Note: Always use characteristic.writeValueWithoutResponse() on BLE UART dongles
+// to prevent iOS CoreBluetooth write timeouts.</code></pre>
+    </section>
+
+    <footer>
+      <div>Yamaha RMAX Telemetry Project &bull; Documented 2026</div>
+      <div>Compatible with 2020–2026 Yamaha Wolverine RMAX 1000 Models</div>
+    </footer>
+  </div>
+
+</body>
+</html>
