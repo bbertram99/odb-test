@@ -113,7 +113,7 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
     @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
 
-    /* Live Status Strip (Gear, Drive Mode, Brake Light) */
+    /* Live Status Strip */
     .drive-status-strip {
       display: flex;
       gap: 0.5rem;
@@ -130,21 +130,15 @@
       align-items: center;
       backdrop-filter: blur(8px);
     }
-    .status-pill-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
     .status-pill-val { font-size: 1.4rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
     .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
     .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
     .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
 
-    .status-pill-val.brake-on {
-      color: var(--red) !important;
-      text-shadow: 0 0 12px var(--red);
-      font-weight: 900;
-    }
-    .status-pill-val.brake-off {
-      color: rgba(255, 255, 255, 0.2);
-    }
+    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
+    .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.2); }
 
     /* Touch Metric Cards */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
@@ -170,6 +164,40 @@
     }
     .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
 
+    /* Interactive Instruction Box */
+    .instruction-card {
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 10px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+    }
+    .inst-header {
+      font-weight: 800;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .inst-state {
+      background: rgba(245, 158, 11, 0.15);
+      border-left: 3px solid var(--amber);
+      padding: 0.3rem 0.5rem;
+      border-radius: 4px;
+      color: #fff;
+      font-weight: 600;
+    }
+    .inst-steps {
+      color: var(--text);
+      line-height: 1.4;
+      padding-left: 1rem;
+    }
+
     .btn-touch {
       background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem;
       border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
@@ -180,8 +208,8 @@
     .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; }
 
     select {
-      background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.6rem;
-      border-radius: 8px; font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; font-weight: 600;
+      background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.65rem;
+      border-radius: 8px; font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700;
     }
 
     .terminal-box {
@@ -240,7 +268,7 @@
         <span class="brand-glow"></span>
         RMAX COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.4.0</span>
+      <span class="version-tag" id="app-version-badge">v1.5.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -267,7 +295,7 @@
       </div>
     </div>
 
-    <!-- Live Transmission, Drive Mode, and Brake Light Strip -->
+    <!-- Live Status Strip -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -357,33 +385,36 @@
     </div>
   </div>
 
-  <!-- TAB 2: Telemetry Flight Recorder -->
+  <!-- TAB 2: Guided Flight Recorder & Cumulative Logger -->
   <div id="tab-recorder" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Session Flight Recorder</div>
-      <p style="font-size:0.75rem; color:var(--text-muted);">
-        Target <strong>21 40</strong> or <strong>21 64</strong> to capture the 2025 Turf / 4WD / Diff-Lock switch register.
-      </p>
+      <div class="disc-title">Guided Test Flight Recorder</div>
       
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.4rem;">
-        <div>
-          <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TARGET PAYLOAD:</label>
-          <select id="record-payload-target" style="width:100%;">
-            <option value="2140">21 40 (Chassis/Diff Control Unit)</option>
-            <option value="2164">21 64 (Extended Status Block)</option>
-            <option value="2141">21 41 (Body Control Unit)</option>
-            <option value="2165">21 65 (Switch Matrix Block)</option>
-            <option value="2101">21 01 (Engine Main Block)</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">TEST ACTION TAG:</label>
-          <select id="record-tag" style="width:100%;">
-            <option value="Turf -> 2WD -> 4WD -> Diff-Lock">Turf -> 2WD -> 4WD -> Diff-Lock</option>
-            <option value="Neutral vs Reverse Shifter Toggle">Neutral vs Reverse Shifter Toggle</option>
-            <option value="Brake Pedal Press & Release">Brake Pedal Press & Release</option>
-          </select>
-        </div>
+      <!-- Test Selector Dropdown -->
+      <div style="display:flex; flex-direction:column; gap:0.3rem;">
+        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT TARGET TEST:</label>
+        <select id="record-test-select" onchange="onTestSelectChanged()">
+          <option value="test_drive_mode_2140">1. 4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock) [Target: 21 40]</option>
+          <option value="test_diff_2164">2. Extended Diff & Chassis Sweep [Target: 21 64]</option>
+          <option value="test_reverse_2140">3. Reverse vs Neutral Isolation [Target: 21 40]</option>
+          <option value="test_handbrake_2101">4. Parking Brake Hand Lever [Target: 21 01]</option>
+          <option value="test_dmode_2101">5. D-Mode Switch (Crawling / Trail / Sport) [Target: 21 01]</option>
+          <option value="test_warmup_2101">6. Engine Warmup & MAP Blip [Target: 21 01]</option>
+        </select>
+      </div>
+
+      <!-- Dynamic On-Screen Instructions -->
+      <div class="instruction-card" id="instruction-box">
+        <div class="inst-header">🔑 REQUIRED MACHINE STATE</div>
+        <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Stationary.</div>
+        <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 TEST PROCEDURE</div>
+        <ol class="inst-steps" id="inst-steps-list">
+          <li>Start with the rotary switch in <strong>Turf Mode</strong>.</li>
+          <li>Tap the <strong>🔴 Start Session Record</strong> button below.</li>
+          <li>Turn switch to <strong>2WD</strong> (pause 2s) &rarr; <strong>4WD</strong> (pause 2s) &rarr; <strong>Diff Lock</strong> (pause 2s).</li>
+          <li>Return switch back to <strong>Turf Mode</strong>.</li>
+          <li>Tap <strong>⏹️ Stop & Append to Master Log</strong>.</li>
+        </ol>
       </div>
 
       <div style="display:flex; gap:0.5rem; margin-top:0.2rem;">
@@ -394,15 +425,21 @@
       <div id="record-status-text" style="font-size:0.8rem; color:var(--cyan); font-weight:700;">Recorder Standby</div>
     </div>
 
+    <!-- Cumulative Master Report Box -->
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="disc-title">Session Telemetry Report</div>
-        <button class="btn-touch" style="padding:0.25rem 0.6rem; font-size:0.75rem; background:rgba(74,222,128,0.2); border-color:var(--green); color:var(--green);" onclick="copySessionReport()">
-          📋 Copy Session Log for AI
-        </button>
+        <div class="disc-title">Master Test Report (<span id="accumulated-count">0</span> Tests Logged)</div>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn-touch" style="padding:0.25rem 0.6rem; font-size:0.75rem; background:rgba(74,222,128,0.2); border-color:var(--green); color:var(--green);" onclick="copyAccumulatedReport()">
+            📋 Copy All Logs for AI
+          </button>
+          <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearAccumulatedReport()">
+            Clear
+          </button>
+        </div>
       </div>
       <div id="recorder-output" class="terminal-box">
-        <div style="color:var(--text-muted);">Recorded telemetry analysis and byte delta variance will appear here...</div>
+        <div style="color:var(--text-muted);">Run tests above. Each completed test will automatically append here for combined export...</div>
       </div>
     </div>
   </div>
@@ -451,12 +488,89 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.4.0";
+    const APP_VERSION = "v1.5.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
       logDebug(`[ERROR] ${msg} (L${line})`, 'err');
       return false;
+    };
+
+    /* ==========================================================
+       TEST DEFINITIONS & STEP-BY-STEP INSTRUCTIONS
+       ========================================================== */
+    const TEST_DEFINITIONS = {
+      test_drive_mode_2140: {
+        title: "4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock)",
+        targetCmd: "2140",
+        stateText: "Key ON, Engine OFF (or Idle). Machine stationary.",
+        steps: [
+          "Start with the rotary switch in <strong>Turf Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Switch to <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
+          "Rotate switch back to <strong>Turf Mode</strong>.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_diff_2164: {
+        title: "Extended Diff & Chassis Sweep",
+        targetCmd: "2164",
+        stateText: "Key ON, Engine OFF. Machine stationary.",
+        steps: [
+          "Start with rotary switch in <strong>Turf Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Cycle through <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_reverse_2140: {
+        title: "Reverse vs Neutral Isolation",
+        targetCmd: "2140",
+        stateText: "Key ON, Engine OFF. Foot holding Brake Pedal firmly.",
+        steps: [
+          "Start with shifter in <strong>Neutral (N)</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Shift to <strong>Reverse (R)</strong> and hold for 3 seconds.",
+          "Shift back to <strong>Neutral (N)</strong> and hold for 3 seconds.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_handbrake_2101: {
+        title: "Parking Brake Hand Lever",
+        targetCmd: "2101",
+        stateText: "Key ON, Engine OFF. Shifter in Neutral (N).",
+        steps: [
+          "Start with Parking Brake lever pulled <strong>ON / ENGAGED</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Release Parking Brake lever completely (pause 3s).",
+          "Pull Parking Brake lever firmly back <strong>ON</strong> (pause 3s).",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_dmode_2101: {
+        title: "D-Mode Switch (Crawling / Trail / Sport)",
+        targetCmd: "2101",
+        stateText: "Key ON, Engine OFF. In Neutral.",
+        steps: [
+          "Start in <strong>Crawl Mode</strong>.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Switch to <strong>Trail Mode</strong> (hold 2s) &rarr; <strong>Sport Mode</strong> (hold 2s).",
+          "Return switch back to <strong>Crawl Mode</strong>.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_warmup_2101: {
+        title: "Engine Warmup & MAP Blip",
+        targetCmd: "2101",
+        stateText: "Engine RUNNING at Idle, In Neutral, Parking Brake ON.",
+        steps: [
+          "With engine idling, tap <strong>🔴 Start Session Record</strong>.",
+          "Let engine idle steadily for 10 seconds.",
+          "Smoothly blip accelerator pedal to ~2,500 RPM and release.",
+          "Let engine idle for 5 seconds.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      }
     };
 
     const SERVICE_UUIDS = [
@@ -474,11 +588,12 @@
     let isRecordingSession = false;
     let activeTab = 'tab-dash';
     let speedUnit = 'kmh';
+    let currentPollingCommand = '2101';
 
     let lastBytes = [];
     let recordedFrames = [];
     let recordStartTime = null;
-    let sessionSummaryText = '';
+    let accumulatedReports = [];
 
     function log(msg) {
       const el = document.getElementById('log');
@@ -513,6 +628,17 @@
       box.scrollTop = box.scrollHeight;
     }
 
+    /* UI Instruction Sync */
+    window.onTestSelectChanged = function() {
+      const testKey = document.getElementById('record-test-select').value;
+      const def = TEST_DEFINITIONS[testKey];
+      if (!def) return;
+
+      document.getElementById('inst-state-text').innerText = def.stateText;
+      const listEl = document.getElementById('inst-steps-list');
+      listEl.innerHTML = def.steps.map(s => `<li>${s}</li>`).join('');
+    };
+
     window.switchTab = function(tabId) {
       activeTab = tabId;
       const tabs = ['tab-dash', 'tab-recorder', 'tab-payload'];
@@ -525,6 +651,7 @@
       });
 
       if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
+        currentPollingCommand = '2101';
         startPolling();
       }
     };
@@ -713,17 +840,21 @@
       await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
       await sendCommand("ATSH7E0", 1500); // Yamaha Primary ECU
 
-      log("Connected to Yamaha RMAX! Telemetry active.");
+      log("Connected to Yamaha RMAX! Live telemetry active.");
     }
 
-    /* Live Polling Loop */
+    /* Continuous Live Polling Loop */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
 
       while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
-        const targetCmd = isRecordingSession ? 
-          document.getElementById('record-payload-target').value : '2101';
+        let targetCmd = '2101';
+        if (isRecordingSession) {
+          const testKey = document.getElementById('record-test-select').value;
+          const def = TEST_DEFINITIONS[testKey];
+          if (def) targetCmd = def.targetCmd;
+        }
 
         const startT = performance.now();
         const rawRes = await sendCommand(targetCmd, 1200);
@@ -783,21 +914,21 @@
       if (targetCmd === '2101') {
         renderByteMatrix(bytes);
 
-        // --- 1. Engine RPM (Bytes 0 & 1) ---
+        // 1. Engine RPM (Bytes 0 & 1)
         const rpm = (bytes[0] * 256) + bytes[1];
         if (!isNaN(rpm) && rpm <= 10000) {
           document.getElementById('val-dash-rpm').innerText = rpm;
           updateTachometer(rpm);
         }
 
-        // --- 2. Speed (Bytes 2 & 3) ---
+        // 2. Speed (Bytes 2 & 3)
         let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
         if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
         document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
         const speedBar = document.getElementById('bar-speed');
         if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-        // --- 3. Coolant (Byte 4) -> d:06 ---
+        // 3. Coolant (Byte 4)
         if (bytes.length >= 5) {
           const coolant = bytes[4];
           document.getElementById('val-dash-coolant').innerText = coolant;
@@ -808,7 +939,7 @@
           }
         }
 
-        // --- 4. Gas Pedal / APS (Byte 7) ---
+        // 4. Gas Pedal / APS (Byte 7)
         if (bytes.length >= 8) {
           const rawAPS = bytes[7];
           const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
@@ -817,7 +948,7 @@
           if (pedalBar) pedalBar.style.width = pedalPct + '%';
         }
 
-        // --- 5. Throttle Blade / TPS (Byte 9) ---
+        // 5. Throttle Blade / TPS (Byte 9)
         if (bytes.length >= 10) {
           const rawTPS = bytes[9];
           const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
@@ -826,7 +957,7 @@
           if (tpsBar) tpsBar.style.width = tpsPct + '%';
         }
 
-        // --- 6. Live Transmission Gear (Byte 19) ---
+        // 6. Live Transmission Gear (Byte 19)
         if (bytes.length >= 20) {
           const b19 = bytes[19];
           const gearNibble = b19 & 0x0F;
@@ -850,7 +981,7 @@
           gearEl.innerText = gearText;
         }
 
-        // --- 7. Live Brake Light Indicator (Byte 21 Bit 4: 0x10) ---
+        // 7. Live Brake Light (Byte 21 Bit 4: 0x10)
         if (bytes.length >= 22) {
           const isBrakeOn = (bytes[21] & 0x10) === 0x10;
           const brakeEl = document.getElementById('val-dash-brake');
@@ -924,40 +1055,41 @@
     }
 
     /* ==========================================================
-       SESSION FLIGHT RECORDER
+       CUMULATIVE FLIGHT RECORDER LOGGING ENGINE
        ========================================================== */
     window.toggleSessionRecording = function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
 
       const btn = document.getElementById('btn-record');
       const statusBadge = document.getElementById('status');
-      const tag = document.getElementById('record-tag').value;
-      const targetPayload = document.getElementById('record-payload-target').value;
+      const testKey = document.getElementById('record-test-select').value;
+      const def = TEST_DEFINITIONS[testKey];
 
       if (!isRecordingSession) {
+        // Start Recording
         isRecordingSession = true;
         recordedFrames = [];
         recordStartTime = Date.now();
 
-        btn.innerText = "⏹️ Stop & Generate Report";
+        btn.innerText = "⏹️ Stop & Append to Master Log";
         btn.classList.add('recording');
         statusBadge.innerText = "RECORDING";
         statusBadge.className = "status-badge recording";
 
-        document.getElementById('record-status-text').innerText = `🔴 Recording [${targetPayload}]: ${tag}`;
-        document.getElementById('recorder-output').innerHTML = `<div style="color:var(--cyan);">Capturing frames for ${targetPayload} (${tag})...</div>`;
+        document.getElementById('record-status-text').innerText = `🔴 Recording Active: ${def.title}`;
       } else {
+        // Stop & Append
         isRecordingSession = false;
         btn.innerText = "🔴 Start Session Record";
         btn.classList.remove('recording');
         statusBadge.innerText = "CONNECTED";
         statusBadge.className = "status-badge connected";
 
-        generateSessionReport(tag, targetPayload);
+        appendSessionToMaster(def);
       }
     };
 
-    function generateSessionReport(tag, targetPayload) {
+    function appendSessionToMaster(def) {
       if (!recordedFrames.length) {
         document.getElementById('record-status-text').innerText = "No frames captured.";
         return;
@@ -967,13 +1099,14 @@
       const durationSec = recordedFrames[totalFrames - 1].time;
       const numBytes = recordedFrames[0].bytes.length;
 
-      let report = `=== YAMAHA RMAX TELEMETRY SESSION REPORT ===\n`;
-      report += `Test Action Tag: ${tag}\n`;
-      report += `Target Command: ${targetPayload} (${numBytes} Bytes Payload)\n`;
-      report += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
-      report += `Timestamp: ${new Date().toISOString()}\n\n`;
+      let sessionText = `\n========================================\n`;
+      sessionText += `[TEST RUN #${accumulatedReports.length + 1}]: ${def.title}\n`;
+      sessionText += `Target Command: ${def.targetCmd} (${numBytes} Bytes Payload)\n`;
+      sessionText += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
+      sessionText += `Machine State: ${def.stateText}\n`;
+      sessionText += `Timestamp: ${new Date().toISOString()}\n\n`;
 
-      report += `--- BYTE VARIANCE ANALYSIS (Which bytes moved?) ---\n`;
+      sessionText += `--- BYTE VARIANCE ANALYSIS (Which bytes moved?) ---\n`;
 
       for (let b = 0; b < numBytes; b++) {
         const values = recordedFrames.map(f => f.bytes[b]);
@@ -988,39 +1121,59 @@
         const dHex = delta.toString(16).toUpperCase().padStart(2, '0');
 
         let indicator = (delta > 0) ? `🎯 ACTIVE (Δ = ${delta} / 0x${dHex})` : `⚪ Static (0x${minHex})`;
-        report += `Byte [${String(b).padStart(2, '0')}]: Range [0x${minHex}..0x${maxHex}] | Start: 0x${startVal.toString(16).toUpperCase().padStart(2, '0')} ➜ End: 0x${endVal.toString(16).toUpperCase().padStart(2, '0')} | ${indicator}\n`;
+        sessionText += `Byte [${String(b).padStart(2, '0')}]: Range [0x${minHex}..0x${maxHex}] | Start: 0x${startVal.toString(16).toUpperCase().padStart(2, '0')} ➜ End: 0x${endVal.toString(16).toUpperCase().padStart(2, '0')} | ${indicator}\n`;
       }
 
-      report += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
+      sessionText += `\n--- SAMPLE TIME-SERIES SNAPSHOTS ---\n`;
       const step = Math.max(1, Math.floor(totalFrames / 6));
       for (let i = 0; i < totalFrames; i += step) {
         const f = recordedFrames[i];
         const hexDump = f.bytes.map(x => x.toString(16).toUpperCase().padStart(2, '0')).join(' ');
-        report += `T+${f.time.padStart(5, ' ')}s: ${hexDump}\n`;
+        sessionText += `T+${f.time.padStart(5, ' ')}s: ${hexDump}\n`;
       }
 
-      report += `=== END OF SESSION REPORT ===`;
+      accumulatedReports.push(sessionText);
 
-      sessionSummaryText = report;
-
-      const outBox = document.getElementById('recorder-output');
-      outBox.innerText = report;
-      document.getElementById('record-status-text').innerText = `✅ Analysis Ready (${totalFrames} frames processed). Tap 'Copy Session Log' to share.`;
+      // Render Cumulative Output in UI
+      updateMasterReportUI();
+      document.getElementById('record-status-text').innerText = `✅ Test Run #${accumulatedReports.length} Appended! Select next test or Copy All.`;
     }
 
-    window.copySessionReport = function() {
-      if (!sessionSummaryText) return alert("Run a recording session first!");
-      navigator.clipboard.writeText(sessionSummaryText)
-        .then(() => alert("Session report copied! Paste it in the chat."))
+    function updateMasterReportUI() {
+      const outBox = document.getElementById('recorder-output');
+      const countEl = document.getElementById('accumulated-count');
+      countEl.innerText = accumulatedReports.length;
+
+      let master = `=== YAMAHA RMAX MASTER TELEMETRY BATCH REPORT ===\n`;
+      master += `App Version: ${APP_VERSION} | Total Test Runs: ${accumulatedReports.length}\n`;
+      master += `Generated: ${new Date().toISOString()}\n`;
+      master += accumulatedReports.join('\n');
+      master += `\n=== END OF MASTER BATCH REPORT ===`;
+
+      outBox.innerText = master;
+    }
+
+    window.copyAccumulatedReport = function() {
+      if (!accumulatedReports.length) return alert("Run at least one test recording first!");
+      const outBox = document.getElementById('recorder-output');
+      navigator.clipboard.writeText(outBox.innerText)
+        .then(() => alert("Master batch report copied! Paste it in the chat."))
         .catch(() => {
           const ta = document.createElement('textarea');
-          ta.value = sessionSummaryText;
+          ta.value = outBox.innerText;
           document.body.appendChild(ta);
           ta.select();
           document.execCommand('copy');
           document.body.removeChild(ta);
-          alert("Session report copied! Paste it in the chat.");
+          alert("Master batch report copied! Paste it in the chat.");
         });
+    };
+
+    window.clearAccumulatedReport = function() {
+      accumulatedReports = [];
+      document.getElementById('accumulated-count').innerText = '0';
+      document.getElementById('recorder-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run tests to accumulate reports...</div>';
+      document.getElementById('record-status-text').innerText = 'Recorder Standby';
     };
 
     /* Simulation Mode */
@@ -1057,8 +1210,18 @@
         
         return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18282${brake.toString(16).padStart(2,'0')}8000AA`;
       }
+      if (cmd === "2140") {
+        const diffVal = Math.sin(Date.now() / 3000) > 0 ? "80" : "81";
+        return `61 40 00 ${diffVal}`;
+      }
+      if (cmd === "2164") {
+        return `03E 0:61640048001D 1:00020000000000 2:00000100000000 3:00000000000700 4:00000000000000 5:00030011000300 6:0000000005000C 7:00030000000100 8:03000500000000`;
+      }
       return "OK";
     }
+
+    // Initialize instructions on load
+    onTestSelectChanged();
   </script>
 </body>
 </html>
