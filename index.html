@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- iOS Standalone Fullscreen Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OBD Cockpit" />
   <title>OBD-II Digital Cockpit</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
@@ -512,14 +516,14 @@
 </head>
 <body>
 
-  <!-- Top HUD Header with Version Tag -->
+  <!-- Top HUD Header -->
   <header>
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
         OBD-II COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.0.4</span>
+      <span class="version-tag" id="app-version-badge">v1.0.5</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -731,7 +735,7 @@
     /* ==========================================================
        APP VERSION CONFIGURATION
        ========================================================== */
-    const APP_VERSION = "v1.0.4";
+    const APP_VERSION = "v1.0.5";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -850,11 +854,28 @@
       log(`Speed units: ${speedUnit.toUpperCase()}`);
     };
 
+    /* Robust Cross-Platform Fullscreen Handler */
     window.toggleFullscreen = function() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+      const doc = document;
+      const docEl = doc.documentElement;
+      const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFs = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isFs = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      if (requestFs && exitFs) {
+        try {
+          if (!isFs) {
+            const p = requestFs.call(docEl);
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            const p = exitFs.call(doc);
+            if (p && p.catch) p.catch(() => {});
+          }
+        } catch (err) {
+          log("Fullscreen error: " + err.message);
+        }
       } else {
-        document.exitFullscreen().catch(() => {});
+        log("Fullscreen API unavailable on iOS WebKit. Use 'Add to Home Screen' for borderless app view.");
       }
     };
 
