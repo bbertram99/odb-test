@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="OBD Cockpit" />
-  <title>OBD-II Digital Cockpit</title>
+  <title>Yamaha RMAX Pro Cockpit</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -129,30 +129,7 @@
     .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
     .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.15s linear; box-shadow: 0 0 6px var(--cyan); }
 
-    /* Categories View */
-    .category-pills { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.2rem; scrollbar-width: none; }
-    .category-pills::-webkit-scrollbar { display: none; }
-    .pill {
-      white-space: nowrap; padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 700; border-radius: 9999px;
-      background: rgba(30, 41, 59, 0.8); color: var(--text-muted); border: 1px solid var(--card-border); cursor: pointer;
-    }
-    .pill:active { transform: scale(0.95); }
-    .pill.active { background: var(--purple) !important; color: #0b1120 !important; border-color: var(--purple); }
-    .filter-bar { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); padding: 0 0.25rem; }
-    .pid-table { display: flex; flex-direction: column; gap: 0.5rem; max-height: calc(100vh - 280px); overflow-y: auto; }
-    .pid-row {
-      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-      padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(8px);
-    }
-    .pid-row.unsupported { opacity: 0.3; }
-    .pid-info { display: flex; flex-direction: column; gap: 0.15rem; }
-    .pid-code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--cyan); font-weight: 700; }
-    .pid-name { font-size: 0.95rem; font-weight: 600; }
-    .pid-val-box { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-    .pid-val { font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; }
-    .pid-unit { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
-
-    /* Sections */
+    /* Action Grid & Console */
     .disc-section {
       background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem;
       display: flex; flex-direction: column; gap: 0.75rem; backdrop-filter: blur(8px);
@@ -169,10 +146,11 @@
     }
     .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
     .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
+    .btn-touch.yamaha { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); }
 
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 0.5rem;
     }
 
@@ -228,9 +206,9 @@
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
-        OBD-II COCKPIT
+        YAMAHA COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.0.9</span>
+      <span class="version-tag" id="app-version-badge">v1.1.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -248,7 +226,7 @@
           <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
         </svg>
         <div class="gauge-center-readout">
-          <span id="val-dash-010C" class="gauge-center-val">--</span>
+          <span id="val-dash-rpm" class="gauge-center-val">--</span>
           <span class="gauge-center-unit">RPM</span>
         </div>
         <div id="redline-alert" class="redline-indicator">REDLINE</div>
@@ -256,14 +234,14 @@
     </div>
 
     <div class="cockpit-grid">
-      <!-- Speed Card -->
+      <!-- Speed -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
-          <span class="card-label">Vehicle Speed</span>
+          <span class="card-label">Ground Speed</span>
           <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-010D" class="card-val">--</span>
+          <span id="val-dash-speed" class="card-val">--</span>
           <span id="label-dash-speed-unit" class="card-unit">km/h</span>
         </div>
         <div class="meter-bar-track">
@@ -271,13 +249,13 @@
         </div>
       </div>
 
-      <!-- Coolant Card -->
+      <!-- Coolant Temp -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Coolant Temp</span>
+          <span class="card-label">Engine Coolant</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-0105" class="card-val">--</span>
+          <span id="val-dash-coolant" class="card-val">--</span>
           <span class="card-unit">°C</span>
         </div>
         <div class="meter-bar-track">
@@ -285,27 +263,13 @@
         </div>
       </div>
 
-      <!-- Engine Load Card -->
+      <!-- Throttle / TPS -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Engine Load</span>
+          <span class="card-label">Throttle (TPS)</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-0104" class="card-val">--</span>
-          <span class="card-unit">%</span>
-        </div>
-        <div class="meter-bar-track">
-          <div id="bar-load" class="meter-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- Throttle Position Card -->
-      <div class="touch-card">
-        <div class="card-top">
-          <span class="card-label">Throttle</span>
-        </div>
-        <div class="card-main">
-          <span id="val-dash-0111" class="card-val">--</span>
+          <span id="val-dash-throttle" class="card-val">--</span>
           <span class="card-unit">%</span>
         </div>
         <div class="meter-bar-track">
@@ -313,13 +277,13 @@
         </div>
       </div>
 
-      <!-- Battery Voltage Card -->
-      <div class="touch-card" style="grid-column: span 2;">
+      <!-- Battery Voltage -->
+      <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">ECU / Battery Voltage</span>
+          <span class="card-label">Battery Voltage</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-ATRV" class="card-val">--</span>
+          <span id="val-dash-voltage" class="card-val">--</span>
           <span class="card-unit">V</span>
         </div>
         <div class="meter-bar-track">
@@ -329,86 +293,31 @@
     </div>
   </div>
 
-  <!-- TAB 2: Categories -->
-  <div id="tab-categories" class="view-panel">
-    <div class="category-pills">
-      <button class="pill active" onclick="filterCategory('all', event)">All Sensors</button>
-      <button class="pill" onclick="filterCategory('engine', event)">Engine</button>
-      <button class="pill" onclick="filterCategory('air', event)">Air & Boost</button>
-      <button class="pill" onclick="filterCategory('fuel', event)">Fuel System</button>
-      <button class="pill" onclick="filterCategory('temp', event)">Temperatures</button>
-      <button class="pill" onclick="filterCategory('o2', event)">O2 & Exhaust</button>
-      <button class="pill" onclick="filterCategory('trip', event)">Trip & Electrical</button>
-    </div>
-
-    <div class="filter-bar">
-      <span id="cat-count">Showing 0 PIDs</span>
-      <label style="cursor: pointer; display:flex; align-items:center; gap:0.3rem;">
-        <input type="checkbox" id="chk-supported-only" onchange="renderCategoryList()" /> Supported Only
-      </label>
-    </div>
-
-    <div id="category-pid-list" class="pid-table"></div>
-  </div>
-
-  <!-- TAB 3: Discovery -->
-  <div id="tab-discovery" class="view-panel">
-    <div class="disc-section">
-      <div class="disc-title">Vehicle Metadata</div>
-      <button class="btn-touch" onclick="scanVehicleInfo()">Read VIN & Protocol</button>
-      <div style="font-size:0.9rem; line-height:1.6;">
-        <div><strong>VIN:</strong> <span id="info-vin" style="font-family:'JetBrains Mono'; color:var(--cyan);">--</span></div>
-        <div><strong>Protocol:</strong> <span id="info-proto">--</span></div>
-      </div>
-    </div>
-
-    <div class="disc-section">
-      <div class="disc-title">Supported PID Bitmasks</div>
-      <button class="btn-touch secondary" onclick="scanSupportedPIDs()">Query ECU Bitmasks</button>
-      <div style="font-size:0.85rem;">
-        <div><strong>Supported Count:</strong> <span id="disc-count" style="font-weight:700; color:var(--green);">0</span> PIDs confirmed by ECU</div>
-      </div>
-    </div>
-
-    <div class="disc-section">
-      <div class="disc-title">Raw Command Query</div>
-      <div class="terminal-row">
-        <input type="text" id="manual-cmd" placeholder="e.g. 010C or ATRV" />
-        <button class="btn-touch" onclick="sendManualCommand()">Send</button>
-      </div>
-      <div style="font-size:0.85rem;"><strong>Response:</strong> <span id="manual-res" style="font-family:'JetBrains Mono'; color:var(--cyan);">--</span></div>
-    </div>
-  </div>
-
-  <!-- TAB 4: Dedicated Live Log & Powersports Fixers -->
+  <!-- TAB 2: Dedicated Live Log & Yamaha Diagnostic Tools -->
   <div id="tab-log" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Powersports & Protocol Fixers</div>
+      <div class="disc-title">Yamaha Powersports Protocol Tools</div>
       <div class="action-grid">
-        <button class="btn-touch" style="grid-column: span 2; background:rgba(74,222,128,0.2); border-color:var(--green); color:var(--green);" onclick="applyYamahaRmaxPreset()">
-          ⚡ Yamaha RMAX Preset (CAN 11/500 + ATSH 7E0)
-        </button>
-        <button class="btn-touch secondary" onclick="forceHeader('7E0')">Set Header 7E0 (ATSH7E0)</button>
-        <button class="btn-touch secondary" onclick="forceProtocol('6')">Force CAN 11/500 (SP6)</button>
-        <button class="btn-touch secondary" onclick="forceProtocol('7')">Force CAN 29/500 (SP7)</button>
-        <button class="btn-touch secondary" onclick="forceProtocol('0')">Reset to Auto (SP0)</button>
-        <button class="btn-touch secondary" onclick="quickQuery('010C')">Test RPM (010C)</button>
-        <button class="btn-touch secondary" onclick="quickQuery('0105')">Test Coolant (0105)</button>
-        <button class="btn-touch secondary" onclick="quickQuery('ATRV')">Read Voltage (ATRV)</button>
-        <button class="btn-touch secondary" onclick="runPIDAudit()">Run Full Audit</button>
+        <button class="btn-touch yamaha" onclick="probeYamahaPayload()">🔍 Auto-Probe Yamaha ECU</button>
+        <button class="btn-touch secondary" onclick="quickQuery('2101')">Send UDS 2101</button>
+        <button class="btn-touch secondary" onclick="quickQuery('2102')">Send UDS 2102</button>
+        <button class="btn-touch secondary" onclick="quickQuery('22F40C')">Send UDS 22F40C</button>
+        <button class="btn-touch secondary" onclick="quickQuery('221000')">Send UDS 221000</button>
+        <button class="btn-touch secondary" onclick="quickQuery('ATRV')">Read Battery (ATRV)</button>
+        <button class="btn-touch secondary" onclick="startCANMonitor()">Passive CAN Monitor (ATMA)</button>
       </div>
     </div>
 
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="disc-title">Live Serial Packet Log</div>
+        <div class="disc-title">Live Serial Log</div>
         <div style="display:flex; gap:0.4rem;">
           <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="copyDebugLog()">Copy Log</button>
           <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearDebugLog()">Clear</button>
         </div>
       </div>
       <div id="live-terminal" class="terminal-box">
-        <div style="color:var(--text-muted);">Console ready. Connect to view packet stream...</div>
+        <div style="color:var(--text-muted);">Console ready. Connect to RMAX to view stream...</div>
       </div>
     </div>
   </div>
@@ -424,14 +333,6 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
       <span>Cockpit</span>
     </button>
-    <button class="dock-btn" id="btn-tab-categories" onclick="switchTab('tab-categories')">
-      <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-      <span>Sensors</span>
-    </button>
-    <button class="dock-btn" id="btn-tab-discovery" onclick="switchTab('tab-discovery')">
-      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-      <span>Discovery</span>
-    </button>
     <button class="dock-btn" id="btn-tab-log" onclick="switchTab('tab-log')">
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
       <span>Live Log</span>
@@ -446,78 +347,18 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.0.9";
+    const APP_VERSION = "v1.1.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
-      logDebug(`[ERROR] ${msg} (Line ${line})`, 'err');
+      logDebug(`[ERROR] ${msg} (L${line})`, 'err');
       return false;
     };
 
-    /* ==========================================================
-       PID REGISTRY & FORMULAS (SAE J1979)
-       ========================================================== */
-    const PID_REGISTRY = {
-      // ENGINE
-      "0104": { cat: "engine", name: "Calculated Engine Load", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "010C": { cat: "engine", name: "Engine Speed (RPM)", unit: "RPM", parse: (b) => Math.round(((b[0] * 256) + b[1]) / 4) },
-      "010E": { cat: "engine", name: "Timing Advance", unit: "°", parse: (b) => ((b[0] - 128) / 2).toFixed(1) },
-      "0111": { cat: "engine", name: "Throttle Position", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "0145": { cat: "engine", name: "Relative Throttle Position", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "0149": { cat: "engine", name: "Pedal Position D", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "014A": { cat: "engine", name: "Pedal Position E", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "014C": { cat: "engine", name: "Commanded Throttle Actuator", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "011F": { cat: "engine", name: "Engine Run Time", unit: "sec", parse: (b) => (b[0] * 256) + b[1] },
-
-      // AIR & BOOST
-      "010B": { cat: "air", name: "Intake Manifold Pressure (MAP)", unit: "kPa", parse: (b) => b[0] },
-      "0110": { cat: "air", name: "Mass Air Flow (MAF) Rate", unit: "g/s", parse: (b) => (((b[0] * 256) + b[1]) / 100).toFixed(2) },
-      "0133": { cat: "air", name: "Absolute Barometric Pressure", unit: "kPa", parse: (b) => b[0] },
-      "0170": { cat: "air", name: "Boost Pressure Control", unit: "kPa", parse: (b) => (((b[0] * 256) + b[1]) / 32).toFixed(1) },
-
-      // FUEL SYSTEM
-      "0106": { cat: "fuel", name: "Short Term Fuel Trim (Bank 1)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
-      "0107": { cat: "fuel", name: "Long Term Fuel Trim (Bank 1)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
-      "0108": { cat: "fuel", name: "Short Term Fuel Trim (Bank 2)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
-      "0109": { cat: "fuel", name: "Long Term Fuel Trim (Bank 2)", unit: "%", parse: (b) => (((b[0] - 128) * 100) / 128).toFixed(1) },
-      "010A": { cat: "fuel", name: "Fuel Pressure (Gauge)", unit: "kPa", parse: (b) => b[0] * 3 },
-      "0122": { cat: "fuel", name: "Fuel Rail Pressure (Manifold)", unit: "kPa", parse: (b) => (((b[0] * 256) + b[1]) * 0.079).toFixed(1) },
-      "0123": { cat: "fuel", name: "Fuel Rail Pressure (Direct)", unit: "bar", parse: (b) => ((((b[0] * 256) + b[1]) * 10) / 100).toFixed(1) },
-      "012F": { cat: "fuel", name: "Fuel Tank Level Input", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "015E": { cat: "fuel", name: "Engine Fuel Rate", unit: "L/h", parse: (b) => (((b[0] * 256) + b[1]) * 0.05).toFixed(2) },
-
-      // TEMPERATURES
-      "0105": { cat: "temp", name: "Engine Coolant Temp", unit: "°C", parse: (b) => b[0] - 40 },
-      "010F": { cat: "temp", name: "Intake Air Temperature", unit: "°C", parse: (b) => b[0] - 40 },
-      "0146": { cat: "temp", name: "Ambient Air Temperature", unit: "°C", parse: (b) => b[0] - 40 },
-      "015C": { cat: "temp", name: "Engine Oil Temperature", unit: "°C", parse: (b) => b[0] - 40 },
-
-      // O2 & EXHAUST
-      "0114": { cat: "o2", name: "O2 Sensor 1 Voltage", unit: "V", parse: (b) => (b[0] / 200).toFixed(3) },
-      "0115": { cat: "o2", name: "O2 Sensor 2 Voltage", unit: "V", parse: (b) => (b[0] / 200).toFixed(3) },
-      "0124": { cat: "o2", name: "O2 Sensor 1 Equiv Ratio", unit: "λ", parse: (b) => (((b[0] * 256) + b[1]) * 2 / 65536).toFixed(3) },
-      "013C": { cat: "o2", name: "Catalyst Temp (Bank 1)", unit: "°C", parse: (b) => ((((b[0] * 256) + b[1]) / 10) - 40).toFixed(0) },
-      "013D": { cat: "o2", name: "Catalyst Temp (Bank 2)", unit: "°C", parse: (b) => ((((b[0] * 256) + b[1]) / 10) - 40).toFixed(0) },
-
-      // TRIP & ELECTRICAL
-      "010D": { cat: "trip", name: "Vehicle Speed", unit: "km/h", parse: (b) => b[0] },
-      "0121": { cat: "trip", name: "Distance with MIL On", unit: "km", parse: (b) => (b[0] * 256) + b[1] },
-      "0131": { cat: "trip", name: "Distance Since Codes Cleared", unit: "km", parse: (b) => (b[0] * 256) + b[1] },
-      "0142": { cat: "trip", name: "Control Module Voltage", unit: "V", parse: (b) => (((b[0] * 256) + b[1]) / 1000).toFixed(2) },
-      "015B": { cat: "trip", name: "Hybrid Battery Life", unit: "%", parse: (b) => (b[0] * 100 / 255).toFixed(1) },
-      "ATRV": { cat: "trip", name: "Adapter Voltage", unit: "V", parse: (raw) => {
-        const m = String(raw).match(/([0-9]+\.?[0-9]*)/);
-        return m ? m[1] : '--';
-      }}
-    };
-
-    /* Canonical 128-bit UUIDs for iOS CoreBluetooth */
     const SERVICE_UUIDS = [
       '0000fff0-0000-1000-8000-00805f9b34fb',
       '0000ffe0-0000-1000-8000-00805f9b34fb',
-      '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
-      '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-      '000018f0-0000-1000-8000-00805f9b34fb'
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
     ];
 
     let bleDevice = null;
@@ -527,10 +368,8 @@
     let isPolling = false;
     let isSimulator = false;
     let activeTab = 'tab-dash';
-    let currentCategory = 'all';
     let speedUnit = 'kmh';
-    let supportedPIDs = new Set(["010C", "010D", "0105", "0104", "0111", "ATRV"]);
-    let auditResults = [];
+    let activeYamahaCommand = '2101'; // Default Yamaha UDS Query
 
     function log(msg) {
       const el = document.getElementById('log');
@@ -578,11 +417,9 @@
         .catch(() => alert("Please manually select and copy text."));
     };
 
-    /* UI Navigation */
     window.switchTab = function(tabId) {
       activeTab = tabId;
-      const tabs = ['tab-dash', 'tab-categories', 'tab-discovery', 'tab-log'];
-      
+      const tabs = ['tab-dash', 'tab-log'];
       tabs.forEach(t => {
         const btn = document.getElementById('btn-' + t);
         if (btn) btn.classList.toggle('active', t === tabId);
@@ -591,8 +428,7 @@
         if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
 
-      if (tabId === 'tab-categories') renderCategoryList();
-      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && (tabId === 'tab-dash' || tabId === 'tab-categories')) {
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
         startPolling();
       }
     };
@@ -624,50 +460,11 @@
           logDebug("Fullscreen error: " + err.message, 'err');
         }
       } else {
-        logDebug("Fullscreen API unavailable on iOS WebKit. Use Add to Home Screen.", 'warn');
+        logDebug("Fullscreen unavailable on iOS WebKit. Use Add to Home Screen.", 'warn');
       }
     };
 
-    window.filterCategory = function(cat, evt) {
-      currentCategory = cat;
-      document.querySelectorAll('.category-pills .pill').forEach(p => p.classList.remove('active'));
-      if (evt && evt.target) evt.target.classList.add('active');
-      renderCategoryList();
-    };
-
-    window.renderCategoryList = function() {
-      const container = document.getElementById('category-pid-list');
-      if (!container) return;
-      const chk = document.getElementById('chk-supported-only');
-      const supportedOnly = chk ? chk.checked : false;
-      container.innerHTML = '';
-
-      let count = 0;
-      for (const [cmd, def] of Object.entries(PID_REGISTRY)) {
-        if (currentCategory !== 'all' && def.cat !== currentCategory) continue;
-        const isSupp = supportedPIDs.has(cmd);
-        if (supportedOnly && !isSupp) continue;
-
-        count++;
-        const row = document.createElement('div');
-        row.className = 'pid-row ' + (!isSupp ? 'unsupported' : '');
-        row.innerHTML = `
-          <div class="pid-info">
-            <span class="pid-code">${cmd}</span>
-            <span class="pid-name">${def.name}</span>
-          </div>
-          <div class="pid-val-box">
-            <span class="pid-val" id="val-cat-${cmd}">--</span>
-            <span class="pid-unit">${def.unit}</span>
-          </div>
-        `;
-        container.appendChild(row);
-      }
-      const countEl = document.getElementById('cat-count');
-      if (countEl) countEl.innerText = `Showing ${count} PIDs`;
-    };
-
-    /* Bluetooth Communication Engine */
+    /* Bluetooth Communication */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -676,12 +473,9 @@
     async function connect() {
       if (isSimulator) toggleSimulator();
       try {
-        if (!navigator.bluetooth) {
-          throw new Error("Web Bluetooth unavailable. Use Bluefy on iOS over HTTPS.");
-        }
+        if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable. Open in Bluefy.");
 
         logDebug("Opening Bluetooth pairing prompt...");
-        
         bleDevice = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: SERVICE_UUIDS
@@ -690,52 +484,27 @@
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
         logDebug("Connecting to GATT server...");
         const server = await bleDevice.gatt.connect();
-
         await new Promise(r => setTimeout(r, 300));
 
-        logDebug("Resolving BLE UART Service...");
         let service = null;
         for (const uuid of SERVICE_UUIDS) {
           try {
             service = await server.getPrimaryService(uuid);
-            if (service) {
-              logDebug(`Found Service: ${uuid}`);
-              break;
-            }
+            if (service) break;
           } catch (e) {}
         }
-
-        if (!service) {
-          try {
-            const services = await server.getPrimaryServices();
-            if (services && services.length > 0) service = services[0];
-          } catch (e) {}
-        }
-
-        if (!service) throw new Error("No compatible UART service found.");
+        if (!service) throw new Error("No UART BLE service found.");
 
         await new Promise(r => setTimeout(r, 200));
-
         const chars = await service.getCharacteristics();
-        writeChar = null;
-        readChar = null;
+        writeChar = null; readChar = null;
 
         for (const char of chars) {
           if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
           if (char.properties.notify || char.properties.indicate) readChar = char;
         }
 
-        if (!writeChar || !readChar) {
-          if (chars.length === 1) {
-            writeChar = chars[0];
-            readChar = chars[0];
-          } else {
-            throw new Error("TX/RX characteristics not found.");
-          }
-        }
-
-        logDebug(`TX Char: ${writeChar.uuid}`);
-        logDebug(`RX Char: ${readChar.uuid}`);
+        if (!writeChar || !readChar) throw new Error("TX/RX characteristics not resolved.");
 
         await readChar.startNotifications();
         readChar.addEventListener('characteristicvaluechanged', handleNotification);
@@ -745,7 +514,7 @@
         if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
         if (btnConnect) { btnConnect.innerText = "Disconnect"; btnConnect.classList.add("disconnect"); }
 
-        await initELM327();
+        await initYamahaELM327();
         startPolling();
 
       } catch (err) {
@@ -766,7 +535,7 @@
       const btnConnect = document.getElementById('btn-connect');
       if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
       if (btnConnect) { btnConnect.innerText = "Connect"; btnConnect.classList.remove("disconnect"); }
-      logDebug("Device disconnected from GATT.", 'warn');
+      logDebug("Device disconnected.", 'warn');
       log("Disconnected.");
     }
 
@@ -830,142 +599,146 @@
       });
     }
 
-    /* ELM327 Robust Initialization Sequence (with Yamaha RMAX compatibility) */
-    async function initELM327() {
-      logDebug("--- INITIALIZING ELM327 FOR YAMAHA / POWERSPORTS ---");
+    /* Yamaha Powersports Initialization Routine */
+    async function initYamahaELM327() {
+      logDebug("--- INITIALIZING YAMAHA RMAX CAN PROTOCOL ---", 'warn');
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
 
-      await sendCommand("ATD", 1500);    // Set defaults
+      await sendCommand("ATD", 1500);    // Defaults
       await sendCommand("ATZ", 3000);    // Reset
-      await new Promise(r => setTimeout(r, 600)); // Stabilization
+      await new Promise(r => setTimeout(r, 600));
 
       await sendCommand("ATE0", 1500);   // Echo off
       await sendCommand("ATL0", 1500);   // Linefeeds off
       await sendCommand("ATS0", 1500);   // Spaces off
       await sendCommand("ATH0", 1500);   // Headers off
       await sendCommand("ATAT2", 1500);  // Adaptive timing
-      await sendCommand("ATSTFF", 1500); // Max internal timeout multiplier
+      await sendCommand("ATSTFF", 1500); // Extended timeout
 
-      // Set Yamaha CAN 11-bit 500k protocol & 7E0 Header
-      await sendCommand("ATSP6", 2000);  // ISO 15765-4 CAN (11-bit, 500k)
-      await sendCommand("ATSH7E0", 1500);// Direct address Yamaha ECU (ID 7E0)
+      // Lock to Yamaha CAN 11-bit 500k & Engine ECU Address 7E0
+      await sendCommand("ATSP6", 2000);  // ISO 15765-4 CAN (11/500)
+      await sendCommand("ATSH7E0", 1500);// Yamaha Primary ECU ID
 
-      logDebug("Probing Yamaha ECU via RPM (010C)...");
-      const testRPM = await sendCommand("010C", 3000);
+      logDebug("Auto-probing Yamaha UDS Data Identifier (2101 / 22F40C)...");
+      const test21 = await sendCommand("2101", 3000);
 
-      if (testRPM.includes("410C")) {
-        logDebug("🎉 ECU Communication Verified on CAN 11/500 + 7E0!", 'rx');
-        log("Yamaha ECU connected! Telemetry live.");
+      if (test21.includes("6101") || (!test21.includes("7F") && !test21.includes("NO DATA"))) {
+        activeYamahaCommand = "2101";
+        logDebug("✅ Locked to Yamaha Mode 21 01 Telemetry Stream!", 'rx');
       } else {
-        logDebug("Notice: If gauges show '--', tap '⚡ Yamaha RMAX Preset' in Live Log.", 'warn');
-        log("Connected. Starting live telemetry...");
+        const test22 = await sendCommand("22F40C", 3000);
+        if (test22.includes("62F40C")) {
+          activeYamahaCommand = "22F40C";
+          logDebug("✅ Locked to Yamaha Mode 22 F40C Stream!", 'rx');
+        } else {
+          activeYamahaCommand = "2101";
+          logDebug("Ready. If values don't stream, tap 'Auto-Probe' in Live Log.", 'warn');
+        }
       }
+      log("Connected to Yamaha RMAX! Streaming...");
     }
 
-    /* Live Polling Loop */
+    /* Live Polling Loop for Yamaha Engine Stream */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
 
       while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
         if (activeTab === 'tab-dash') {
-          const dashPIDs = ["010C", "010D", "0105", "0104", "0111", "ATRV"];
-          for (const cmd of dashPIDs) {
-            if (!isPolling || activeTab !== 'tab-dash') break;
-            
-            const startT = performance.now();
-            const res = await sendCommand(cmd, 1500);
-            const rtt = Math.round(performance.now() - startT);
-            
-            updatePIDValue(cmd, res, 'dash');
+          // Poll Yamaha Telemetry Frame
+          const res = await sendCommand(activeYamahaCommand, 1500);
+          parseYamahaFrame(res);
 
-            if (cmd === '010C') {
-              if (res.includes("NO DATA")) {
-                log("⚠️ NO DATA. Tap '⚡ Yamaha RMAX Preset' in Live Log tab.");
-              } else if (res !== "TIMEOUT") {
-                const rpmEl = document.getElementById('val-dash-010C');
-                log(`⚡ Live: RPM ${rpmEl ? rpmEl.innerText : '--'} | ${rtt}ms`);
-              }
-            }
-          }
-        } else if (activeTab === 'tab-categories') {
-          for (const [cmd, def] of Object.entries(PID_REGISTRY)) {
-            if (!isPolling || activeTab !== 'tab-categories') break;
-            if (currentCategory !== 'all' && def.cat !== currentCategory) continue;
-            if (!supportedPIDs.has(cmd)) continue;
-
-            const res = await sendCommand(cmd, 1500);
-            updatePIDValue(cmd, res, 'cat');
-          }
+          // Update Voltage
+          const voltRes = await sendCommand("ATRV", 800);
+          parseVoltage(voltRes);
         }
-        await new Promise(r => setTimeout(r, 45));
+        await new Promise(r => setTimeout(r, 60));
       }
       isPolling = false;
     }
 
-    function updatePIDValue(cmd, raw, prefix) {
-      const def = PID_REGISTRY[cmd];
-      if (!def) return;
+    /* Yamaha UDS Payload Decoders */
+    function parseYamahaFrame(raw) {
+      if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
+      const clean = String(raw).replace(/[\s\r\n>]/g, '');
 
-      let val = '--';
-      if (cmd === 'ATRV') {
-        val = def.parse(raw);
-      } else {
-        const clean = String(raw).replace(/\s+/g, '');
-        const header = "41" + cmd.substring(2);
-        const idx = clean.indexOf(header);
-        if (idx !== -1) {
-          const hexPayload = clean.substring(idx + header.length);
-          const bytes = [];
-          for (let i = 0; i < hexPayload.length; i += 2) {
-            bytes.push(parseInt(hexPayload.substr(i, 2), 16));
+      // Decoder 1: Mode 21 01 Multi-byte Block (61 01 ...)
+      if (clean.includes("6101")) {
+        const idx = clean.indexOf("6101");
+        const payload = clean.substring(idx + 4);
+        
+        // Extract bytes
+        const bytes = [];
+        for (let i = 0; i < payload.length; i += 2) {
+          bytes.push(parseInt(payload.substr(i, 2), 16));
+        }
+
+        if (bytes.length >= 4) {
+          // Yamaha RPM: typically Bytes 0 & 1 or Bytes 2 & 3
+          let rpm = Math.round(((bytes[0] * 256) + bytes[1]) / 4);
+          if (rpm > 12000 || rpm < 0) rpm = Math.round(((bytes[2] * 256) + bytes[3]) / 4);
+          if (!isNaN(rpm)) updateRPM(rpm);
+
+          // Coolant Temp (Bytes 2 or 4)
+          if (bytes.length >= 3) {
+            let temp = bytes[2] - 40;
+            if (temp < -40 || temp > 150) temp = bytes[3] - 40;
+            if (!isNaN(temp)) updateCoolant(temp);
           }
-          try { val = def.parse(bytes); } catch (e) {}
+
+          // Throttle (Byte 3 or 4)
+          if (bytes.length >= 4) {
+            let tps = Math.round((bytes[3] * 100) / 255);
+            if (!isNaN(tps)) updateThrottle(tps);
+          }
         }
       }
-
-      if (val === '--' || isNaN(val)) return;
-
-      let displayVal = val;
-      if (cmd === '010D' && speedUnit === 'mph') {
-        displayVal = Math.round(val * 0.621371);
+      // Decoder 2: Mode 22 F40C RPM (62 F4 0C A B)
+      else if (clean.includes("62F40C")) {
+        const idx = clean.indexOf("62F40C");
+        const a = parseInt(clean.substring(idx + 6, idx + 8), 16);
+        const b = parseInt(clean.substring(idx + 8, idx + 10), 16);
+        const rpm = Math.round(((a * 256) + b) / 4);
+        if (!isNaN(rpm)) updateRPM(rpm);
       }
+    }
 
-      const el = document.getElementById(`val-${prefix}-${cmd}`);
-      if (el) el.innerText = displayVal;
+    function updateRPM(rpm) {
+      document.getElementById('val-dash-rpm').innerText = rpm;
+      updateTachometer(rpm);
+    }
 
-      if (prefix === 'dash') {
-        if (cmd === '010C') {
-          updateTachometer(val);
-        } else if (cmd === '010D') {
-          const pct = Math.min(100, (val / 220) * 100);
-          const bar = document.getElementById('bar-speed');
-          if (bar) bar.style.width = pct + '%';
-        } else if (cmd === '0105') {
-          const pct = Math.min(100, Math.max(0, (val / 120) * 100));
-          const bar = document.getElementById('bar-coolant');
-          if (bar) {
-            bar.style.width = pct + '%';
-            bar.style.background = val > 105 ? 'var(--red)' : val > 95 ? 'var(--amber)' : 'var(--cyan)';
-          }
-        } else if (cmd === '0104') {
-          const bar = document.getElementById('bar-load');
-          if (bar) bar.style.width = val + '%';
-        } else if (cmd === '0111') {
-          const bar = document.getElementById('bar-throttle');
-          if (bar) bar.style.width = val + '%';
-        } else if (cmd === 'ATRV') {
-          const numV = parseFloat(val);
-          const pct = Math.min(100, Math.max(0, ((numV - 10) / 5) * 100));
-          const bar = document.getElementById('bar-voltage');
-          if (bar) bar.style.width = pct + '%';
-        }
+    function updateCoolant(temp) {
+      document.getElementById('val-dash-coolant').innerText = temp;
+      const pct = Math.min(100, Math.max(0, (temp / 120) * 100));
+      const bar = document.getElementById('bar-coolant');
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.style.background = temp > 105 ? 'var(--red)' : temp > 95 ? 'var(--amber)' : 'var(--cyan)';
+      }
+    }
+
+    function updateThrottle(tps) {
+      document.getElementById('val-dash-throttle').innerText = tps;
+      const bar = document.getElementById('bar-throttle');
+      if (bar) bar.style.width = tps + '%';
+    }
+
+    function parseVoltage(raw) {
+      const match = String(raw).match(/([0-9]+\.?[0-9]*)/);
+      if (match && match[1]) {
+        document.getElementById('val-dash-voltage').innerText = match[1];
+        const numV = parseFloat(match[1]);
+        const pct = Math.min(100, Math.max(0, ((numV - 10) / 5) * 100));
+        const bar = document.getElementById('bar-voltage');
+        if (bar) bar.style.width = pct + '%';
       }
     }
 
     function updateTachometer(rpm) {
-      const maxRPM = 7000;
+      const maxRPM = 9000;
       const arcLength = 293.2;
       const pct = Math.min(1, Math.max(0, rpm / maxRPM));
       const offset = arcLength - (pct * arcLength);
@@ -975,11 +748,11 @@
 
       if (bar) {
         bar.style.strokeDashoffset = offset;
-        if (rpm >= 5800) {
+        if (rpm >= 7800) {
           bar.style.stroke = 'var(--redline)';
           bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
           if (redlineEl) redlineEl.classList.add('active');
-        } else if (rpm >= 4200) {
+        } else if (rpm >= 5500) {
           bar.style.stroke = 'var(--amber)';
           bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
           if (redlineEl) redlineEl.classList.remove('active');
@@ -991,196 +764,50 @@
       }
     }
 
-    /* Powersports & Yamaha Quick Preset */
-    window.applyYamahaRmaxPreset = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II adapter first.");
+    /* Yamaha Diagnostic Prober */
+    window.probeYamahaPayload = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
       isPolling = false;
 
-      logDebug("--- APPLYING YAMAHA RMAX CAN PROTOCOL PRESET ---", 'warn');
-      await sendCommand("ATE0", 1500);
-      await sendCommand("ATL0", 1500);
-      await sendCommand("ATS0", 1500);
-      await sendCommand("ATH0", 1500);
-      await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
-      await sendCommand("ATSH7E0", 1500); // Yamaha Engine ECU Header 7E0
+      logDebug("--- PROBING YAMAHA DIAGNOSTIC IDENTIFIERS ---", 'warn');
+      const probeList = [
+        "2101", "2102", "2103", "2104", "2105", 
+        "22F40C", "22F405", "22F40D", "22F411", "221000", "220101"
+      ];
 
-      const res = await sendCommand("010C", 3000);
-      if (res.includes("410C")) {
-        logDebug(`🎉 SUCCESS! Yamaha RPM Responded: ${res}`, 'rx');
-        log("Yamaha RMAX Connected! Switching to Cockpit...");
-        setTimeout(() => switchTab('tab-dash'), 1200);
-      } else {
-        logDebug(`RPM query returned: ${res}. Trying 29-bit CAN Header...`, 'err');
-        await sendCommand("ATSP7", 2000);
-        await sendCommand("ATSH18DB33F1", 1500);
-        const res2 = await sendCommand("010C", 3000);
-        logDebug(`CAN 29-bit attempt: ${res2}`, res2.includes("410C") ? 'rx' : 'err');
+      for (const cmd of probeList) {
+        const res = await sendCommand(cmd, 2500);
+        if (!res.includes("7F") && !res.includes("NO DATA") && !res.includes("TIMEOUT")) {
+          logDebug(`🎯 WORKING YAMAHA IDENTIFIER FOUND: ${cmd} ➜ ${res}`, 'rx');
+          activeYamahaCommand = cmd;
+        }
+        await new Promise(r => setTimeout(r, 60));
       }
-    };
 
-    window.forceHeader = async function(headerHex) {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-      logDebug(`Setting Header ATSH ${headerHex}`, 'tx');
-      const res = await sendCommand(`ATSH${headerHex}`, 2000);
-      logDebug(`Result: ${res}`, 'rx');
-    };
-
-    window.forceProtocol = async function(protoNum) {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-      logDebug(`Forcing Protocol ATSP${protoNum}`, 'tx');
-      await sendCommand(`ATSP${protoNum}`, 2000);
-      const res = await sendCommand("010C", 3000);
-      logDebug(`Test 010C on Protocol ${protoNum}: ${res}`, 'rx');
+      logDebug(`Probe complete. Active query set to: ${activeYamahaCommand}`, 'warn');
     };
 
     window.quickQuery = async function(cmd) {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
       isPolling = false;
-      logDebug(`Executing manual query: ${cmd}`, 'tx');
+      logDebug(`Sending manual command: ${cmd}`, 'tx');
       const res = await sendCommand(cmd, 3000);
       logDebug(`Result: ${res}`, 'rx');
     };
 
-    /* Discovery & Bitmasks */
-    window.scanSupportedPIDs = async function() {
+    window.startCANMonitor = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
       isPolling = false;
-
-      logDebug("--- SCANNING SUPPORTED PID BITMASKS ---", 'warn');
-      const scanBases = ["0100", "0120", "0140", "0160"];
-      supportedPIDs.clear();
-      supportedPIDs.add("ATRV");
-
-      for (const baseCmd of scanBases) {
-        const res = await sendCommand(baseCmd, 3500);
-        const clean = res.replace(/\s+/g, '');
-        const header = "41" + baseCmd.substring(2);
-        const idx = clean.indexOf(header);
-        if (idx === -1) break;
-
-        const hexMask = clean.substring(idx + 4, idx + 12);
-        if (hexMask.length < 8) break;
-
-        const baseNum = parseInt(baseCmd.substring(2), 16);
-        const binaryString = parseInt(hexMask, 16).toString(2).padStart(32, '0');
-
-        for (let i = 0; i < 32; i++) {
-          if (binaryString[i] === '1') {
-            const hex = (baseNum + i + 1).toString(16).toUpperCase().padStart(2, '0');
-            supportedPIDs.add(`01${hex}`);
-          }
-        }
-        if (binaryString[31] === '0') break;
-      }
-
-      const discCountEl = document.getElementById('disc-count');
-      if (discCountEl) discCountEl.innerText = supportedPIDs.size;
-      logDebug(`Discovered ${supportedPIDs.size} supported PIDs.`, 'rx');
-      renderCategoryList();
+      logDebug("--- STARTING PASSIVE CAN MONITOR (ATMA) ---", 'warn');
+      logDebug("Listening to broadcast frames for 4 seconds...");
+      await writeBLE(new TextEncoder().encode('ATMA\r'));
+      setTimeout(async () => {
+        await writeBLE(new TextEncoder().encode('\r')); // Stop monitor
+        logDebug("Passive CAN monitor stopped.", 'warn');
+      }, 4000);
     };
 
-    window.scanVehicleInfo = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      logDebug("--- QUERYING VEHICLE METADATA ---", 'warn');
-      const protoRes = await sendCommand("ATDP", 2000);
-      const protoEl = document.getElementById('info-proto');
-      if (protoEl) protoEl.innerText = protoRes.replace(/[\r\n]/g, ' ') || 'Unknown';
-
-      const vinRes = await sendCommand("0902", 4000);
-      const vin = parseVIN(vinRes);
-      const vinEl = document.getElementById('info-vin');
-      if (vinEl) vinEl.innerText = vin || "VIN not broadcasted by vehicle.";
-      logDebug(`VIN: ${vin || 'None'} | Protocol: ${protoRes}`, 'rx');
-    };
-
-    function parseVIN(raw) {
-      const clean = raw.replace(/[\r\n\s>]/g, '');
-      const match = clean.match(/49020[1-5]([0-9A-F]+)/gi);
-      if (!match) {
-        const idx = clean.indexOf("4902");
-        if (idx === -1) return null;
-        let hex = clean.substring(idx + 4), str = '';
-        for (let i = 0; i < hex.length; i += 2) {
-          const code = parseInt(hex.substr(i, 2), 16);
-          if (code >= 32 && code <= 126) str += String.fromCharCode(code);
-        }
-        return str.replace(/[^A-HJ-NPR-Z0-9]/gi, '');
-      }
-
-      let hexPayload = match.map(m => m.substring(6)).join('');
-      let vin = '';
-      for (let i = 0; i < hexPayload.length; i += 2) {
-        const code = parseInt(hexPayload.substr(i, 2), 16);
-        if (code >= 32 && code <= 126) vin += String.fromCharCode(code);
-      }
-      return vin;
-    }
-
-    window.sendManualCommand = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      const input = document.getElementById('manual-cmd');
-      if (!input) return;
-      const cmd = input.value.trim().toUpperCase();
-      if (!cmd) return;
-
-      isPolling = false;
-      const res = await sendCommand(cmd, 3000);
-      const resEl = document.getElementById('manual-res');
-      if (resEl) resEl.innerText = res;
-    };
-
-    /* Dev & Audit Sweep */
-    window.runPIDAudit = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      auditResults = [];
-      logDebug("--- STARTING FULL PID AUDIT SWEEP ---", 'warn');
-      const pidsToTest = Object.keys(PID_REGISTRY);
-      let passedCount = 0;
-
-      for (let i = 0; i < pidsToTest.length; i++) {
-        const cmd = pidsToTest[i];
-        const def = PID_REGISTRY[cmd];
-        const res = await sendCommand(cmd, 2000);
-
-        let status = 'NO DATA';
-        let parsedVal = '--';
-        const clean = res.replace(/\s+/g, '');
-        const header = cmd === 'ATRV' ? 'V' : "41" + cmd.substring(2);
-
-        if (cmd === 'ATRV' && res.match(/[0-9]+\.[0-9]+/)) {
-          status = 'SUCCESS';
-          parsedVal = def.parse(res);
-          passedCount++;
-        } else if (clean.includes(header)) {
-          const idx = clean.indexOf(header);
-          const hexPayload = clean.substring(idx + header.length);
-          const bytes = [];
-          for (let j = 0; j < hexPayload.length; j += 2) {
-            bytes.push(parseInt(hexPayload.substr(j, 2), 16));
-          }
-          try {
-            parsedVal = def.parse(bytes);
-            status = isNaN(parsedVal) ? 'PARSING_ERROR' : 'SUCCESS';
-            if (status === 'SUCCESS') passedCount++;
-          } catch (err) {
-            status = 'EXCEPTION';
-          }
-        }
-
-        auditResults.push({ pid: cmd, name: def.name, status, parsedVal, raw: res });
-        await new Promise(r => setTimeout(r, 40));
-      }
-
-      logDebug(`Audit Complete: ${passedCount}/${pidsToTest.length} PIDs operational.`, 'rx');
-    };
-
-    /* Simulator Mode */
+    /* Simulation Mode */
     window.toggleSimulator = function() {
       isSimulator = !isSimulator;
       const statusEl = document.getElementById('status');
@@ -1188,9 +815,7 @@
       if (isSimulator) {
         if (bleDevice?.gatt?.connected) disconnect();
         if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
-        logDebug("Simulator active: Streaming test telemetry.", 'warn');
-        Object.keys(PID_REGISTRY).forEach(pid => supportedPIDs.add(pid));
-        renderCategoryList();
+        logDebug("Simulator active: Generating synthetic Yamaha telemetry.", 'warn');
         startPolling();
       } else {
         isPolling = false;
@@ -1202,47 +827,19 @@
     function getSimulatedResponse(cmd) {
       if (cmd.startsWith("AT")) {
         if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
-        if (cmd === "ATRV") return (13.6 + Math.sin(Date.now() / 2500) * 0.4).toFixed(1) + "V";
+        if (cmd === "ATRV") return (14.2 + Math.sin(Date.now() / 2500) * 0.3).toFixed(1) + "V";
         return "OK";
       }
-      if (cmd === "0902") return "49 02 01 31 46 41 46 50 35 33 55 31 38 41 31 30 39 30 38 31";
-      if (cmd === "0100") return "41 00 BE 3E B8 11";
-      if (cmd === "0120") return "41 20 80 07 E0 11";
-      if (cmd === "0140") return "41 40 7A D0 00 00";
-
-      const time = Date.now() / 1000;
-      switch (cmd) {
-        case "010C": {
-          const rpm = Math.round(2600 + Math.sin(time * 0.9) * 2200);
-          const raw = rpm * 4;
-          const a = (raw >> 8) & 0xFF, b = raw & 0xFF;
-          return `41 0C ${a.toString(16).padStart(2,'0')} ${b.toString(16).padStart(2,'0')}`;
-        }
-        case "010D": {
-          const speed = Math.round(65 + Math.sin(time * 0.4) * 45);
-          return `41 0D ${speed.toString(16).padStart(2,'0')}`;
-        }
-        case "0105": {
-          const temp = Math.round(92 + Math.sin(time * 0.1) * 4) + 40;
-          return `41 05 ${temp.toString(16).padStart(2,'0')}`;
-        }
-        case "0104": {
-          const load = Math.round((55 + Math.sin(time * 0.7) * 25) * 255 / 100);
-          return `41 04 ${load.toString(16).padStart(2,'0')}`;
-        }
-        case "0111": {
-          const thr = Math.round((35 + Math.sin(time * 0.7) * 25) * 255 / 100);
-          return `41 11 ${thr.toString(16).padStart(2,'0')}`;
-        }
-        default: {
-          const pseudoA = Math.round(100 + Math.sin(time) * 30);
-          const pseudoB = Math.round(50 + Math.cos(time) * 20);
-          return `41 ${cmd.substring(2)} ${pseudoA.toString(16).padStart(2,'0')} ${pseudoB.toString(16).padStart(2,'0')}`;
-        }
+      if (cmd === "2101") {
+        const time = Date.now() / 1000;
+        const rpm = Math.round(3500 + Math.sin(time * 0.9) * 2500) * 4;
+        const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
+        const coolant = Math.round(88 + Math.sin(time * 0.1) * 4) + 40;
+        const tps = Math.round((45 + Math.sin(time * 0.7) * 30) * 255 / 100);
+        return `61 01 ${a.toString(16).padStart(2,'0')} ${b.toString(16).padStart(2,'0')} ${coolant.toString(16).padStart(2,'0')} ${tps.toString(16).padStart(2,'0')}`;
       }
+      return "61 01 1A F8 80 40";
     }
-
-    renderCategoryList();
   </script>
 </body>
 </html>
