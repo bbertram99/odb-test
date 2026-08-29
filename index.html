@@ -170,14 +170,12 @@
     .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
     .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
 
-    /* Action Buttons Row */
     .action-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 0.5rem;
     }
 
-    /* Live Debug Terminal Window */
     .terminal-box {
       background: #020617;
       border: 1px solid var(--card-border);
@@ -232,7 +230,7 @@
         <span class="brand-glow"></span>
         OBD-II COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.0.8</span>
+      <span class="version-tag" id="app-version-badge">v1.0.9</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -375,30 +373,35 @@
     <div class="disc-section">
       <div class="disc-title">Raw Command Query</div>
       <div class="terminal-row">
-        <input type="text" id="manual-cmd" placeholder="e.g. 010F or ATRV" />
+        <input type="text" id="manual-cmd" placeholder="e.g. 010C or ATRV" />
         <button class="btn-touch" onclick="sendManualCommand()">Send</button>
       </div>
       <div style="font-size:0.85rem;"><strong>Response:</strong> <span id="manual-res" style="font-family:'JetBrains Mono'; color:var(--cyan);">--</span></div>
     </div>
   </div>
 
-  <!-- TAB 4: Dedicated Live Debug & Log Tab -->
+  <!-- TAB 4: Dedicated Live Log & Powersports Fixers -->
   <div id="tab-log" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Protocol & Troubleshooting Actions</div>
+      <div class="disc-title">Powersports & Protocol Fixers</div>
       <div class="action-grid">
+        <button class="btn-touch" style="grid-column: span 2; background:rgba(74,222,128,0.2); border-color:var(--green); color:var(--green);" onclick="applyYamahaRmaxPreset()">
+          ⚡ Yamaha RMAX Preset (CAN 11/500 + ATSH 7E0)
+        </button>
+        <button class="btn-touch secondary" onclick="forceHeader('7E0')">Set Header 7E0 (ATSH7E0)</button>
         <button class="btn-touch secondary" onclick="forceProtocol('6')">Force CAN 11/500 (SP6)</button>
         <button class="btn-touch secondary" onclick="forceProtocol('7')">Force CAN 29/500 (SP7)</button>
         <button class="btn-touch secondary" onclick="forceProtocol('0')">Reset to Auto (SP0)</button>
-        <button class="btn-touch secondary" onclick="quickQuery('ATRV')">Read Battery (ATRV)</button>
-        <button class="btn-touch secondary" onclick="quickQuery('0100')">Test PID 0100</button>
-        <button class="btn-touch secondary" onclick="runPIDAudit()">Run PID Sweep</button>
+        <button class="btn-touch secondary" onclick="quickQuery('010C')">Test RPM (010C)</button>
+        <button class="btn-touch secondary" onclick="quickQuery('0105')">Test Coolant (0105)</button>
+        <button class="btn-touch secondary" onclick="quickQuery('ATRV')">Read Voltage (ATRV)</button>
+        <button class="btn-touch secondary" onclick="runPIDAudit()">Run Full Audit</button>
       </div>
     </div>
 
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="disc-title">Live Serial Debug Stream</div>
+        <div class="disc-title">Live Serial Packet Log</div>
         <div style="display:flex; gap:0.4rem;">
           <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="copyDebugLog()">Copy Log</button>
           <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearDebugLog()">Clear</button>
@@ -443,7 +446,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.0.8";
+    const APP_VERSION = "v1.0.9";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -827,33 +830,36 @@
       });
     }
 
-    /* ELM327 Robust Initialization Sequence */
+    /* ELM327 Robust Initialization Sequence (with Yamaha RMAX compatibility) */
     async function initELM327() {
-      logDebug("--- INITIALIZING ELM327 PROTOCOL ---");
+      logDebug("--- INITIALIZING ELM327 FOR YAMAHA / POWERSPORTS ---");
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
 
-      await sendCommand("ATD", 1500);   // Set defaults
-      await sendCommand("ATZ", 3000);   // Reset
-      await new Promise(r => setTimeout(r, 600)); // MCU stabilization
+      await sendCommand("ATD", 1500);    // Set defaults
+      await sendCommand("ATZ", 3000);    // Reset
+      await new Promise(r => setTimeout(r, 600)); // Stabilization
 
-      await sendCommand("ATE0", 1500);  // Echo off
-      await sendCommand("ATL0", 1500);  // Linefeeds off
-      await sendCommand("ATS0", 1500);  // Spaces off
-      await sendCommand("ATH0", 1500);  // Headers off
-      await sendCommand("ATAT2", 1500); // Adaptive timing 2 (Aggressive)
-      await sendCommand("ATSTFF", 1500);// Max timeout multiplier
-      await sendCommand("ATSP0", 2500); // Set protocol auto
+      await sendCommand("ATE0", 1500);   // Echo off
+      await sendCommand("ATL0", 1500);   // Linefeeds off
+      await sendCommand("ATS0", 1500);   // Spaces off
+      await sendCommand("ATH0", 1500);   // Headers off
+      await sendCommand("ATAT2", 1500);  // Adaptive timing
+      await sendCommand("ATSTFF", 1500); // Max internal timeout multiplier
 
-      logDebug("Testing ECU connection with PID 0100 (8s max)...");
-      const init0100 = await sendCommand("0100", 8000);
+      // Set Yamaha CAN 11-bit 500k protocol & 7E0 Header
+      await sendCommand("ATSP6", 2000);  // ISO 15765-4 CAN (11-bit, 500k)
+      await sendCommand("ATSH7E0", 1500);// Direct address Yamaha ECU (ID 7E0)
 
-      if (init0100.includes("NO DATA") || init0100 === "TIMEOUT") {
-        logDebug("⚠️ ECU returned NO DATA. Key must be in ON/RUN position!", 'warn');
-        log("ECU NO DATA. Turn key to ON or try 'Force CAN 11/500' in Live Log tab.");
+      logDebug("Probing Yamaha ECU via RPM (010C)...");
+      const testRPM = await sendCommand("010C", 3000);
+
+      if (testRPM.includes("410C")) {
+        logDebug("🎉 ECU Communication Verified on CAN 11/500 + 7E0!", 'rx');
+        log("Yamaha ECU connected! Telemetry live.");
       } else {
-        logDebug("✅ ECU responded to PID 0100! Protocol locked.", 'rx');
-        log("Protocol locked! Live telemetry active.");
+        logDebug("Notice: If gauges show '--', tap '⚡ Yamaha RMAX Preset' in Live Log.", 'warn');
+        log("Connected. Starting live telemetry...");
       }
     }
 
@@ -876,7 +882,7 @@
 
             if (cmd === '010C') {
               if (res.includes("NO DATA")) {
-                log("⚠️ ECU NO DATA. Ensure key is ON or tap 'Force CAN 11/500' in Live Log.");
+                log("⚠️ NO DATA. Tap '⚡ Yamaha RMAX Preset' in Live Log tab.");
               } else if (res !== "TIMEOUT") {
                 const rpmEl = document.getElementById('val-dash-010C');
                 log(`⚡ Live: RPM ${rpmEl ? rpmEl.innerText : '--'} | ${rtt}ms`);
@@ -985,20 +991,48 @@
       }
     }
 
-    /* Quick Troubleshooting Actions in Live Log */
+    /* Powersports & Yamaha Quick Preset */
+    window.applyYamahaRmaxPreset = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II adapter first.");
+      isPolling = false;
+
+      logDebug("--- APPLYING YAMAHA RMAX CAN PROTOCOL PRESET ---", 'warn');
+      await sendCommand("ATE0", 1500);
+      await sendCommand("ATL0", 1500);
+      await sendCommand("ATS0", 1500);
+      await sendCommand("ATH0", 1500);
+      await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
+      await sendCommand("ATSH7E0", 1500); // Yamaha Engine ECU Header 7E0
+
+      const res = await sendCommand("010C", 3000);
+      if (res.includes("410C")) {
+        logDebug(`🎉 SUCCESS! Yamaha RPM Responded: ${res}`, 'rx');
+        log("Yamaha RMAX Connected! Switching to Cockpit...");
+        setTimeout(() => switchTab('tab-dash'), 1200);
+      } else {
+        logDebug(`RPM query returned: ${res}. Trying 29-bit CAN Header...`, 'err');
+        await sendCommand("ATSP7", 2000);
+        await sendCommand("ATSH18DB33F1", 1500);
+        const res2 = await sendCommand("010C", 3000);
+        logDebug(`CAN 29-bit attempt: ${res2}`, res2.includes("410C") ? 'rx' : 'err');
+      }
+    };
+
+    window.forceHeader = async function(headerHex) {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+      logDebug(`Setting Header ATSH ${headerHex}`, 'tx');
+      const res = await sendCommand(`ATSH${headerHex}`, 2000);
+      logDebug(`Result: ${res}`, 'rx');
+    };
+
     window.forceProtocol = async function(protoNum) {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
       isPolling = false;
-      logDebug(`--- FORCING PROTOCOL ATSP${protoNum} ---`, 'warn');
+      logDebug(`Forcing Protocol ATSP${protoNum}`, 'tx');
       await sendCommand(`ATSP${protoNum}`, 2000);
-      const res = await sendCommand("0100", 5000);
-      if (res.includes("4100")) {
-        logDebug(`🎉 SUCCESS! Protocol ${protoNum} responded to PID 0100: ${res}`, 'rx');
-        log(`Protocol ${protoNum} locked! Switching to Cockpit...`);
-        setTimeout(() => switchTab('tab-dash'), 1200);
-      } else {
-        logDebug(`Protocol ${protoNum} returned: ${res}`, 'err');
-      }
+      const res = await sendCommand("010C", 3000);
+      logDebug(`Test 010C on Protocol ${protoNum}: ${res}`, 'rx');
     };
 
     window.quickQuery = async function(cmd) {
