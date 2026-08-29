@@ -124,14 +124,16 @@
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 0.6rem 0.8rem;
+      padding: 0.65rem 0.85rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       backdrop-filter: blur(8px);
     }
-    .status-pill-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .status-pill-val { font-size: 1.3rem; font-weight: 800; color: var(--cyan); }
+    .status-pill-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.4rem; font-weight: 800; color: var(--cyan); }
+    .status-pill-val.reverse { color: var(--amber); text-shadow: 0 0 8px var(--amber); }
+    .status-pill-val.neutral { color: var(--green); text-shadow: 0 0 8px var(--green); }
 
     /* Touch Metric Cards */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
@@ -227,7 +229,7 @@
         <span class="brand-glow"></span>
         RMAX COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.3.0</span>
+      <span class="version-tag" id="app-version-badge">v1.3.5</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -258,7 +260,7 @@
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
-        <span id="val-dash-gear" class="status-pill-val">P</span>
+        <span id="val-dash-gear" class="status-pill-val neutral">N</span>
       </div>
       <div class="status-pill-box">
         <span class="status-pill-label">Drive Mode</span>
@@ -296,7 +298,7 @@
         </div>
       </div>
 
-      <!-- Calibrated Accelerator Pedal (APS Track 1) -->
+      <!-- Gas Pedal / APS (Byte 7) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Gas Pedal (APS)</span>
@@ -310,7 +312,7 @@
         </div>
       </div>
 
-      <!-- Calibrated Throttle Body (TPS d:01) -->
+      <!-- Throttle Body / TPS (d:01) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -340,17 +342,16 @@
     </div>
   </div>
 
-  <!-- TAB 2: Telemetry Flight Recorder & Metric Mapper -->
+  <!-- TAB 2: Telemetry Flight Recorder -->
   <div id="tab-recorder" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Session Flight Recorder</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Perform a test motion (e.g. shift gears P-R-N-H-L or switch 2WD/4WD) and capture the exact byte changes.
+        Tag your test action (e.g. 2WD / 4WD / Diff-Lock switch or brake press) and capture delta frames.
       </p>
       <div style="display:flex; flex-direction:column; gap:0.4rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">TEST ACTION TAG:</label>
         <select id="record-tag">
-          <option value="Gear Shift Cycle (P -> R -> N -> H -> L)">Gear Shift Cycle (P -> R -> N -> H -> L)</option>
           <option value="2WD / 4WD / Diff-Lock Switching">2WD / 4WD / Diff-Lock Switching</option>
           <option value="Brake Pedal Press & Release">Brake Pedal Press & Release</option>
           <option value="Cold Start & Engine Warmup">Cold Start & Engine Warmup</option>
@@ -423,7 +424,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.3.0";
+    const APP_VERSION = "v1.3.5";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -705,8 +706,8 @@
         parseVoltage(voltRes);
 
         const rpmVal = document.getElementById('val-dash-rpm').innerText;
-        const pedalVal = document.getElementById('val-dash-pedal').innerText;
-        log(`⚡ RMAX Live: RPM ${rpmVal} | Pedal ${pedalVal}% | ${rtt}ms`);
+        const gearVal = document.getElementById('val-dash-gear').innerText;
+        log(`⚡ RMAX: ${gearVal} | RPM ${rpmVal} | ${rtt}ms`);
 
         await new Promise(r => setTimeout(r, 35));
       }
@@ -714,7 +715,7 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED DECODER
+       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED SENSOR DECODER
        ========================================================== */
     function parseYamahaPayload(raw) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
@@ -776,7 +777,7 @@
         }
       }
 
-      // --- 4. Calibrated Gas Pedal / APS (Byte 7): 0x23 (35) -> 0xC5 (197) ---
+      // --- 4. Gas Pedal / APS (Byte 7): 0x23 (35) -> 0xC5 (197) ---
       if (bytes.length >= 8) {
         const rawAPS = bytes[7];
         const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
@@ -785,7 +786,7 @@
         if (pedalBar) pedalBar.style.width = pedalPct + '%';
       }
 
-      // --- 5. Calibrated Throttle Body / TPS (Byte 9): 0x21 (33) -> 0xD2 (210) -> Diagnostic d:01 ---
+      // --- 5. Throttle Blade / TPS (Byte 9): 0x21 (33) -> 0xD2 (210) -> Diagnostic d:01 ---
       if (bytes.length >= 10) {
         const rawTPS = bytes[9];
         const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
@@ -794,13 +795,28 @@
         if (tpsBar) tpsBar.style.width = tpsPct + '%';
       }
 
-      // --- 6. Transmission Gear & Drive Mode (Byte 18 & 19) ---
+      // --- 6. Calibrated Transmission Gear Selector (Byte 19) ---
       if (bytes.length >= 20) {
-        // Gear & 4WD decoders will calibrate during the gear recording test
-        const b18 = bytes[18];
         const b19 = bytes[19];
-        // Placeholder state mapping
-        if (b19 === 0x80) document.getElementById('val-dash-drive').innerText = '2WD';
+        const gearCode = b19 & 0x0F;
+        const gearEl = document.getElementById('val-dash-gear');
+        
+        let gearText = 'N';
+        gearEl.className = 'status-pill-val';
+
+        if (gearCode === 0x00) {
+          gearText = 'N';
+          gearEl.classList.add('neutral');
+        } else if (gearCode === 0x02) {
+          gearText = 'R';
+          gearEl.classList.add('reverse');
+        } else if (gearCode === 0x01) {
+          gearText = 'H';
+        } else if (gearCode === 0x03) {
+          gearText = 'L';
+        }
+
+        gearEl.innerText = gearText;
       }
 
       lastBytes = [...bytes];
