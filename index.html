@@ -89,7 +89,7 @@
     .view-panel { display: none; flex-direction: column; gap: 0.75rem; flex: 1; animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Cockpit Hero Gauge */
+    /* Hero Tachometer */
     .cockpit-hero {
       background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
       padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -113,32 +113,39 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
     @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
 
-    /* Live Status Strip */
+    /* Live Status Strip (Gear, D-Mode, Brakes) */
     .drive-status-strip {
-      display: flex;
-      gap: 0.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1.3fr 0.9fr 0.9fr;
+      gap: 0.4rem;
       width: 100%;
     }
     .status-pill-box {
-      flex: 1;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 0.6rem 0.8rem;
+      padding: 0.55rem 0.6rem;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      gap: 0.15rem;
       backdrop-filter: blur(8px);
     }
-    .status-pill-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .status-pill-val { font-size: 1.4rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    .status-pill-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.25rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    
     .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
     .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
     .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
 
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); font-weight: 800; }
+    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); font-weight: 800; }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); font-weight: 800; }
+
     .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
-    .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.2); }
+    .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.18); }
 
     /* Touch Metric Cards */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
@@ -266,9 +273,9 @@
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
-        RMAX COCKPIT
+        RMAX PRO COCKPIT
       </div>
-      <span class="version-tag" id="app-version-badge">v1.5.0</span>
+      <span class="version-tag" id="app-version-badge">v1.6.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -295,19 +302,23 @@
       </div>
     </div>
 
-    <!-- Live Status Strip -->
+    <!-- Live Status Strip (Gear, D-Mode, P-Brake, Foot Brake) -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
         <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
       </div>
       <div class="status-pill-box">
-        <span class="status-pill-label">Brake</span>
-        <span id="val-dash-brake" class="status-pill-val brake-off">OFF</span>
+        <span class="status-pill-label">D-Mode</span>
+        <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
       </div>
       <div class="status-pill-box">
-        <span class="status-pill-label">Drive</span>
-        <span id="val-dash-drive" class="status-pill-val" style="font-size:1.1rem;">2WD</span>
+        <span class="status-pill-label">P-Brake</span>
+        <span id="val-dash-pbrake" class="status-pill-val brake-off">OFF</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">Brake</span>
+        <span id="val-dash-brake" class="status-pill-val brake-off">OFF</span>
       </div>
     </div>
 
@@ -406,7 +417,7 @@
       <!-- Dynamic On-Screen Instructions -->
       <div class="instruction-card" id="instruction-box">
         <div class="inst-header">🔑 REQUIRED MACHINE STATE</div>
-        <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Stationary.</div>
+        <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Machine stationary.</div>
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 TEST PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Start with the rotary switch in <strong>Turf Mode</strong>.</li>
@@ -488,7 +499,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v1.5.0";
+    const APP_VERSION = "v1.6.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -868,7 +879,8 @@
 
         const rpmVal = document.getElementById('val-dash-rpm').innerText;
         const gearVal = document.getElementById('val-dash-gear').innerText;
-        log(`⚡ RMAX: Gear [${gearVal}] | RPM ${rpmVal} | ${rtt}ms`);
+        const dmodeVal = document.getElementById('val-dash-dmode').innerText;
+        log(`⚡ RMAX: ${gearVal} | ${dmodeVal} | RPM ${rpmVal} | ${rtt}ms`);
 
         await new Promise(r => setTimeout(r, 35));
       }
@@ -914,21 +926,21 @@
       if (targetCmd === '2101') {
         renderByteMatrix(bytes);
 
-        // 1. Engine RPM (Bytes 0 & 1)
+        // --- 1. Engine RPM (Bytes 0 & 1) ---
         const rpm = (bytes[0] * 256) + bytes[1];
         if (!isNaN(rpm) && rpm <= 10000) {
           document.getElementById('val-dash-rpm').innerText = rpm;
           updateTachometer(rpm);
         }
 
-        // 2. Speed (Bytes 2 & 3)
+        // --- 2. Speed (Bytes 2 & 3) ---
         let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
         if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
         document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
         const speedBar = document.getElementById('bar-speed');
         if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-        // 3. Coolant (Byte 4)
+        // --- 3. Coolant (Byte 4) -> d:06 ---
         if (bytes.length >= 5) {
           const coolant = bytes[4];
           document.getElementById('val-dash-coolant').innerText = coolant;
@@ -939,7 +951,7 @@
           }
         }
 
-        // 4. Gas Pedal / APS (Byte 7)
+        // --- 4. Gas Pedal / APS (Byte 7) ---
         if (bytes.length >= 8) {
           const rawAPS = bytes[7];
           const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
@@ -948,7 +960,7 @@
           if (pedalBar) pedalBar.style.width = pedalPct + '%';
         }
 
-        // 5. Throttle Blade / TPS (Byte 9)
+        // --- 5. Throttle Blade / TPS (Byte 9) ---
         if (bytes.length >= 10) {
           const rawTPS = bytes[9];
           const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
@@ -957,7 +969,7 @@
           if (tpsBar) tpsBar.style.width = tpsPct + '%';
         }
 
-        // 6. Live Transmission Gear (Byte 19)
+        // --- 6. Live Transmission Gear (Byte 19) ---
         if (bytes.length >= 20) {
           const b19 = bytes[19];
           const gearNibble = b19 & 0x0F;
@@ -981,7 +993,37 @@
           gearEl.innerText = gearText;
         }
 
-        // 7. Live Brake Light (Byte 21 Bit 4: 0x10)
+        // --- 7. Live D-MODE Selector (Byte 20) ---
+        if (bytes.length >= 21) {
+          const b20 = bytes[20];
+          const dmodeEl = document.getElementById('val-dash-dmode');
+          
+          if (b20 === 0x82) {
+            dmodeEl.innerText = 'CRAWL';
+            dmodeEl.className = 'status-pill-val dmode-crawl';
+          } else if (b20 === 0x81) {
+            dmodeEl.innerText = 'TRAIL';
+            dmodeEl.className = 'status-pill-val dmode-trail';
+          } else if (b20 === 0x80) {
+            dmodeEl.innerText = 'SPORT';
+            dmodeEl.className = 'status-pill-val dmode-sport';
+          }
+        }
+
+        // --- 8. Live Parking Brake Lever (Byte 21 Bit 2: 0x04) ---
+        if (bytes.length >= 22) {
+          const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+          const pbrakeEl = document.getElementById('val-dash-pbrake');
+          if (isPBrakeOn) {
+            pbrakeEl.innerText = 'PARK';
+            pbrakeEl.className = 'status-pill-val brake-on';
+          } else {
+            pbrakeEl.innerText = 'OFF';
+            pbrakeEl.className = 'status-pill-val brake-off';
+          }
+        }
+
+        // --- 9. Live Foot Brake Pedal (Byte 21 Bit 4: 0x10) ---
         if (bytes.length >= 22) {
           const isBrakeOn = (bytes[21] & 0x10) === 0x10;
           const brakeEl = document.getElementById('val-dash-brake');
@@ -1066,7 +1108,6 @@
       const def = TEST_DEFINITIONS[testKey];
 
       if (!isRecordingSession) {
-        // Start Recording
         isRecordingSession = true;
         recordedFrames = [];
         recordStartTime = Date.now();
@@ -1078,7 +1119,6 @@
 
         document.getElementById('record-status-text').innerText = `🔴 Recording Active: ${def.title}`;
       } else {
-        // Stop & Append
         isRecordingSession = false;
         btn.innerText = "🔴 Start Session Record";
         btn.classList.remove('recording');
@@ -1134,7 +1174,6 @@
 
       accumulatedReports.push(sessionText);
 
-      // Render Cumulative Output in UI
       updateMasterReportUI();
       document.getElementById('record-status-text').innerText = `✅ Test Run #${accumulatedReports.length} Appended! Select next test or Copy All.`;
     }
@@ -1206,9 +1245,9 @@
         const coolant = Math.round(45 + Math.sin(time * 0.1) * 15);
         const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
-        const brake = Math.sin(time * 0.5) > 0 ? 0x11 : 0x01;
+        const brake = Math.sin(time * 0.5) > 0 ? 0x14 : 0x00;
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18282${brake.toString(16).padStart(2,'0')}8000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:${coolant.toString(16).padStart(2,'0')}00C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF75396C00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
       }
       if (cmd === "2140") {
         const diffVal = Math.sin(Date.now() / 3000) > 0 ? "80" : "81";
@@ -1220,7 +1259,6 @@
       return "OK";
     }
 
-    // Initialize instructions on load
     onTestSelectChanged();
   </script>
 </body>
