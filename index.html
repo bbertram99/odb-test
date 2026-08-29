@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro (v2.2.0)</title>
+  <title>Yamaha RMAX Pro (v2.3.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -145,6 +145,27 @@
     .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
     .status-pill-val.brake-off { color: rgba(255, 255, 255, 0.18); }
 
+    /* Inclinometer & GPS HUD Widget */
+    .adventure-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.4rem;
+      width: 100%;
+    }
+    .adv-box {
+      background: rgba(16, 23, 41, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+    }
+    .adv-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .adv-val { font-size: 1.25rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
+
     /* Touch Metric Cards Grid */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
     .touch-card {
@@ -241,7 +262,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v2.2.0</span>
+      <span class="version-tag" id="app-version-badge">v2.3.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -251,7 +272,7 @@
     </div>
   </header>
 
-  <!-- TAB 1: Cockpit Telemetry -->
+  <!-- TAB 1: Advanced Cockpit Telemetry -->
   <div id="tab-dash" class="view-panel" style="display: flex;">
     
     <!-- Hero Tachometer -->
@@ -289,11 +310,27 @@
       </div>
     </div>
 
+    <!-- Adventure Inclinometer & GPS Bar -->
+    <div class="adventure-strip">
+      <div class="adv-box">
+        <span class="adv-label">Pitch / Grade</span>
+        <span id="val-dash-pitch" class="adv-val">0°</span>
+      </div>
+      <div class="adv-box">
+        <span class="adv-label">Roll / Tilt</span>
+        <span id="val-dash-roll" class="adv-val">0°</span>
+      </div>
+      <div class="adv-box">
+        <span class="adv-label">Altitude</span>
+        <span id="val-dash-altitude" class="adv-val">-- ft</span>
+      </div>
+    </div>
+
     <div class="cockpit-grid">
-      <!-- Ground Speed -->
+      <!-- Ground Speed (d:07 or GPS fallback) -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
-          <span class="card-label">Speed (d:07)</span>
+          <span class="card-label">Speed</span>
           <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
         </div>
         <div class="card-main">
@@ -305,7 +342,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (CALIBRATED: Byte 15 / d:06) -->
+      <!-- Coolant Temp (CALIBRATED: Byte 15) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Coolant (d:06)</span>
@@ -319,7 +356,7 @@
         </div>
       </div>
 
-      <!-- Spark Advance / Timing (Byte 16) -->
+      <!-- Spark Advance (Byte 16) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Spark Timing</span>
@@ -361,7 +398,7 @@
         </div>
       </div>
 
-      <!-- Throttle Blade / TPS (Byte 9 / d:01) -->
+      <!-- Throttle Blade / TPS (Byte 9) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -375,7 +412,7 @@
         </div>
       </div>
 
-      <!-- ECU ADC Voltage (Byte 13) -->
+      <!-- Battery Voltage -->
       <div class="touch-card" style="grid-column: span 2;">
         <div class="card-top">
           <span class="card-label">ECU Regulated Voltage (Byte 13 d:09)</span>
@@ -395,17 +432,16 @@
   <!-- TAB 2: Guided Flight Recorder -->
   <div id="tab-recorder" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Guided Test Flight Recorder</div>
+      <div class="disc-title">Targeted RMAX Flight Tests</div>
       
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
-        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT TARGET TEST:</label>
+        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT FLIGHT TEST:</label>
         <select id="record-test-select" onchange="onTestSelectChanged()">
-          <option value="test_drive_mode_2140">1. 4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock) [Target: 21 40]</option>
-          <option value="test_diff_2164">2. Extended Diff & Chassis Sweep [Target: 21 64]</option>
-          <option value="test_reverse_2140">3. Reverse vs Neutral Isolation [Target: 21 40]</option>
-          <option value="test_handbrake_2101">4. Parking Brake Hand Lever [Target: 21 01]</option>
-          <option value="test_dmode_2101">5. D-Mode Switch (Crawling / Trail / Sport) [Target: 21 01]</option>
-          <option value="test_warmup_2101">6. Engine Warmup & MAP Blip [Target: 21 01]</option>
+          <option value="test_headlights_2101">1. Headlights (OFF -> Low -> High -> OFF) [Target: 21 01]</option>
+          <option value="test_speed_roll_2101">2. Low-Speed Roll Test (0 -> 10 -> 15 MPH) [Target: 21 01]</option>
+          <option value="test_iqs_suspension_7e5">3. Fox iQS Suspension Sweep (Comfort -> Med -> Firm) [Target: 0x7E5]</option>
+          <option value="test_eps_sweep_760">4. EPS Power Steering Lock-to-Lock [Target: 0x760]</option>
+          <option value="test_incline_tilt_2101">5. Vehicle Incline / Slope Rocking [Target: 21 01]</option>
         </select>
       </div>
 
@@ -414,10 +450,10 @@
         <div class="inst-state" id="inst-state-text">Key ON, Engine OFF (or Idle). Machine stationary.</div>
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 TEST PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
-          <li>Start with the rotary switch in <strong>Turf Mode</strong>.</li>
-          <li>Tap the <strong>🔴 Start Session Record</strong> button below.</li>
-          <li>Turn switch to <strong>2WD</strong> (pause 2s) &rarr; <strong>4WD</strong> (pause 2s) &rarr; <strong>Diff Lock</strong> (pause 2s).</li>
-          <li>Return switch back to <strong>Turf Mode</strong>.</li>
+          <li>Start with Light Switch in <strong>OFF</strong> position.</li>
+          <li>Tap <strong>🔴 Start Session Record</strong>.</li>
+          <li>Turn switch to <strong>Low Beam</strong> (pause 2s) &rarr; <strong>High Beam</strong> (pause 2s).</li>
+          <li>Return switch back to <strong>OFF</strong>.</li>
           <li>Tap <strong>⏹️ Stop & Append to Master Log</strong>.</li>
         </ol>
       </div>
@@ -431,21 +467,20 @@
     </div>
   </div>
 
-  <!-- TAB 3: Multi-ECU Module Scanner & DTCs -->
-  <div id="tab-modules" class="view-panel">
+  <!-- TAB 3: Diagnostic Trouble Codes & ECU Node Scanner -->
+  <div id="tab-diagnostics" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">Multi-ECU Network Gateway</div>
+      <div class="disc-title">Live DTC & Fault Memory Decoder</div>
       <div class="action-grid">
-        <button class="btn-touch yamaha" onclick="scanAllCANModules()">🔍 Ping All CAN Addresses (700-7E8)</button>
-        <button class="btn-touch secondary" onclick="queryEPSModule()">Query EPS Steering (0x760)</button>
-        <button class="btn-touch secondary" onclick="queryYamahaDTCs()">Read DTCs (21 60 / 21 61)</button>
+        <button class="btn-touch yamaha" onclick="decodeYamahaDTCs()">🔍 Scan & Decode Fault Codes (21 60 / 61)</button>
+        <button class="btn-touch secondary" onclick="probeAuxiliaryModules()">Probe EPS (760) & iQS (7E5)</button>
       </div>
     </div>
 
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
-      <div class="disc-title">Module & Diagnostic Stream</div>
-      <div id="module-scan-results" class="terminal-box">
-        <div style="color:var(--text-muted);">Tap a tool above to query the network. Results log automatically to Master Report...</div>
+      <div class="disc-title">Decoded Trouble Codes & Status</div>
+      <div id="dtc-display-box" class="terminal-box">
+        <div style="color:var(--text-muted);">Tap Scan above to decode active and historic fault memory...</div>
       </div>
     </div>
   </div>
@@ -485,9 +520,9 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
       <span>Recorder</span>
     </button>
-    <button class="dock-btn" id="btn-tab-modules" onclick="switchTab('tab-modules')">
-      <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-      <span>Modules</span>
+    <button class="dock-btn" id="btn-tab-diagnostics" onclick="switchTab('tab-diagnostics')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>DTCs</span>
     </button>
     <button class="dock-btn" id="btn-tab-master-log" onclick="switchTab('tab-master-log')">
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
@@ -503,7 +538,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v2.2.0";
+    const APP_VERSION = "v2.3.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -511,75 +546,87 @@
       return false;
     };
 
+    /* Yamaha Diagnostic Trouble Code Lookup Dictionary */
+    const YAMAHA_DTC_MAP = {
+      12: "Crankshaft Position Sensor (No normal signal received)",
+      13: "Intake Air Pressure Sensor (Open/Short circuit)",
+      14: "Intake Air Pressure Sensor (Hose detached or clogged)",
+      15: "Throttle Position Sensor 1 (Open/Short circuit)",
+      16: "Throttle Position Sensor 2 (Stuck / signal mismatch)",
+      21: "Coolant Temperature Sensor (Open/Short circuit)",
+      22: "Intake Air Temperature Sensor (Open/Short circuit)",
+      28: "Engine Temperature Abnormally High",
+      30: "Lean Angle / Tip-Over Sensor Tripped (Vehicle Overturned)",
+      33: "Ignition Coil #1 Malfunction",
+      34: "Ignition Coil #2 Malfunction",
+      41: "Lean Angle / Tip-Over Sensor (Open/Short circuit)",
+      42: "Speed Sensor / Neutral Switch Input Signal Malfunction",
+      46: "Vehicle Charging System Voltage Abnormal",
+      50: "ECU Internal Memory Fault",
+      60: "YCC-T Drive-By-Wire Throttle Servo Motor Malfunction"
+    };
+
     const TEST_DEFINITIONS = {
-      test_drive_mode_2140: {
-        title: "4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock)",
-        targetCmd: "2140",
-        stateText: "Key ON, Engine OFF (or Idle). Machine stationary.",
-        steps: [
-          "Start with the rotary switch in <strong>Turf Mode</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Switch to <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
-          "Rotate switch back to <strong>Turf Mode</strong>.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_diff_2164: {
-        title: "Extended Diff & Chassis Sweep",
-        targetCmd: "2164",
+      test_headlights_2101: {
+        title: "Headlights (OFF -> Low -> High -> OFF)",
+        targetCmd: "2101",
+        header: "7E0",
         stateText: "Key ON, Engine OFF. Machine stationary.",
         steps: [
-          "Start with rotary switch in <strong>Turf Mode</strong>.",
+          "Start with Light Switch in <strong>OFF</strong>.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "Cycle through <strong>2WD</strong> (hold 2s) &rarr; <strong>4WD</strong> (hold 2s) &rarr; <strong>Diff Lock</strong> (hold 2s).",
+          "Turn to <strong>Low Beam</strong> (pause 2s) &rarr; <strong>High Beam</strong> (pause 2s).",
+          "Return switch back to <strong>OFF</strong>.",
           "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
         ]
       },
-      test_reverse_2140: {
-        title: "Reverse vs Neutral Isolation",
-        targetCmd: "2140",
-        stateText: "Key ON, Engine OFF. Foot holding Brake Pedal firmly.",
-        steps: [
-          "Start with shifter in <strong>Neutral (N)</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Shift to <strong>Reverse (R)</strong> and hold for 3 seconds.",
-          "Shift back to <strong>Neutral (N)</strong> and hold for 3 seconds.",
-          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
-        ]
-      },
-      test_handbrake_2101: {
-        title: "Parking Brake Hand Lever",
+      test_speed_roll_2101: {
+        title: "Low-Speed Roll Test (0 -> 10 -> 15 MPH)",
         targetCmd: "2101",
-        stateText: "Key ON, Engine OFF. Shifter in Neutral (N).",
+        header: "7E0",
+        stateText: "Engine Running, In Gear (High), Flat safe path.",
         steps: [
-          "Start with Parking Brake lever pulled <strong>ON / ENGAGED</strong>.",
+          "Stop machine in High gear.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "Release Parking Brake lever completely (pause 3s).",
-          "Pull Parking Brake lever firmly back <strong>ON</strong> (pause 3s).",
+          "Accelerate smoothly to 10 MPH (hold 3s) &rarr; 15 MPH (hold 3s).",
+          "Come to a complete stop.",
           "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
         ]
       },
-      test_dmode_2101: {
-        title: "D-Mode Switch (Crawling / Trail / Sport)",
+      test_iqs_suspension_7e5: {
+        title: "Fox iQS Suspension Sweep (Comfort -> Med -> Firm)",
         targetCmd: "2101",
-        stateText: "Key ON, Engine OFF. In Neutral.",
+        header: "7E5",
+        stateText: "Key ON, Engine OFF. Stationary.",
         steps: [
-          "Start in <strong>Crawl Mode</strong>.",
+          "Start in <strong>Comfort</strong> suspension setting.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "Switch to <strong>Trail Mode</strong> (hold 2s) &rarr; <strong>Sport Mode</strong> (hold 2s).",
-          "Return switch back to <strong>Crawl Mode</strong>.",
+          "Switch to <strong>Medium</strong> (hold 2s) &rarr; <strong>Firm</strong> (hold 2s).",
+          "Return back to <strong>Comfort</strong>.",
           "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
         ]
       },
-      test_warmup_2101: {
-        title: "Engine Warmup & MAP Blip",
+      test_eps_sweep_760: {
+        title: "EPS Power Steering Lock-to-Lock",
         targetCmd: "2101",
-        stateText: "Engine RUNNING at Idle, In Neutral, Parking Brake ON.",
+        header: "760",
+        stateText: "Engine Running at Idle in Park/Neutral.",
         steps: [
-          "With engine idling, tap <strong>🔴 Start Session Record</strong>.",
-          "Let engine idle steadily for 10 seconds.",
-          "Smoothly blip accelerator pedal to ~2,500 RPM and release.",
-          "Let engine idle for 5 seconds.",
+          "Steering wheel straight.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Turn wheel full left lock (pause 2s) &rarr; full right lock (pause 2s) &rarr; center.",
+          "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
+        ]
+      },
+      test_incline_tilt_2101: {
+        title: "Vehicle Incline / Slope Rocking",
+        targetCmd: "2101",
+        header: "7E0",
+        stateText: "Key ON, Engine OFF. Safe incline or rock machine.",
+        steps: [
+          "Park machine level.",
+          "Tap <strong>🔴 Start Session Record</strong>.",
+          "Rock machine side-to-side and up/down firmly.",
           "Tap <strong>⏹️ Stop & Append to Master Log</strong>."
         ]
       }
@@ -610,6 +657,42 @@
       if (el) el.innerText = msg;
     }
 
+    /* Initialize Built-in Phone Sensors (Inclinometer & GPS) */
+    function initPhoneSensors() {
+      // 1. Gyroscope / Inclinometer for Pitch & Roll
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+          const pitch = Math.round(event.beta || 0); // Front-to-back tilt
+          const roll = Math.round(event.gamma || 0); // Side-to-side tilt
+          
+          const pitchEl = document.getElementById('val-dash-pitch');
+          const rollEl = document.getElementById('val-dash-roll');
+          if (pitchEl) pitchEl.innerText = `${pitch}°`;
+          if (rollEl) rollEl.innerText = `${roll}°`;
+        });
+      }
+
+      // 2. High-Accuracy GPS Ground Speed & Altitude
+      if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition((pos) => {
+          const speedKmh = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : null;
+          const altM = pos.coords.altitude ? Math.round(pos.coords.altitude * 3.28084) : null; // ft
+
+          if (altM !== null) {
+            const altEl = document.getElementById('val-dash-altitude');
+            if (altEl) altEl.innerText = `${altM} ft`;
+          }
+
+          // If ECU speed is 0 or uncalibrated, use GPS as smooth HUD fallback
+          if (speedKmh !== null) {
+            let displaySpeed = (speedUnit === 'mph') ? Math.round(speedKmh * 0.621371) : speedKmh;
+            const spdEl = document.getElementById('val-dash-speed');
+            if (spdEl && spdEl.innerText === '--') spdEl.innerText = displaySpeed;
+          }
+        }, () => {}, { enableHighAccuracy: true, maximumAge: 1000 });
+      }
+    }
+
     window.onTestSelectChanged = function() {
       const testKey = document.getElementById('record-test-select').value;
       const def = TEST_DEFINITIONS[testKey];
@@ -622,7 +705,7 @@
 
     window.switchTab = function(tabId) {
       activeTab = tabId;
-      const tabs = ['tab-dash', 'tab-recorder', 'tab-modules', 'tab-master-log'];
+      const tabs = ['tab-dash', 'tab-recorder', 'tab-diagnostics', 'tab-master-log'];
       tabs.forEach(t => {
         const btn = document.getElementById('btn-' + t);
         if (btn) btn.classList.toggle('active', t === tabId);
@@ -822,10 +905,15 @@
 
       while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
         let targetCmd = '2101';
+        let targetHeader = '7E0';
+
         if (isRecordingSession) {
           const testKey = document.getElementById('record-test-select').value;
           const def = TEST_DEFINITIONS[testKey];
-          if (def) targetCmd = def.targetCmd;
+          if (def) {
+            targetCmd = def.targetCmd;
+            targetHeader = def.header;
+          }
         }
 
         const startT = performance.now();
@@ -834,7 +922,7 @@
 
         parseYamahaPayload(rawRes, targetCmd);
 
-        // Update Voltage via ATRV
+        // Voltage Query
         const voltRes = await sendCommand("ATRV", 800);
         const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
         if (m && m[1]) {
@@ -852,7 +940,7 @@
     }
 
     /* ==========================================================
-       YAMAHA RMAX 21 01 CALIBRATED SENSOR DECODER
+       YAMAHA RMAX 21 01 DEFRAGMENTER & CALIBRATED DECODER
        ========================================================== */
     function parseYamahaPayload(raw, targetCmd) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
@@ -898,11 +986,11 @@
         // 2. Speed (Bytes 2 & 3)
         let speed = Math.round(((bytes[2] * 256) + bytes[3]) / 10);
         if (speedUnit === 'mph') speed = Math.round(speed * 0.621371);
-        document.getElementById('val-dash-speed').innerText = isNaN(speed) ? '--' : speed;
+        if (speed > 0) document.getElementById('val-dash-speed').innerText = speed;
         const speedBar = document.getElementById('bar-speed');
         if (speedBar) speedBar.style.width = Math.min(100, (speed / 140) * 100) + '%';
 
-        // 3. Coolant Temperature (EXACT CALIBRATION: Byte 15 -> d:06)
+        // 3. Coolant Temperature (Byte 15 -> d:06)
         const coolant = bytes[15];
         document.getElementById('val-dash-coolant').innerText = coolant;
         const coolantBar = document.getElementById('bar-coolant');
@@ -937,8 +1025,7 @@
         const mapBar = document.getElementById('bar-map');
         if (mapBar) mapBar.style.width = Math.min(100, (mapKpa / 250) * 100) + '%';
 
-        // 8. Spark Advance / Ignition Timing (CALIBRATED: Byte 16)
-        // Byte 16: 0x69 (105) at idle -> 0x92 (146) at blip
+        // 8. Spark Advance / Ignition Timing (Byte 16)
         const timingDeg = Math.round((bytes[16] - 80) / 2);
         document.getElementById('val-dash-timing').innerText = timingDeg > -10 && timingDeg < 55 ? timingDeg : (bytes[16] - 90);
         const timingBar = document.getElementById('bar-timing');
@@ -1007,7 +1094,97 @@
     }
 
     /* ==========================================================
-       CENTRAL MASTER LOGGING ENGINE
+       YAMAHA DTC DECODER
+       ========================================================== */
+    window.decodeYamahaDTCs = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const out = document.getElementById('dtc-display-box');
+      out.innerHTML = '<div style="color:var(--cyan);">Scanning Active (21 60) & Historic (21 61) DTCs...</div>';
+
+      await sendCommand("ATSH7E0", 1000);
+      const res60 = await sendCommand("2160", 2500);
+      const res61 = await sendCommand("2161", 2500);
+
+      let html = '<div style="font-weight:700; color:var(--amber);">--- ACTIVE FAULT MEMORY (d:60) ---</div>';
+      html += parseDTCBlock(res60);
+
+      html += '<div style="font-weight:700; color:var(--cyan); margin-top:0.75rem;">--- HISTORIC STORED FAULTS (d:61) ---</div>';
+      html += parseDTCBlock(res61);
+
+      out.innerHTML = html;
+
+      appendToMasterReport("Yamaha DTC Scan & Decoder", "Active (21 60) & Historic (21 61)", `Active: ${res60}\nHistoric: ${res61}`);
+    };
+
+    function parseDTCBlock(raw) {
+      let hexStream = '';
+      raw.split(/[\r\n]+/).forEach(line => {
+        const m = line.replace(/\s+/g, '').match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+        if (m) hexStream += m[1];
+      });
+
+      if (!hexStream.length) return '<div style="color:var(--green);">✅ System Clean (No Active Trouble Codes)</div>';
+
+      const bytes = [];
+      for (let i = 0; i < hexStream.length; i += 2) {
+        bytes.push(parseInt(hexStream.substr(i, 2), 16));
+      }
+
+      // Filter unique non-zero DTC codes
+      const foundCodes = [];
+      for (let i = 4; i < bytes.length; i += 2) {
+        const code = bytes[i];
+        if (code > 0 && code < 99 && !foundCodes.includes(code)) {
+          foundCodes.push(code);
+        }
+      }
+
+      if (!foundCodes.length) {
+        return '<div style="color:var(--green);">✅ No Fault Codes Stored</div>';
+      }
+
+      return foundCodes.map(code => {
+        const desc = YAMAHA_DTC_MAP[code] || "Yamaha Manufacturer Specific Diagnostic Code";
+        return `<div style="color:var(--red); padding:0.2rem 0;">⚠️ <strong>Code ${code}</strong>: ${desc}</div>`;
+      }).join('');
+    }
+
+    window.probeAuxiliaryModules = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const out = document.getElementById('dtc-display-box');
+      out.innerHTML = '<div style="color:var(--cyan);">Probing EPS (0x760) & Fox iQS (0x7E5) auxiliary control units...</div>';
+
+      const probeTargets = [
+        { header: '760', label: 'EPS Power Steering', cmds: ['2100', '2101', '2102', '22F40C'] },
+        { header: '7E5', label: 'Fox iQS Suspension Unit', cmds: ['2100', '2101', '2164', '220101'] }
+      ];
+
+      let logText = '';
+
+      for (const target of probeTargets) {
+        await sendCommand(`ATSH${target.header}`, 1000);
+        out.innerHTML += `<div style="color:var(--amber); margin-top:0.4rem;">Testing Node 0x${target.header} (${target.label}):</div>`;
+
+        for (const cmd of target.cmds) {
+          const res = await sendCommand(cmd, 1500);
+          const clean = res.replace(/[\s\r\n>]/g, '');
+          const isHit = !clean.includes('7F') && !clean.includes('NODATA') && !clean.includes('TIMEOUT');
+          
+          out.innerHTML += `<div style="color:${isHit ? 'var(--green)' : 'var(--text-muted)'}; padding-left:0.5rem;">${cmd} &rarr; ${res}</div>`;
+          logText += `${target.label} (0x${target.header}) ${cmd} -> ${res}\n`;
+        }
+      }
+
+      await sendCommand("ATSH7E0", 1000); // restore
+      appendToMasterReport("Auxiliary Node Deep Probe", "0x760 and 0x7E5 Sub-LID Sweep", logText);
+    };
+
+    /* ==========================================================
+       MASTER CUMULATIVE LOGGER
        ========================================================== */
     function appendToMasterReport(title, details, rawResultText) {
       let block = `\n========================================\n`;
@@ -1061,7 +1238,7 @@
       log("Master log reset.");
     };
 
-    /* Session Flight Recorder Engine */
+    /* Flight Recorder Session */
     window.toggleSessionRecording = function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
 
@@ -1102,7 +1279,7 @@
       const durationSec = recordedFrames[totalFrames - 1].time;
       const numBytes = recordedFrames[0].bytes.length;
 
-      let logBody = `Target Command: ${def.targetCmd} (${numBytes} Bytes Payload)\n`;
+      let logBody = `Target Command: ${def.targetCmd} (Header: ${def.header}, ${numBytes} Bytes)\n`;
       logBody += `Duration: ${durationSec}s | Frames Captured: ${totalFrames} (${(totalFrames / durationSec).toFixed(1)} FPS)\n`;
       logBody += `Machine State: ${def.stateText}\n\n`;
       logBody += `--- BYTE VARIANCE ANALYSIS ---\n`;
@@ -1134,72 +1311,6 @@
       appendToMasterReport(def.title, def.stateText, logBody);
       document.getElementById('record-status-text').innerText = `✅ Appended to Master Log! Total tests: ${accumulatedReports.length}`;
     }
-
-    /* Multi-ECU & Diagnostics Logging */
-    window.scanAllCANModules = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      const term = document.getElementById('module-scan-results');
-      term.innerHTML = '<div style="color:var(--cyan);">Scanning CAN Node IDs 0x700 to 0x7E8...</div>';
-
-      const scanAddresses = ["7E0", "760", "7A0", "7D0", "750", "7E2", "7E3", "7E4", "7E5", "730", "740"];
-      let foundCount = 0;
-      let scanLog = '';
-
-      for (const addr of scanAddresses) {
-        await sendCommand(`ATSH${addr}`, 1000);
-        const res = await sendCommand("2101", 1500);
-        const clean = res.replace(/[\s\r\n>]/g, '');
-
-        if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT") && clean.length > 4) {
-          foundCount++;
-          term.innerHTML += `<div style="color:var(--green); font-weight:700;">🎯 [ACTIVE NODE] 0x${addr} ➜ ${res}</div>`;
-          scanLog += `Active Node 0x${addr} ➜ ${res}\n`;
-        } else {
-          scanLog += `Node 0x${addr} ➜ ${clean || 'No response'}\n`;
-        }
-        term.scrollTop = term.scrollHeight;
-        await new Promise(r => setTimeout(r, 40));
-      }
-
-      await sendCommand("ATSH7E0", 1000);
-      term.innerHTML += `<div style="color:var(--amber); font-weight:700;">Scan Complete! Found ${foundCount} active CAN nodes. Restored header to 0x7E0.</div>`;
-
-      appendToMasterReport("CAN Bus Multi-Module Address Ping", `Scanned 11 Target Addresses`, scanLog);
-    };
-
-    window.queryEPSModule = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      const term = document.getElementById('module-scan-results');
-      term.innerHTML = '<div style="color:var(--cyan);">Querying EPS Steering Computer (0x760)...</div>';
-
-      await sendCommand("ATSH760", 1000);
-      const epsRes = await sendCommand("2101", 2000);
-      await sendCommand("ATSH7E0", 1000); // restore
-
-      term.innerHTML += `<div><strong>EPS (0x760) ➜ 21 01:</strong> ${epsRes}</div>`;
-      appendToMasterReport("Electronic Power Steering Query", "Header 0x760 LID 2101", epsRes);
-    };
-
-    window.queryYamahaDTCs = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
-      isPolling = false;
-
-      const term = document.getElementById('module-scan-results');
-      term.innerHTML = '<div style="color:var(--cyan);">Querying Active (21 60) and Historic (21 61) DTCs...</div>';
-
-      const activeRes = await sendCommand("2160", 2500);
-      term.innerHTML += `<div><strong>Active DTCs (21 60):</strong> ${activeRes}</div>`;
-
-      const histRes = await sendCommand("2161", 2500);
-      term.innerHTML += `<div><strong>Historic Memory (21 61):</strong> ${histRes}</div>`;
-
-      let dtcLog = `Active DTCs (21 60 / d:60): ${activeRes}\nHistoric DTCs (21 61 / d:61): ${histRes}`;
-      appendToMasterReport("Yamaha Fault Code & DTC Query", "Checked Active and Stored Diagnostic Memory", dtcLog);
-    };
 
     /* Simulation Mode */
     window.toggleSimulator = function() {
@@ -1235,14 +1346,14 @@
         
         return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}0004 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2100 2:0200CF634A${timing.toString(16).padStart(2,'0')}00 3:C18281${brake.toString(16).padStart(2,'0')}8000AA`;
       }
-      if (cmd === "2140") return Math.sin(Date.now() / 3000) > 0 ? "61 40 00 80" : "61 40 00 81";
-      if (cmd === "2164") return "03E 0:61640048001D 1:00020000000000 2:00000100000000 3:00000000000700 4:00000000000000 5:00030011000300 6:0000000005000C 7:00030000000100 8:03000500000000";
-      if (cmd === "2160") return "61 60 00 00 00 00 (No Active Fault Codes)";
-      if (cmd === "2161") return "61 61 00 15 00 21 00 00 (Historical Codes Logged)";
+      if (cmd === "2160") return "01A 0:616000000000 1:00000000000000 2:00000000000000 3:00000000000000";
+      if (cmd === "2161") return "01A 0:616100000000 1:00000000000000 2:00000000000000 3:00000000000000";
       return "OK";
     }
 
+    // Initialize sensors and UI on load
     onTestSelectChanged();
+    initPhoneSensors();
   </script>
 </body>
 </html>
