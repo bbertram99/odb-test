@@ -3,10 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- Anti-Cache Directives for iOS WebKit & Bluefy -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Master" />
-  <title>Yamaha RMAX Master Test Suite</title>
+  <title>Yamaha RMAX Master Suite (v2.1.1)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -230,14 +235,14 @@
 </head>
 <body>
 
-  <!-- Top HUD Header -->
+  <!-- Top HUD Header with Verified Version -->
   <header>
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
         RMAX MASTER SUITE
       </div>
-      <span class="version-tag" id="app-version-badge">v2.1.0</span>
+      <span class="version-tag" id="app-version-badge">v2.1.1</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -247,7 +252,7 @@
     </div>
   </header>
 
-  <!-- TAB 1: Advanced Cockpit Telemetry -->
+  <!-- TAB 1: Cockpit Telemetry -->
   <div id="tab-dash" class="view-panel" style="display: flex;">
     
     <!-- Hero Tachometer -->
@@ -500,7 +505,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v2.1.0";
+    const APP_VERSION = "v2.1.1";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -508,9 +513,6 @@
       return false;
     };
 
-    /* ==========================================================
-       TEST DEFINITIONS & STEP-BY-STEP INSTRUCTIONS
-       ========================================================== */
     const TEST_DEFINITIONS = {
       test_drive_mode_2140: {
         title: "4-Way Drive Mode Sweep (Turf / 2WD / 4WD / Diff-Lock)",
@@ -925,7 +927,7 @@
         const tpsBar = document.getElementById('bar-throttle');
         if (tpsBar) tpsBar.style.width = tpsPct + '%';
 
-        // 6. ECU Sensor / Regulated Voltage (Byte 13 -> d:09): (B13 * 0.0706)
+        // 6. ECU Sensor Voltage (Byte 13 -> d:09): (B13 * 0.0706)
         const ecuVolt = (bytes[13] * 0.0706).toFixed(1);
         document.getElementById('val-dash-voltage').innerText = ecuVolt;
         const voltBar = document.getElementById('bar-voltage');
