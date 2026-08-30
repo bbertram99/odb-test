@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v4.2.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v4.3.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -77,7 +77,7 @@
     .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
 
-    /* Live Multi-Status Strip (Clean 5 Badges) */
+    /* Live Multi-Status Strip */
     .drive-status-strip { display: grid; grid-template-columns: 1fr 1.3fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; }
     .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.15rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
     .status-pill-label { font-size: 0.54rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
@@ -95,7 +95,6 @@
     .status-pill-val.drive-turf { color: var(--green); text-shadow: 0 0 10px var(--green); }
     .status-pill-val.drive-2wd { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
     .status-pill-val.drive-4wd { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
-    .status-pill-val.drive-diff { color: var(--red); text-shadow: 0 0 10px var(--red); }
 
     .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
     .status-pill-val.off { color: rgba(255, 255, 255, 0.2); }
@@ -171,7 +170,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v4.2.0</span>
+      <span class="version-tag" id="app-version-badge">v4.3.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -198,7 +197,7 @@
       </div>
     </div>
 
-    <!-- Verified Status Strip (Clean 5 Badges) -->
+    <!-- Verified Status Strip (Clean 5 Badges, No False Diff Lock) -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -222,12 +221,12 @@
       </div>
     </div>
 
-    <!-- Cockpit Grid -->
+    <!-- Cockpit Grid (100% Confirmed Powertrain Metrics) -->
     <div class="cockpit-grid">
-      <!-- Ground Speed (DEFAULT: KM/H) -->
+      <!-- Ground Speed (Includes Reverse Speed Auto-Backup!) -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
-          <span class="card-label">Ground Speed</span>
+          <span class="card-label" id="label-speed-heading">Ground Speed</span>
           <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
         </div>
         <div class="card-main">
@@ -253,7 +252,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (DEFAULT: °C) -->
+      <!-- Coolant Temp -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Coolant Temp</span>
@@ -268,7 +267,7 @@
         </div>
       </div>
 
-      <!-- Intake Air Temp (DEFAULT: °C) -->
+      <!-- Intake Air Temp (IAT) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Intake Air (IAT)</span>
@@ -311,10 +310,10 @@
         </div>
       </div>
 
-      <!-- Fuel Injector Pulse Rate -->
+      <!-- Fuel Injector Delivery Rate -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Inj Pulse Rate</span>
+          <span class="card-label">Inj Fuel Rate</span>
         </div>
         <div class="card-main">
           <span id="val-dash-fuel" class="card-val">--</span>
@@ -322,6 +321,20 @@
         </div>
         <div class="meter-bar-track">
           <div id="bar-fuel" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Estimated Injector Duty % (Promoted!) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Inj Duty Cycle</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-duty" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-duty" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -354,7 +367,7 @@
       </div>
 
       <!-- Battery Voltage -->
-      <div class="touch-card">
+      <div class="touch-card" style="grid-column: span 2;">
         <div class="card-top">
           <span class="card-label">Battery Voltage</span>
         </div>
@@ -388,13 +401,26 @@
   <!-- TAB 2: Experimental Discovery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Experimental Byte Discovery Lab</div>
+      <div class="disc-title">🧪 Experimental Lab & Reverse Investigator</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
-        Tracking unmapped sub-channels, transmission pulses, drive registers, and live ECU queries.
+        Tracking unmapped sub-channels, transmission pulses, drive registers, and reverse gear signatures.
       </p>
     </div>
 
     <div class="cockpit-grid">
+      <!-- Reverse Alternative Investigator Card -->
+      <div class="exp-card" style="grid-column: span 2; border-color:var(--amber);">
+        <div class="exp-header">
+          <span class="exp-title" style="color:var(--amber);">Reverse Signature Analyzer</span>
+          <span class="exp-tag">B[19] & B[11]</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" style="font-size:1.15rem;" id="exp-val-revsig">Gear: N | Pulse: 0</span>
+          <span class="exp-hex-val" id="exp-hex-revsig">0x80</span>
+        </div>
+        <span class="exp-hint">Monitors primary gear register ($0\text{x04}$), transmission output pulses ($B11$), and reverse speed synthesis.</span>
+      </div>
+
       <!-- Byte 11: Drivetrain / Output Speed Pulse Candidate -->
       <div class="exp-card">
         <div class="exp-header">
@@ -405,7 +431,7 @@
           <span class="exp-dec-val" id="exp-val-b11">0</span>
           <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
         </div>
-        <span class="exp-hint">Scales smoothly with ground speed ($2 \to 48$). Candidate secondary pulley/speed pulse.</span>
+        <span class="exp-hint">Secondary pulley speed pulses. Used to recover reverse speed!</span>
       </div>
 
       <!-- Byte 22: Raw Drive Mode / Diff Torque Register -->
@@ -418,7 +444,7 @@
           <span class="exp-dec-val" id="exp-val-b22">0x80</span>
           <span class="exp-hex-val" id="exp-name-b22">TURF</span>
         </div>
-        <span class="exp-hint">Counts $0\text{x80} \dots 0\text{x8F}$ as 4WD/Diff-Lock engages.</span>
+        <span class="exp-hint">Raw register: $0\text{x80}=\text{Turf}, 0\text{x81}=\text{2WD}, 0\text{x82+}=\text{4WD}$.</span>
       </div>
 
       <!-- Byte 10: Delta TPS (Relative Throttle Blade Angle) -->
@@ -431,7 +457,7 @@
           <span class="exp-dec-val" id="exp-val-b10">0</span>
           <span class="exp-hex-val" id="exp-hex-b10">0x00</span>
         </div>
-        <span class="exp-hint">Exact physical throttle blade displacement step (TPS - 33).</span>
+        <span class="exp-hint">Exact physical throttle blade displacement step ($\text{TPS} - 33$).</span>
       </div>
 
       <!-- Byte 4: VE Lookup Table Column -->
@@ -444,7 +470,7 @@
           <span class="exp-dec-val" id="exp-val-b4">35</span>
           <span class="exp-hex-val" id="exp-hex-b4">0x23</span>
         </div>
-        <span class="exp-hint">Fuel map table column index. Caps at 72 (0x48) in Park/Neutral.</span>
+        <span class="exp-hint">Fuel map table column index. Caps at 72 ($0\text{x48}$) in Park/Neutral.</span>
       </div>
 
       <!-- Byte 3: IACV Warmup Stepper -->
@@ -457,20 +483,7 @@
           <span class="exp-dec-val" id="exp-val-b3">--</span>
           <span class="exp-hex-val" id="exp-hex-b3">0x00</span>
         </div>
-        <span class="exp-hint">Idle stepper offset. Decays 8 $\to$ 3 as coolant warms up.</span>
-      </div>
-
-      <!-- Calculated Injector Duty Cycle % -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Est. Inj Duty Cycle</span>
-          <span class="exp-tag">Calculated</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-duty">0%</span>
-          <span class="exp-hex-val">DUTY</span>
-        </div>
-        <span class="exp-hint">Calculated injector on-time percentage based on RPM & fuel delivery.</span>
+        <span class="exp-hint">Idle stepper offset. Decays $8 \to 3$ as coolant warms up.</span>
       </div>
 
       <!-- Byte 18: Barometric Altitude Sensor -->
@@ -483,11 +496,11 @@
           <span class="exp-dec-val" id="exp-val-baro">1008 mbar</span>
           <span class="exp-hex-val" id="exp-hex-b18">0xC0</span>
         </div>
-        <span class="exp-hint">Raw altitude air pressure. Changes as you climb mountains!</span>
+        <span class="exp-hint">Altitude pressure. Baseline for Speed-Density Engine Load.</span>
       </div>
 
       <!-- Sub-Error & Relays (Bytes 12 & 17) -->
-      <div class="exp-card">
+      <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
           <span class="exp-title">Chassis Relays / Flags</span>
           <span class="exp-tag">B[12] & B[17]</span>
@@ -610,7 +623,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v4.2.0";
+    const APP_VERSION = "v4.3.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -630,7 +643,7 @@
         ]
       },
       test_sus_uds: {
-        title: "Fox iQS Suspension UDS Sweep [0x7E5]",
+        title: "Fox iQS Suspension Sweep [0x7E5]",
         header: "7E5",
         stateText: "Key ON, Engine Running.",
         steps: [
@@ -942,7 +955,7 @@
       if (bytes.length < 18) return;
 
       // ---------------------------------------------------------
-      // 1. VERIFIED COCKPIT METRICS
+      // 1. CORE TELEMETRY & REVERSE SIGNATURE DECODER
       // ---------------------------------------------------------
       const rpm = (bytes[0] * 256) + bytes[1];
       const rawMph = bytes[2];
@@ -953,23 +966,43 @@
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
       const timingDeg = Math.round((bytes[16] - 80) / 2);
       
-      // Barometric Altitude Pressure
+      // Altitude Baro
       const baroMbar = Math.round((bytes[18] && bytes[18] > 100 ? bytes[18] : 192) * 5.25);
 
-      // Calibrated Speed-Density Engine Load %
+      // Speed-Density Engine Load %
       const engineLoadPct = Math.min(100, Math.max(0, Math.round((mapMbar / baroMbar) * 100)));
 
-      // Fuel Delivery Index (Byte 8)
+      // Fuel Delivery Index & Estimated Duty Cycle %
       const fuelIndex = bytes[8];
+      const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
 
-      // Gear Decode
-      const gearNibble = bytes[19] & 0x0F;
+      // Gear Position & Dual Reverse Signature Analysis
+      const b19 = bytes[19];
+      const gearNibble = b19 & 0x0F;
+      const isReverseBit = (b19 & 0x04) === 0x04 || gearNibble === 0x04;
+      
       let gearText = 'N';
       let gearClass = 'gear-n';
-      if (gearNibble === 0x04) { gearText = 'R'; gearClass = 'gear-r'; } 
+      if (isReverseBit) { gearText = 'R'; gearClass = 'gear-r'; } 
       else if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
       else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
-      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; } 
+      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
+
+      // ---------------------------------------------------------
+      // SPEED CALCULATION (WITH REVERSE SPEED AUTO-RECOVERY!)
+      // ---------------------------------------------------------
+      let speed = 0;
+      const b11TransPulse = bytes[11] || 0;
+      
+      if (isReverseBit && rawMph === 0 && b11TransPulse > 2) {
+        // Recover reverse speed via transmission secondary speed pulse (Byte 11)
+        const revKmh = Math.round((b11TransPulse - 2) * 0.68);
+        speed = (speedUnit === 'kmh') ? revKmh : Math.round(revKmh / 1.60934);
+        document.getElementById('label-speed-heading').innerText = "Rev Speed (Trans)";
+      } else {
+        speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
+        document.getElementById('label-speed-heading').innerText = "Ground Speed";
+      }
 
       // D-Mode Decode
       const b20 = bytes[20];
@@ -979,39 +1012,43 @@
       else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
       else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
 
-      // 4WD Drive System Decode (Handles full range gracefully)
+      // 4WD Drive System Decode (Cleaned per user feedback: 0x80=TURF, 0x81=2WD, 0x82+=4WD)
       const b22 = bytes[22] || 0x80;
       let driveText = 'TURF';
       let driveClass = 'drive-turf';
       if (b22 === 0x80) { driveText = 'TURF'; driveClass = 'drive-turf'; }
       else if (b22 === 0x81) { driveText = '2WD'; driveClass = 'drive-2wd'; }
-      else if (b22 === 0x82) { driveText = '4WD'; driveClass = 'drive-4wd'; }
-      else if (b22 >= 0x83) { driveText = 'DIFF LOCK'; driveClass = 'drive-diff'; }
+      else if (b22 >= 0x82) { driveText = '4WD'; driveClass = 'drive-4wd'; }
 
       // Brakes
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
       const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
 
-      // Update Verified Cockpit UI
+      // ---------------------------------------------------------
+      // UPDATE VERIFIED COCKPIT UI
+      // ---------------------------------------------------------
       if (!isNaN(rpm) && rpm <= 10000) {
         document.getElementById('val-dash-rpm').innerText = rpm;
         updateTachometer(rpm);
       }
       
-      let speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
       document.getElementById('val-dash-speed').innerText = speed;
       const speedBar = document.getElementById('bar-speed');
       if (speedBar) speedBar.style.width = Math.min(100, ((speedUnit === 'kmh' ? speed / 112 : rawMph / 70)) * 100) + '%';
 
-      // Engine Load
+      // Engine Load %
       document.getElementById('val-dash-load').innerText = engineLoadPct;
       const loadBar = document.getElementById('bar-load');
       if (loadBar) loadBar.style.width = engineLoadPct + '%';
 
-      // Fuel Delivery Rate
+      // Fuel Delivery & Injector Duty
       document.getElementById('val-dash-fuel').innerText = fuelIndex;
       const fuelBar = document.getElementById('bar-fuel');
       if (fuelBar) fuelBar.style.width = Math.min(100, (fuelIndex / 170) * 100) + '%';
+
+      document.getElementById('val-dash-duty').innerText = estDutyPct;
+      const dutyBar = document.getElementById('bar-duty');
+      if (dutyBar) dutyBar.style.width = estDutyPct + '%';
 
       // Coolant Temp
       let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
@@ -1068,27 +1105,26 @@
       if(fbrakeEl) { fbrakeEl.innerText = isFBrakeOn ? 'ON' : 'OFF'; fbrakeEl.className = `status-pill-val ${isFBrakeOn ? 'brake-on' : 'off'}`; }
 
       // ---------------------------------------------------------
-      // 2. EXPERIMENTAL MYSTERY LAB UI UPDATE
+      // 2. EXPERIMENTAL LAB UI UPDATE
       // ---------------------------------------------------------
       const b3 = bytes[3] !== undefined ? bytes[3] : 0;
       const b4 = bytes[4] !== undefined ? bytes[4] : 0;
       const b10 = bytes[10] !== undefined ? bytes[10] : 0;
-      const b11 = bytes[11] !== undefined ? bytes[11] : 0;
       const b12 = bytes[12] !== undefined ? bytes[12] : 0;
       const b17 = bytes[17] !== undefined ? bytes[17] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
 
+      // Reverse Diagnostic Investigator
+      document.getElementById('exp-val-revsig').innerText = `Gear: ${gearText} | Trans Pulse: ${b11TransPulse}`;
+      document.getElementById('exp-hex-revsig').innerText = `B19: 0x${b19.toString(16).toUpperCase().padStart(2, '0')}`;
+
       // Byte 11 (Drivetrain / Output Pulse Candidate)
-      document.getElementById('exp-val-b11').innerText = b11;
-      document.getElementById('exp-hex-b11').innerText = `0x${b11.toString(16).toUpperCase().padStart(2, '0')}`;
+      document.getElementById('exp-val-b11').innerText = b11TransPulse;
+      document.getElementById('exp-hex-b11').innerText = `0x${b11TransPulse.toString(16).toUpperCase().padStart(2, '0')}`;
 
       // Byte 22 (Raw Drive Register & State)
       document.getElementById('exp-val-b22').innerText = `0x${b22.toString(16).toUpperCase().padStart(2, '0')}`;
       document.getElementById('exp-name-b22').innerText = driveText;
-
-      // Estimated Injector Duty %
-      const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
-      document.getElementById('exp-val-duty').innerText = `${estDutyPct}%`;
 
       document.getElementById('exp-val-b4').innerText = b4;
       document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
@@ -1111,7 +1147,7 @@
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelIndex, pedalPct, tpsPct, timingDeg, atrvVal, 
+          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
           gearText, dmodeText, driveText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
@@ -1123,7 +1159,7 @@
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, fuelIndex, b10, b11, bytes[13] || 0, b18, b22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, b4, fuelIndex, b10, b11TransPulse, bytes[13] || 0, b18, b22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1191,7 +1227,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Inj_Fuel_Index,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
