@@ -1,3 +1,5 @@
+--- START OF FILE index.html ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -116,29 +118,28 @@
     .disc-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; backdrop-filter: blur(8px); }
     .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
 
-    /* Interactive Instruction Box */
+    /* Interactive Box & Buttons */
     .instruction-card { background: rgba(2, 6, 23, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; }
     .inst-header { font-weight: 800; color: var(--amber); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.3rem; }
     .inst-state { background: rgba(245, 158, 11, 0.15); border-left: 3px solid var(--amber); padding: 0.3rem 0.5rem; border-radius: 4px; color: #fff; font-weight: 600; }
     .inst-steps { color: var(--text); line-height: 1.4; padding-left: 1rem; }
 
-    .btn-touch { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; }
+    .btn-touch { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; text-align: center;}
     .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
     .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
     .btn-touch.yamaha { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); font-weight: 800; }
     .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
-    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; }
+    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
 
     select { background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.65rem; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 600; }
 
     .terminal-box { background: #020617; border: 1px solid var(--card-border); border-radius: 10px; padding: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.4; flex: 1; max-height: calc(100vh - 380px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem; }
-    .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; }
 
     /* Bottom Touch Dock */
     .touch-dock { position: fixed; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; background: rgba(10, 15, 29, 0.92); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 0.4rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); z-index: 100; }
     .dock-btn { flex: 1; padding: 0.55rem 0.1rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; background: transparent; border: none; border-radius: 12px; color: var(--text-muted); cursor: pointer; }
     .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
-    .dock-btn span { font-size: 0.62rem; font-weight: 700; }
+    .dock-btn span { font-size: 0.6rem; font-weight: 700; white-space: nowrap; }
     .dock-btn:active { transform: scale(0.92); }
     .dock-btn.active { color: var(--cyan); background: rgba(56, 189, 248, 0.12); }
     .dock-action-btn { padding: 0.6rem 0.85rem; border-radius: 12px; font-size: 0.75rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; background: var(--cyan); color: #05070e; box-shadow: 0 0 15px rgba(56, 189, 248, 0.35); }
@@ -146,6 +147,10 @@
     .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35); }
 
     #log { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); min-height: 40px; max-height: 50px; overflow-y: auto; background: #020617; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--card-border); }
+
+    /* Custom styles for CSV Logger UI */
+    .big-stats { font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 800; color: #fff; text-align: center; margin: 0.5rem 0; }
+    .sub-stats { font-size: 0.85rem; color: var(--text-muted); text-align: center; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
   </style>
 </head>
 <body>
@@ -157,7 +162,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v3.3.0</span>
+      <span class="version-tag" id="app-version-badge">v3.5.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -208,7 +213,7 @@
     </div>
 
     <div class="cockpit-grid">
-      <!-- Ground Speed (Byte 2) -->
+      <!-- Ground Speed -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
           <span class="card-label">Ground Speed</span>
@@ -223,7 +228,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (Byte 14 - 31) -->
+      <!-- Coolant Temp -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Coolant (d:06)</span>
@@ -238,7 +243,7 @@
         </div>
       </div>
 
-      <!-- Gas Pedal / APS (Byte 7) -->
+      <!-- Gas Pedal / APS -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Gas Pedal (APS)</span>
@@ -252,7 +257,7 @@
         </div>
       </div>
 
-      <!-- Throttle Blade / TPS (Byte 9) -->
+      <!-- Throttle Blade / TPS -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Throttle Blade</span>
@@ -266,7 +271,7 @@
         </div>
       </div>
 
-      <!-- Spark Advance (Byte 16) -->
+      <!-- Spark Advance -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Spark Timing</span>
@@ -296,7 +301,32 @@
     </div>
   </div>
 
-  <!-- TAB 2: Test Flight Directives -->
+  <!-- TAB 2: Continuous CSV Logger -->
+  <div id="tab-csv" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Continuous Data Logger</div>
+      <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
+        Record all decoded metrics and <strong>every raw Hex byte in separate columns</strong>. Export direct to your iPhone via Share Sheet for reverse engineering in Excel (e.g. finding the Reverse Gear bit!).
+      </p>
+
+      <div style="background:rgba(2, 6, 23, 0.85); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:1.5rem 1rem; display:flex; flex-direction:column; align-items:center;">
+        <div class="sub-stats">Session Duration</div>
+        <div class="big-stats" id="csv-timer-text">00:00.0</div>
+        <div class="sub-stats" id="csv-frame-text">0 Frames Captured</div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.5rem;">
+        <button class="btn-touch record-btn" id="btn-csv-toggle" onclick="toggleCsvLogger()" style="padding:0.85rem; font-size:1rem;">
+          🔴 Start CSV Recording
+        </button>
+        <button class="btn-touch" id="btn-csv-export" onclick="exportCsv()" style="padding:0.85rem; font-size:0.9rem; background:rgba(56, 189, 248, 0.25); color:var(--cyan); opacity:0.5; pointer-events:none;">
+          📤 Share CSV to AI / Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Test Flight Directives -->
   <div id="tab-recorder" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Test Flight Directives</div>
@@ -335,14 +365,14 @@
     </div>
   </div>
 
-  <!-- TAB 3: Master Cumulative Test Report -->
+  <!-- TAB 4: Master Cumulative Test Report -->
   <div id="tab-master-log" class="view-panel">
     <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <div class="disc-title">Accumulated Master Log (<span id="accumulated-count">0</span> Tests Logged)</div>
+        <div class="disc-title">Accumulated Master Log (<span id="accumulated-count">0</span>)</div>
         <div style="display:flex; gap:0.4rem;">
           <button class="btn-touch" style="padding:0.3rem 0.7rem; font-size:0.8rem; background:rgba(74,222,128,0.25); border-color:var(--green); color:var(--green);" onclick="copyAccumulatedReport()">
-            📋 Copy Complete Master Report for AI
+            📋 Copy
           </button>
           <button class="btn-touch secondary" style="padding:0.3rem 0.5rem; font-size:0.7rem;" onclick="clearAccumulatedReport()">
             Clear
@@ -366,13 +396,17 @@
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
       <span>Cockpit</span>
     </button>
+    <button class="dock-btn" id="btn-tab-csv" onclick="switchTab('tab-csv')">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      <span>CSV Log</span>
+    </button>
     <button class="dock-btn" id="btn-tab-recorder" onclick="switchTab('tab-recorder')">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
       <span>Directives</span>
     </button>
     <button class="dock-btn" id="btn-tab-master-log" onclick="switchTab('tab-master-log')">
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-      <span id="dock-log-label">Logs (0)</span>
+      <span id="dock-log-label">Reports (0)</span>
     </button>
 
     <button id="btn-connect" class="dock-action-btn" onclick="handleConnectClick()">
@@ -384,7 +418,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v3.3.0";
+    const APP_VERSION = "v3.5.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -450,9 +484,16 @@
     let speedUnit = 'mph';
     let tempUnit = 'c';
 
+    // Reverse Engineering diagnostic hook
     let recordedFrames = [];
     let recordStartTime = null;
     let accumulatedReports = [];
+
+    // Continuous CSV logger hook
+    let isCsvLogging = false;
+    let csvFrames = [];
+    let csvStartTime = 0;
+    let csvInterval = null;
 
     function log(msg) {
       const el = document.getElementById('log');
@@ -471,7 +512,7 @@
 
     window.switchTab = function(tabId) {
       activeTab = tabId;
-      const tabs = ['tab-dash', 'tab-recorder', 'tab-master-log'];
+      const tabs = ['tab-dash', 'tab-csv', 'tab-recorder', 'tab-master-log'];
       tabs.forEach(t => {
         const btn = document.getElementById('btn-' + t);
         if (btn) btn.classList.toggle('active', t === tabId);
@@ -480,7 +521,7 @@
         if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
 
-      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && ['tab-dash', 'tab-csv'].includes(tabId)) {
         startPolling();
       }
     };
@@ -576,6 +617,7 @@
     }
 
     function disconnect() {
+      if (isCsvLogging) toggleCsvLogger();
       if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
       onDisconnected();
     }
@@ -726,32 +768,56 @@
 
       if (bytes.length < 18) return;
 
-      // Session Recording Hook
-      if (isRecordingSession) {
-        const elapsed = ((Date.now() - recordStartTime) / 1000).toFixed(2);
-        recordedFrames.push({ time: elapsed, bytes: [...bytes] });
-        document.getElementById('record-status-text').innerText = `🔴 Recording: ${recordedFrames.length} frames (${elapsed}s)`;
-      }
-
-      // 1. Engine RPM (Bytes 0 & 1)
+      // Calculate Core Telemetry Variables
       const rpm = (bytes[0] * 256) + bytes[1];
+      const rawMph = bytes[2];
+      const coolantC = bytes[14] - 31;
+      const mapMbar = (bytes[5] * 256) + bytes[6];
+      const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
+      const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
+      const timingDeg = Math.round((bytes[16] - 80) / 2);
+      
+      const b19 = bytes[19];
+      const gearNibble = b19 & 0x0F;
+      let gearText = 'N';
+      let gearClass = 'gear-n';
+      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+      else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; } 
+
+      const b20 = bytes[20];
+      let dmodeText = 'UNKNOWN';
+      let dmodeClass = 'dmode-trail';
+      if (b20 === 0x82) { dmodeText = 'CRAWL'; dmodeClass = 'dmode-crawl'; }
+      else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
+      else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
+
+      const b22 = bytes[22];
+      let driveText = 'UNKNOWN';
+      let driveClass = 'drive-2wd';
+      if (b22 === 0x80) { driveText = 'TURF'; driveClass = 'drive-turf'; }
+      else if (b22 === 0x81) { driveText = '2WD'; driveClass = 'drive-2wd'; }
+      else if (b22 === 0x82) { driveText = '4WD'; driveClass = 'drive-4wd'; }
+      else if (b22 === 0x84 || b22 === 0x83) { driveText = 'DIFF'; driveClass = 'drive-diff'; }
+
+      const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+      const isBrakeOn = (bytes[21] & 0x10) === 0x10;
+      const isLowBeam = (bytes[21] & 0x02) === 0x02;
+      const isHighBeam = (bytes[21] & 0x01) === 0x01;
+      let lightText = isHighBeam ? 'HIGH' : (isLowBeam ? 'LOW' : 'OFF');
+
+      // Update UI Dash
       if (!isNaN(rpm) && rpm <= 10000) {
         document.getElementById('val-dash-rpm').innerText = rpm;
         updateTachometer(rpm);
       }
-
-      // 2. Ground Speed (CALIBRATED: Byte 2 = Exact MPH)
-      const rawMph = bytes[2];
+      
       let speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
       document.getElementById('val-dash-speed').innerText = speed;
       const speedBar = document.getElementById('bar-speed');
       if (speedBar) speedBar.style.width = Math.min(100, (rawMph / 70) * 100) + '%';
 
-      // 3. Coolant Temperature (PROVEN CALIBRATION: Byte 14 - 31)
-      const rawB14 = bytes[14];
-      let coolantC = rawB14 - 31;
       let displayTemp = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
-      
       document.getElementById('val-dash-coolant').innerText = displayTemp;
       const coolantBar = document.getElementById('bar-coolant');
       if (coolantBar) {
@@ -760,86 +826,54 @@
         coolantBar.style.background = coolantC > 98 ? 'var(--red)' : coolantC > 90 ? 'var(--amber)' : 'var(--cyan)';
       }
 
-      // 4. Gas Pedal / APS (Byte 7)
-      const rawAPS = bytes[7];
-      const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
       document.getElementById('val-dash-pedal').innerText = pedalPct;
       const pedalBar = document.getElementById('bar-pedal');
       if (pedalBar) pedalBar.style.width = pedalPct + '%';
 
-      // 5. Throttle Blade / TPS (Byte 9)
-      const rawTPS = bytes[9];
-      const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
       document.getElementById('val-dash-throttle').innerText = tpsPct;
       const tpsBar = document.getElementById('bar-throttle');
       if (tpsBar) tpsBar.style.width = tpsPct + '%';
 
-      // 6. Manifold Pressure (MAP: Bytes 5 & 6)
-      const mapMbar = (bytes[5] * 256) + bytes[6];
-      document.getElementById('val-dash-map').innerText = mapMbar > 0 ? mapMbar : '--';
-      const mapBar = document.getElementById('bar-map');
-      if (mapBar) mapBar.style.width = Math.min(100, (mapMbar / 300) * 100) + '%';
-
-      // 7. Spark Advance / Ignition Timing (CALIBRATED: Byte 16)
-      const timingDeg = Math.round((bytes[16] - 80) / 2);
       document.getElementById('val-dash-timing').innerText = timingDeg > -10 && timingDeg < 55 ? timingDeg : (bytes[16] - 90);
       const timingBar = document.getElementById('bar-timing');
       if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timingDeg / 45) * 100)) + '%';
 
-      // 8. Transmission Gear (Byte 19)
-      const b19 = bytes[19];
-      const gearNibble = b19 & 0x0F;
+      document.getElementById('val-dash-voltage').innerText = atrvVal || '--';
+
       const gearEl = document.getElementById('val-dash-gear');
-      let gearText = 'N';
-      let gearClass = 'gear-n';
+      if(gearEl) { gearEl.className = `status-pill-val ${gearClass}`; gearEl.innerText = gearText; }
 
-      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
-      else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
-      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; } // We will find R next
-
-      gearEl.className = `status-pill-val ${gearClass}`;
-      gearEl.innerText = gearText;
-
-      // 9. D-MODE Selector (Byte 20)
-      const b20 = bytes[20];
       const dmodeEl = document.getElementById('val-dash-dmode');
-      if (b20 === 0x82) { dmodeEl.innerText = 'CRAWL'; dmodeEl.className = 'status-pill-val dmode-crawl'; }
-      else if (b20 === 0x81) { dmodeEl.innerText = 'TRAIL'; dmodeEl.className = 'status-pill-val dmode-trail'; }
-      else if (b20 === 0x80) { dmodeEl.innerText = 'SPORT'; dmodeEl.className = 'status-pill-val dmode-sport'; }
+      if(dmodeEl) { dmodeEl.className = `status-pill-val ${dmodeClass}`; dmodeEl.innerText = dmodeText; }
 
-      // 10. Drive Mode / Turf (Byte 22)
-      const b22 = bytes[22];
       const driveEl = document.getElementById('val-dash-drive');
-      if (b22 === 0x80) { driveEl.innerText = 'TURF'; driveEl.className = 'status-pill-val drive-turf'; }
-      else if (b22 === 0x81) { driveEl.innerText = '2WD'; driveEl.className = 'status-pill-val drive-2wd'; }
-      else if (b22 === 0x82) { driveEl.innerText = '4WD'; driveEl.className = 'status-pill-val drive-4wd'; }
-      else if (b22 === 0x84 || b22 === 0x83) { driveEl.innerText = 'DIFF'; driveEl.className = 'status-pill-val drive-diff'; }
+      if(driveEl) { driveEl.className = `status-pill-val ${driveClass}`; driveEl.innerText = driveText; }
 
-      // 11. Parking Brake (Byte 21 Bit 2: 0x04)
-      const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
       const pbrakeEl = document.getElementById('val-dash-pbrake');
-      pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF';
-      pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`;
+      if(pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
 
-      // 12. Foot Brake (Byte 21 Bit 4: 0x10)
-      const isBrakeOn = (bytes[21] & 0x10) === 0x10;
-      const brakeEl = document.getElementById('val-dash-brake');
-      brakeEl.innerText = isBrakeOn ? 'ON' : 'OFF';
-      brakeEl.className = `status-pill-val ${isBrakeOn ? 'brake-on' : 'off'}`;
-
-      // 13. Headlights (Byte 21 Bits 0 & 1: 0x01/0x02)
-      const isLowBeam = (bytes[21] & 0x02) === 0x02;
-      const isHighBeam = (bytes[21] & 0x01) === 0x01;
       const lightsEl = document.getElementById('val-dash-lights');
-      if (isHighBeam) {
-        lightsEl.innerText = 'HIGH';
-        lightsEl.className = 'status-pill-val on';
-      } else if (isLowBeam) {
-        lightsEl.innerText = 'LOW';
-        lightsEl.className = 'status-pill-val on';
-      } else {
-        lightsEl.innerText = 'OFF';
-        lightsEl.className = 'status-pill-val off';
+      if(lightsEl) { lightsEl.innerText = lightText; lightsEl.className = `status-pill-val ${isHighBeam||isLowBeam ? 'on' : 'off'}`; }
+
+      // CONTINUOUS CSV DATA LOGGER HOOK
+      if (isCsvLogging) {
+        const elapsed = ((Date.now() - csvStartTime) / 1000).toFixed(3);
+        // Map all bytes cleanly for easy finding of Reverse in Excel
+        const byteCols = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(',');
+        
+        const row = [
+          elapsed, rpm, rawMph, displayTemp, mapMbar, pedalPct, tpsPct, timingDeg, atrvVal, 
+          gearText, dmodeText, driveText, isPBrakeOn ? 1 : 0, isBrakeOn ? 1 : 0, lightText, byteCols
+        ].join(',');
+        
+        csvFrames.push(row);
+      }
+
+      // DIAGNOSTIC SESSION RECORDER HOOK
+      if (isRecordingSession) {
+        const elapsed = ((Date.now() - recordStartTime) / 1000).toFixed(2);
+        recordedFrames.push({ time: elapsed, bytes: [...bytes] });
+        document.getElementById('record-status-text').innerText = `🔴 Recording: ${recordedFrames.length} frames (${elapsed}s)`;
       }
     }
 
@@ -871,6 +905,87 @@
     }
 
     /* ==========================================================
+       CSV TELEMETRY LOGGER FUNCTIONS
+       ========================================================== */
+    window.toggleCsvLogger = function() {
+      const btn = document.getElementById('btn-csv-toggle');
+      const exportBtn = document.getElementById('btn-csv-export');
+      const timerEl = document.getElementById('csv-timer-text');
+      const frameEl = document.getElementById('csv-frame-text');
+
+      if (!isCsvLogging) {
+        // Start Logging
+        if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to Machine OBD-II First!");
+
+        isCsvLogging = true;
+        csvStartTime = Date.now();
+        csvFrames = [];
+
+        // Build Header with 26 Byte Columns
+        let headerRow = "Time_Sec,RPM,Speed,Temp,MAP_mbar,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake,Lights";
+        for(let i = 0; i < 26; i++) { headerRow += `,B${i}`; }
+        csvFrames.push(headerRow);
+
+        btn.innerText = "⏹️ Stop CSV Recording";
+        btn.classList.add('recording');
+        exportBtn.style.opacity = '0.5';
+        exportBtn.style.pointerEvents = 'none';
+
+        csvInterval = setInterval(() => {
+          const s = Math.floor((Date.now() - csvStartTime) / 1000);
+          const mins = Math.floor(s / 60).toString().padStart(2, '0');
+          const secs = (s % 60).toString().padStart(2, '0');
+          timerEl.innerText = `${mins}:${secs}.0`;
+          frameEl.innerText = `${csvFrames.length - 1} Frames Captured`;
+        }, 1000);
+        
+      } else {
+        // Stop Logging
+        isCsvLogging = false;
+        clearInterval(csvInterval);
+        btn.innerText = "🔴 Start CSV Recording";
+        btn.classList.remove('recording');
+
+        if (csvFrames.length > 1) {
+          exportBtn.style.opacity = '1';
+          exportBtn.style.pointerEvents = 'auto';
+        }
+      }
+    };
+
+    window.exportCsv = async function() {
+      if (csvFrames.length <= 1) return alert("No data to export!");
+      
+      const csvContent = csvFrames.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const filename = `RMAX_Telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+      const file = new File([blob], filename, { type: 'text/csv' });
+
+      // iOS Native Share Sheet support via WebShare API
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: 'RMAX CSV Telemetry',
+            files: [file]
+          });
+          log("CSV Shared successfully.");
+        } catch (e) {
+          log("Share cancelled or failed: " + e.message);
+        }
+      } else {
+        // Fallback for browsers that don't support WebShare API (like Desktop Chrome)
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    };
+
+    /* ==========================================================
        CENTRAL MASTER LOGGING ENGINE
        ========================================================== */
     function appendToMasterReport(title, details, rawResultText) {
@@ -890,7 +1005,7 @@
       const dockLabel = document.getElementById('dock-log-label');
       
       countEl.innerText = accumulatedReports.length;
-      dockLabel.innerText = `Logs (${accumulatedReports.length})`;
+      dockLabel.innerText = `Reports (${accumulatedReports.length})`;
 
       let master = `=== YAMAHA RMAX MASTER BATCH TEST REPORT ===\n`;
       master += `App Version: ${APP_VERSION} | Total Accumulated Test Runs: ${accumulatedReports.length}\n`;
@@ -920,12 +1035,12 @@
     window.clearAccumulatedReport = function() {
       accumulatedReports = [];
       document.getElementById('accumulated-count').innerText = '0';
-      document.getElementById('dock-log-label').innerText = 'Logs (0)';
+      document.getElementById('dock-log-label').innerText = 'Reports (0)';
       document.getElementById('master-report-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run tests to accumulate reports...</div>';
       log("Master log reset.");
     };
 
-    /* Flight Recorder Session */
+    /* Flight Recorder Session (Diagnostics) */
     window.toggleSessionRecording = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
 
@@ -946,8 +1061,7 @@
         document.getElementById('record-status-text').innerText = `🔴 Recording Active: ${def.title}`;
 
         if (def.type === 'sweep') {
-          // Automatic Sweep Protocol
-          isPolling = false; // Pause background polling
+          isPolling = false; 
           await sendCommand(`ATSH${def.header}`, 1000);
           
           for (let i = 0; i <= 0x20; i++) {
@@ -963,7 +1077,6 @@
           }
           
           await sendCommand("ATSH7E0", 1000); // restore
-          // Automatically stop when sweep finishes
           if (isRecordingSession) toggleSessionRecording();
         }
 
@@ -1072,7 +1185,6 @@
     }
 
     onTestSelectChanged();
-    initPhoneSensors();
   </script>
 </body>
 </html>
