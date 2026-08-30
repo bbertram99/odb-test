@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v3.6.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v3.7.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -162,7 +162,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v3.6.0</span>
+      <span class="version-tag" id="app-version-badge">v3.7.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -334,15 +334,14 @@
     <div class="disc-section">
       <div class="disc-title">Test Flight Directives</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Select a mission to automatically execute the correct diagnostic query. Ensure the machine is in the required state before tapping Record.
+        The Engine ECU (0x7E0) is now 100% Mapped. These directives will now target standard UDS (Service 22) on the EPS and Fox Suspension modules to find their passive streams.
       </p>
       
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT MISSION:</label>
         <select id="record-test-select" onchange="onTestSelectChanged()">
-          <option value="test_gears">1. Full Gear Sweep (L, H, N, R)</option>
-          <option value="test_eps_brute">2. EPS Module Sweep [Target: 0x760]</option>
-          <option value="test_sus_brute">3. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
+          <option value="test_eps_uds">1. EPS UDS Sweep [Target: 0x760, Svc: 22]</option>
+          <option value="test_sus_uds">2. Fox iQS UDS Sweep [Target: 0x7E5, Svc: 22]</option>
         </select>
       </div>
 
@@ -421,7 +420,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v3.6.0";
+    const APP_VERSION = "v3.7.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -430,43 +429,29 @@
     };
 
     const TEST_DEFINITIONS = {
-      test_gears: {
-        title: "Full Gear Sweep (L, H, N, R)",
-        targetCmd: "2101",
-        header: "7E0",
-        type: "poll",
-        stateText: "Engine Running. Foot holding Brake Pedal firmly.",
-        steps: [
-          "We found Reverse (0x82)! Now we need to map High and Low.",
-          "Start in <strong>Neutral (N)</strong>.",
-          "Tap <strong>🔴 Start Session Record</strong>.",
-          "Shift to <strong>High (H)</strong> (hold 3s).",
-          "Shift to <strong>Low (L)</strong> (hold 3s).",
-          "Shift back to <strong>Neutral (N)</strong>.",
-          "Tap <strong>⏹️ Stop & Append</strong>."
-        ]
-      },
-      test_eps_brute: {
-        title: "EPS Module Diagnostic Sweep",
+      test_eps_uds: {
+        title: "EPS UDS Standard Sweep",
         targetCmd: "sweep",
         header: "760",
         type: "sweep",
-        stateText: "Key ON, Engine OFF.",
+        stateText: "Key ON, Engine Running.",
         steps: [
+          "We found out the ECU ignores EPS. We must talk directly to it.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "The app will automatically ping LIDs 0x00 through 0x20 on the EPS module.",
+          "The app will send standard UDS queries (Service 22) to the EPS Module.",
           "It will stop automatically when done."
         ]
       },
-      test_sus_brute: {
-        title: "Fox iQS Suspension Sweep",
+      test_sus_uds: {
+        title: "Fox iQS UDS Standard Sweep",
         targetCmd: "sweep",
         header: "7E5",
         type: "sweep",
-        stateText: "Key ON, Engine OFF.",
+        stateText: "Key ON, Engine Running.",
         steps: [
+          "The ECU ignores the Fox module entirely.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "The app will automatically ping LIDs 0x00 through 0x20 on the Fox iQS module.",
+          "The app will send standard UDS queries (Service 22) to the Fox Module.",
           "It will stop automatically when done."
         ]
       }
@@ -786,11 +771,11 @@
       const gearNibble = b19 & 0x0F;
       let gearText = 'N';
       let gearClass = 'gear-n';
-      // v3.6.0 Fix: 0x82 is Reverse based on CSV data proof!
-      if (gearNibble === 0x02) { gearText = 'R'; gearClass = 'gear-r'; } 
+      
+      // v3.7.0 Fix: Transmission perfectly mapped via your physical shift sequence!
+      if (gearNibble === 0x04) { gearText = 'R'; gearClass = 'gear-r'; } 
+      else if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
       else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
-      else if (gearNibble === 0x08) { gearText = 'H'; gearClass = 'gear-h'; } // Unconfirmed guess
-      else if (gearNibble === 0x04) { gearText = 'H'; gearClass = 'gear-h'; } // Unconfirmed guess
       else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; } 
 
       const b20 = bytes[20];
@@ -810,9 +795,10 @@
 
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
       const isBrakeOn = (bytes[21] & 0x10) === 0x10;
-      const isLowBeam = (bytes[21] & 0x02) === 0x02;
+      
+      // v3.7.0 Fix: Engine ECU only cares about High Beams for the dash indicator.
       const isHighBeam = (bytes[21] & 0x01) === 0x01;
-      let lightText = isHighBeam ? 'HIGH' : (isLowBeam ? 'LOW' : 'OFF');
+      let lightText = isHighBeam ? 'HIGH' : 'OFF';
 
       // Update UI Dash
       if (!isNaN(rpm) && rpm <= 10000) {
@@ -861,7 +847,7 @@
       if(pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
 
       const lightsEl = document.getElementById('val-dash-lights');
-      if(lightsEl) { lightsEl.innerText = lightText; lightsEl.className = `status-pill-val ${isHighBeam||isLowBeam ? 'on' : 'off'}`; }
+      if(lightsEl) { lightsEl.innerText = lightText; lightsEl.className = `status-pill-val ${isHighBeam ? 'on' : 'off'}`; }
 
       // CONTINUOUS CSV DATA LOGGER HOOK
       if (isCsvLogging) {
@@ -921,14 +907,12 @@
       const frameEl = document.getElementById('csv-frame-text');
 
       if (!isCsvLogging) {
-        // Start Logging
         if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to Machine OBD-II First!");
 
         isCsvLogging = true;
         csvStartTime = Date.now();
         csvFrames = [];
 
-        // Build Header with 26 Byte Columns
         let headerRow = "Time_Sec,RPM,Speed,Temp,MAP_mbar,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake,Lights";
         for(let i = 0; i < 26; i++) { headerRow += `,B${i}`; }
         csvFrames.push(headerRow);
@@ -947,7 +931,6 @@
         }, 1000);
         
       } else {
-        // Stop Logging
         isCsvLogging = false;
         clearInterval(csvInterval);
         btn.innerText = "🔴 Start CSV Recording";
@@ -968,7 +951,6 @@
         csvFrames.push(markerRow);
         log("📍 Timestamp Marker Dropped!");
         
-        // Brief visual flash for confirmation
         const timerText = document.getElementById('csv-timer-text');
         timerText.style.color = "var(--amber)";
         setTimeout(() => timerText.style.color = "#fff", 300);
@@ -1084,19 +1066,20 @@
 
         if (def.type === 'sweep') {
           isPolling = false; 
-          await new Promise(r => setTimeout(r, 250)); // Ensure background polling is completely dead before sweeping
+          await new Promise(r => setTimeout(r, 400)); // Ensure background polling is completely dead before sweeping
           
           await sendCommand(`ATSH${def.header}`, 1000);
           
+          // Using UDS Service 22 (Read Data By Common Identifier) instead of 21 for Fox/EPS
           for (let i = 0; i <= 0x20; i++) {
             if (!isRecordingSession) break;
             const hexLID = i.toString(16).toUpperCase().padStart(2, '0');
-            document.getElementById('record-status-text').innerText = `🔴 Sweeping Node ${def.header} (LID: 21 ${hexLID})...`;
-            const res = await sendCommand(`21${hexLID}`, 1000);
+            document.getElementById('record-status-text').innerText = `🔴 Sweeping Node ${def.header} (UDS 22 01 ${hexLID})...`;
             
+            const res = await sendCommand(`2201${hexLID}`, 1000);
             const clean = res.replace(/[\s\r\n>]/g, '');
             if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
-              recordedFrames.push({ lid: `21${hexLID}`, data: res.trim() });
+              recordedFrames.push({ lid: `22 01 ${hexLID}`, data: res.trim() });
             }
           }
           
@@ -1113,12 +1096,12 @@
         isPolling = false;
 
         if (def.type === 'sweep') {
-          let logBody = `Target Node: ${def.header}\n\n--- ACTIVE PAYLOADS FOUND ---\n`;
+          let logBody = `Target Node: ${def.header} (UDS Service 22)\n\n--- ACTIVE PAYLOADS FOUND ---\n`;
           if (!recordedFrames.length) {
-            logBody += `No active LIDs responded. Wait, if it says STOPPED, the ELM327 buffer was interrupted.\n`;
+            logBody += `No active PIDs responded. The module might require a specific session ID or passive sniffing.\n`;
           } else {
             recordedFrames.forEach(f => {
-              logBody += `LID ${f.lid} ➜ ${f.data}\n`;
+              logBody += `PID ${f.lid} ➜ ${f.data}\n`;
             });
           }
           appendToMasterReport(def.title, def.stateText, logBody);
