@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RMAX Blackbox" />
+  <title>Yamaha RMAX Blackbox Suite (v3.0.0)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+    :root {
+      --bg: #05070e;
+      --card-bg: rgba(16, 23, 41, 0.75);
+      --card-border: rgba(56, 189, 248, 0.15);
+      --card-glow: rgba(56, 189, 248, 0.05);
+      --text: #f8fafc;
+      --text-muted: #64748b;
+      --cyan: #38bdf8;
+      --green: #4ade80;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --purple: #c084fc;
+      --redline: #ff0055;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 60%),
+        linear-gradient(180deg, #070b14 0%, #030408 100%);
+      color: var(--text);
+      padding: 0.75rem 0.75rem 5.5rem 0.75rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.25rem 0.25rem 0.75rem 0.25rem;
+    }
+
+    .brand-container { display: flex; align-items: center; gap: 0.5rem; }
+    .brand-title {
+      display: flex; align-items: center; gap: 0.4rem; font-size: 1.15rem;
+      font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff;
+    }
+    .brand-glow {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+    }
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700;
+      padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3); color: var(--cyan);
+    }
+
+    .hud-widgets { display: flex; align-items: center; gap: 0.4rem; }
+    .status-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700;
+      padding: 0.35rem 0.65rem; border-radius: 9999px; background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-muted); letter-spacing: 0.05em;
+    }
+    .status-badge.connected {
+      background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green);
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+    }
+    .status-badge.recording {
+      background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red);
+      animation: pulseRecord 0.6s infinite alternate; font-weight: 800;
+    }
+    @keyframes pulseRecord { from { opacity: 0.6; } to { opacity: 1; } }
+
+    .btn-hud-icon {
+      background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text); width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .btn-hud-icon:active { transform: scale(0.92); }
+
+    .view-panel { display: none; flex-direction: column; gap: 0.75rem; flex: 1; animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Hero Tachometer */
+    .cockpit-hero {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
+      padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow);
+      backdrop-filter: blur(12px);
+    }
+    .gauge-wrapper { position: relative; width: 240px; height: 200px; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { width: 240px; height: 200px; transform: rotate(-30deg); }
+    .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
+    .gauge-val-track {
+      fill: none; stroke: var(--cyan); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2;
+      transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan));
+    }
+    .gauge-center-readout {
+      position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+      text-align: center; display: flex; flex-direction: column; align-items: center;
+    }
+    .gauge-center-val { font-size: 3.5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .gauge-center-unit { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.2rem; }
+    .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
+    .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
+    @keyframes pulseGlow { from { opacity: 0.4; } to { opacity: 1; text-shadow: 0 0 10px var(--redline); } }
+
+    /* Live Multi-Status Strip */
+    .drive-status-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 0.9fr 0.9fr 0.9fr;
+      gap: 0.35rem;
+      width: 100%;
+    }
+    .status-pill-box {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+      padding: 0.5rem 0.25rem; display: flex; flex-direction: column; justify-content: center;
+      align-items: center; gap: 0.15rem; backdrop-filter: blur(8px);
+    }
+    .status-pill-label { font-size: 0.58rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.1rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; }
+    
+    .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
+    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
+    .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
+    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
+
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); }
+
+    .status-pill-val.eps-high { color: var(--green); text-shadow: 0 0 10px var(--green); }
+    .status-pill-val.eps-std { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
+    .status-pill-val.eps-low { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+
+    .status-pill-val.on { color: var(--green) !important; text-shadow: 0 0 10px var(--green); font-weight: 900; }
+    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
+    .status-pill-val.off { color: rgba(255, 255, 255, 0.18); }
+
+    /* Inclinometer & GPS HUD Widget */
+    .adventure-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.4rem;
+      width: 100%;
+    }
+    .adv-box {
+      background: rgba(16, 23, 41, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+    }
+    .adv-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .adv-val { font-size: 1.25rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
+
+    /* Touch Metric Cards Grid */
+    .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+    .touch-card {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.85rem 1rem;
+      display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer;
+    }
+    .touch-card:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.9); }
+    .card-top { display: flex; justify-content: space-between; align-items: center; }
+    .card-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .card-toggle-hint { font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
+    .card-main { margin: 0.4rem 0; display: flex; align-items: baseline; gap: 0.35rem; }
+    .card-val { font-size: 2rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-unit { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+    .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
+    .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
+
+    /* Sections */
+    .disc-section {
+      background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 1rem;
+      display: flex; flex-direction: column; gap: 0.75rem; backdrop-filter: blur(8px);
+    }
+    .disc-title { font-size: 0.95rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
+
+    .btn-touch {
+      background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.65rem 1rem;
+      border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    }
+    .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
+    .btn-touch.secondary { background: #1e293b; border-color: rgba(255,255,255,0.1); color: var(--text); }
+    .btn-touch.yamaha { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); }
+    .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
+    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; }
+
+    .terminal-box {
+      background: #020617; border: 1px solid var(--card-border); border-radius: 10px; padding: 0.75rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.4; flex: 1;
+      max-height: calc(100vh - 380px); overflow-y: auto; display: flex; flex-direction: column; gap: 0.25rem;
+    }
+
+    .action-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem;
+    }
+
+    /* Live Data Stats Widget */
+    .stats-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .stat-box {
+      background: #020617;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .stat-lbl { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .stat-val { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 800; color: var(--cyan); margin-top: 0.15rem; }
+
+    /* Bottom Touch Dock */
+    .touch-dock {
+      position: fixed; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; background: rgba(10, 15, 29, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 0.4rem 0.5rem; display: flex;
+      justify-content: space-between; align-items: center; gap: 0.25rem; backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); z-index: 100;
+    }
+    .dock-btn {
+      flex: 1; padding: 0.55rem 0.1rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      background: transparent; border: none; border-radius: 12px; color: var(--text-muted); cursor: pointer;
+    }
+    .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .dock-btn span { font-size: 0.62rem; font-weight: 700; }
+    .dock-btn:active { transform: scale(0.92); }
+    .dock-btn.active { color: var(--cyan); background: rgba(56, 189, 248, 0.12); }
+    .dock-action-btn {
+      padding: 0.6rem 0.85rem; border-radius: 12px; font-size: 0.75rem; font-weight: 800; border: none;
+      cursor: pointer; display: flex; align-items: center; gap: 0.3rem; background: var(--cyan); color: #05070e;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+    }
+    .dock-action-btn:active { transform: scale(0.94); }
+    .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35); }
+
+    #log {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-muted); min-height: 40px;
+      max-height: 50px; overflow-y: auto; background: #020617; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top HUD Header -->
+  <header>
+    <div class="brand-container">
+      <div class="brand-title">
+        <span class="brand-glow"></span>
+        RMAX BLACKBOX
+      </div>
+      <span class="version-tag" id="app-version-badge">v3.0.0</span>
+    </div>
+    <div class="hud-widgets">
+      <span id="status" class="status-badge">DISCONNECTED</span>
+      <button class="btn-hud-icon" id="btn-quick-rec" onclick="toggleCSVLogging()" title="Record CSV Ride Log">🔴</button>
+      <a href="readme.html" class="btn-hud-icon" title="Open Technical Guide">📖</a>
+      <button class="btn-hud-icon" onclick="toggleSimulator()" title="Toggle Simulator">⚡</button>
+      <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <!-- TAB 1: Cockpit Telemetry -->
+  <div id="tab-dash" class="view-panel" style="display: flex;">
+    
+    <!-- Hero Tachometer -->
+    <div class="cockpit-hero">
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="gauge-center-readout">
+          <span id="val-dash-rpm" class="gauge-center-val">--</span>
+          <span class="gauge-center-unit">RPM</span>
+        </div>
+        <div id="redline-alert" class="redline-indicator">REDLINE</div>
+      </div>
+    </div>
+
+    <!-- Live Status Strip -->
+    <div class="drive-status-strip">
+      <div class="status-pill-box">
+        <span class="status-pill-label">Gear</span>
+        <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">D-Mode</span>
+        <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">EPS</span>
+        <span id="val-dash-eps-mode" class="status-pill-val eps-std">STD</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">P-Brake</span>
+        <span id="val-dash-pbrake" class="status-pill-val off">OFF</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">Brake</span>
+        <span id="val-dash-brake" class="status-pill-val off">OFF</span>
+      </div>
+      <div class="status-pill-box">
+        <span class="status-pill-label">Lights</span>
+        <span id="val-dash-lights" class="status-pill-val off">OFF</span>
+      </div>
+    </div>
+
+    <!-- Inclinometer & GPS HUD Widget -->
+    <div class="adventure-strip">
+      <div class="adv-box">
+        <span class="adv-label">Pitch / Grade</span>
+        <span id="val-dash-pitch" class="adv-val">0°</span>
+      </div>
+      <div class="adv-box">
+        <span class="adv-label">Roll / Tilt</span>
+        <span id="val-dash-roll" class="adv-val">0°</span>
+      </div>
+      <div class="adv-box">
+        <span class="adv-label">Altitude</span>
+        <span id="val-dash-altitude" class="adv-val">-- ft</span>
+      </div>
+    </div>
+
+    <div class="cockpit-grid">
+      <!-- Ground Speed (Byte 2) -->
+      <div class="touch-card" onclick="toggleSpeedUnits()">
+        <div class="card-top">
+          <span class="card-label">Ground Speed</span>
+          <span class="card-toggle-hint" id="speed-unit-tag">MPH</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-speed" class="card-val">--</span>
+          <span id="label-dash-speed-unit" class="card-unit">mph</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-speed" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Coolant Temp (Byte 14 - 31) -->
+      <div class="touch-card" onclick="toggleTempUnits()">
+        <div class="card-top">
+          <span class="card-label">Coolant (d:06)</span>
+          <span class="card-toggle-hint" id="temp-unit-tag">°C</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-coolant" class="card-val">--</span>
+          <span id="label-dash-temp-unit" class="card-unit">°C</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-coolant" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Gas Pedal / APS (Byte 7) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Gas Pedal (APS)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-pedal" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-pedal" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Throttle Blade / TPS (Byte 9) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Throttle Blade</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-throttle" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-throttle" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Manifold Pressure (MAP: Bytes 5 & 6) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Intake MAP (d:03)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-map" class="card-val">--</span>
+          <span class="card-unit">mbar</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-map" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Spark Advance (Byte 16) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Spark Timing</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-timing" class="card-val">--</span>
+          <span class="card-unit">°BTDC</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-timing" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Battery Voltage -->
+      <div class="touch-card" style="grid-column: span 2;">
+        <div class="card-top">
+          <span class="card-label">ECU Regulated Voltage (Byte 13 d:09)</span>
+          <span id="val-dash-atrv" style="font-size:0.75rem; color:var(--text-muted); font-family:'JetBrains Mono';">ATRV: --V</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-voltage" class="card-val">--</span>
+          <span class="card-unit">V</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-voltage" class="meter-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Full-Spectrum CSV Blackbox Logger -->
+  <div id="tab-blackbox" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Universal Telemetry Blackbox & CSV Exporter</div>
+      <p style="font-size:0.75rem; color:var(--text-muted);">
+        Captures all 18 labeled metrics, gyro inclinometer, plus every raw byte (B00–B24) into a structured time-series CSV for spreadsheet analytics.
+      </p>
+
+      <div class="stats-card-grid">
+        <div class="stat-box">
+          <div class="stat-lbl">LOGGED ROWS</div>
+          <div class="stat-val" id="stat-row-count">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-lbl">ELAPSED TIME</div>
+          <div class="stat-val" id="stat-duration">0.0s</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-lbl">SAMPLE RATE</div>
+          <div class="stat-val" id="stat-fps">0 Hz</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; margin-top:0.3rem;">
+        <button class="btn-touch record-btn" id="btn-main-record" style="flex:1;" onclick="toggleCSVLogging()">
+          🔴 Start Blackbox CSV Recording
+        </button>
+      </div>
+
+      <div class="action-grid" style="margin-top:0.2rem;">
+        <button class="btn-touch yamaha" id="btn-download-csv" onclick="downloadCSVFile()" disabled>
+          💾 Download CSV File (.csv)
+        </button>
+        <button class="btn-touch secondary" onclick="clearCSVBuffer()">
+          🗑️ Clear Buffer
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Preview Stream of CSV Rows -->
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div class="disc-title">Live CSV Stream Preview (Last Captured Row)</div>
+      <div id="csv-preview-box" class="terminal-box" style="max-height:160px; font-size:0.7rem;">
+        <div style="color:var(--text-muted);">Start recording to stream formatted CSV rows...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Diagnostic Trouble Codes & Node Scanner -->
+  <div id="tab-diagnostics" class="view-panel">
+    <div class="disc-section">
+      <div class="disc-title">Live DTC & Fault Memory Decoder</div>
+      <div class="action-grid">
+        <button class="btn-touch yamaha" onclick="decodeYamahaDTCs()">🔍 Scan & Decode Fault Codes (21 60 / 61)</button>
+        <button class="btn-touch secondary" onclick="probeAuxiliaryModules()">Probe EPS (760) & iQS (7E5)</button>
+      </div>
+    </div>
+
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div class="disc-title">Decoded Trouble Codes & Status</div>
+      <div id="dtc-display-box" class="terminal-box">
+        <div style="color:var(--text-muted);">Tap Scan above to decode active and historic fault memory...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Raw Serial Log Stream -->
+  <div id="tab-stream" class="view-panel">
+    <div class="disc-section" style="flex:1; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="disc-title">Raw Serial Packet Stream</div>
+        <button class="btn-touch secondary" style="padding:0.25rem 0.5rem; font-size:0.7rem;" onclick="clearStreamLog()">Clear</button>
+      </div>
+      <div id="live-terminal" class="terminal-box">
+        <div style="color:var(--text-muted);">Console ready. Connect to view packet feed...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real-time Bottom Log Strip -->
+  <div style="margin-top:0.75rem;">
+    <div id="log">System initialized. Touch Connect to start.</div>
+  </div>
+
+  <!-- Bottom Touch Dock -->
+  <div class="touch-dock">
+    <button class="dock-btn active" id="btn-tab-dash" onclick="switchTab('tab-dash')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+      <span>Cockpit</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-blackbox" onclick="switchTab('tab-blackbox')">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      <span id="dock-csv-label">CSV Log</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-diagnostics" onclick="switchTab('tab-diagnostics')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span>DTCs</span>
+    </button>
+    <button class="dock-btn" id="btn-tab-stream" onclick="switchTab('tab-stream')">
+      <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+      <span>Stream</span>
+    </button>
+
+    <button id="btn-connect" class="dock-action-btn" onclick="handleConnectClick()">
+      <span>Connect</span>
+    </button>
+  </div>
+
+  <script>
+    /* ==========================================================
+       APP CONFIGURATION & VERSION
+       ========================================================== */
+    const APP_VERSION = "v3.0.0";
+    document.getElementById('app-version-badge').innerText = APP_VERSION;
+
+    window.onerror = function(msg, url, line) {
+      log(`[ERROR] ${msg} (L${line})`);
+      return false;
+    };
+
+    const YAMAHA_DTC_MAP = {
+      12: "Crankshaft Position Sensor (No normal signal received)",
+      13: "Intake Air Pressure Sensor (Open/Short circuit)",
+      14: "Intake Air Pressure Sensor (Hose detached or clogged)",
+      15: "Throttle Position Sensor 1 (Open/Short circuit)",
+      16: "Throttle Position Sensor 2 (Stuck / signal mismatch)",
+      21: "Coolant Temperature Sensor (Open/Short circuit)",
+      22: "Intake Air Temperature Sensor (Open/Short circuit)",
+      28: "Engine Temperature Abnormally High",
+      30: "Lean Angle / Tip-Over Sensor Tripped (Vehicle Overturned)",
+      33: "Ignition Coil #1 Malfunction",
+      34: "Ignition Coil #2 Malfunction",
+      41: "Lean Angle / Tip-Over Sensor (Open/Short circuit)",
+      42: "Speed Sensor / Neutral Switch Input Signal Malfunction",
+      46: "Vehicle Charging System Voltage Abnormal",
+      50: "ECU Internal Memory Fault",
+      60: "YCC-T Drive-By-Wire Throttle Servo Motor Malfunction"
+    };
+
+    const SERVICE_UUIDS = [
+      '0000fff0-0000-1000-8000-00805f9b34fb',
+      '0000ffe0-0000-1000-8000-00805f9b34fb',
+      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+    ];
+
+    let bleDevice = null;
+    let writeChar = null;
+    let readChar = null;
+    let rxBuffer = '';
+    let isPolling = false;
+    let isSimulator = false;
+    let isLoggingCSV = false;
+    let activeTab = 'tab-dash';
+    let speedUnit = 'mph';
+    let tempUnit = 'c';
+
+    // Blackbox In-Memory Telemetry Buffer
+    let csvRows = [];
+    let logStartTime = null;
+
+    // Hardware Sensors State
+    let livePitch = 0;
+    let liveRoll = 0;
+    let liveAltitudeFt = 0;
+
+    function log(msg) {
+      const el = document.getElementById('log');
+      if (el) el.innerText = msg;
+    }
+
+    function logStream(msg, dir = 'rx') {
+      const box = document.getElementById('live-terminal');
+      if (!box) return;
+      const time = new Date().toISOString().substring(11, 23);
+      const entry = document.createElement('div');
+      entry.style.color = dir === 'tx' ? 'var(--cyan)' : 'var(--green)';
+      entry.innerText = `[${time}] ${dir === 'tx' ? '➜ TX' : '🠔 RX'}: ${msg}`;
+      box.appendChild(entry);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    window.clearStreamLog = function() {
+      const box = document.getElementById('live-terminal');
+      if (box) box.innerHTML = '';
+    };
+
+    function initPhoneSensors() {
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+          livePitch = Math.round(event.beta || 0);
+          liveRoll = Math.round(event.gamma || 0);
+          
+          const pitchEl = document.getElementById('val-dash-pitch');
+          const rollEl = document.getElementById('val-dash-roll');
+          if (pitchEl) pitchEl.innerText = `${livePitch}°`;
+          if (rollEl) rollEl.innerText = `${liveRoll}°`;
+        });
+      }
+
+      if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition((pos) => {
+          liveAltitudeFt = pos.coords.altitude ? Math.round(pos.coords.altitude * 3.28084) : 0;
+          const altEl = document.getElementById('val-dash-altitude');
+          if (altEl) altEl.innerText = `${liveAltitudeFt} ft`;
+        }, () => {}, { enableHighAccuracy: true, maximumAge: 1000 });
+      }
+    }
+
+    window.switchTab = function(tabId) {
+      activeTab = tabId;
+      const tabs = ['tab-dash', 'tab-blackbox', 'tab-diagnostics', 'tab-stream'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('btn-' + t);
+        if (btn) btn.classList.toggle('active', t === tabId);
+
+        const panel = document.getElementById(t);
+        if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
+      });
+
+      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && tabId === 'tab-dash') {
+        startPolling();
+      }
+    };
+
+    window.toggleSpeedUnits = function() {
+      speedUnit = (speedUnit === 'mph') ? 'kmh' : 'mph';
+      document.getElementById('speed-unit-tag').innerText = speedUnit.toUpperCase();
+      document.getElementById('label-dash-speed-unit').innerText = (speedUnit === 'kmh') ? 'km/h' : 'mph';
+      log(`Speed units: ${speedUnit.toUpperCase()}`);
+    };
+
+    window.toggleTempUnits = function() {
+      tempUnit = (tempUnit === 'c') ? 'f' : 'c';
+      document.getElementById('temp-unit-tag').innerText = `°${tempUnit.toUpperCase()}`;
+      document.getElementById('label-dash-temp-unit').innerText = `°${tempUnit.toUpperCase()}`;
+      log(`Temperature units: °${tempUnit.toUpperCase()}`);
+    };
+
+    window.toggleFullscreen = function() {
+      const doc = document;
+      const docEl = doc.documentElement;
+      const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFs = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isFs = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      if (requestFs && exitFs) {
+        try {
+          if (!isFs) {
+            const p = requestFs.call(docEl);
+            if (p && p.catch) p.catch(() => {});
+          } else {
+            const p = exitFs.call(doc);
+            if (p && p.catch) p.catch(() => {});
+          }
+        } catch (err) {}
+      }
+    };
+
+    /* Bluetooth Engine */
+    window.handleConnectClick = async function() {
+      if (bleDevice?.gatt?.connected) disconnect();
+      else await connect();
+    };
+
+    async function connect() {
+      if (isSimulator) toggleSimulator();
+      try {
+        if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable. Open in Bluefy.");
+
+        log("Opening Bluetooth pairing prompt...");
+        bleDevice = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true,
+          optionalServices: SERVICE_UUIDS
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        log("Connecting to GATT server...");
+        const server = await bleDevice.gatt.connect();
+        await new Promise(r => setTimeout(r, 300));
+
+        let service = null;
+        for (const uuid of SERVICE_UUIDS) {
+          try {
+            service = await server.getPrimaryService(uuid);
+            if (service) break;
+          } catch (e) {}
+        }
+        if (!service) throw new Error("No UART BLE service found.");
+
+        await new Promise(r => setTimeout(r, 200));
+        const chars = await service.getCharacteristics();
+        writeChar = null; readChar = null;
+
+        for (const char of chars) {
+          if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
+          if (char.properties.notify || char.properties.indicate) readChar = char;
+        }
+
+        if (!writeChar || !readChar) throw new Error("TX/RX characteristics not resolved.");
+
+        await readChar.startNotifications();
+        readChar.addEventListener('characteristicvaluechanged', handleNotification);
+
+        const statusEl = document.getElementById('status');
+        const btnConnect = document.getElementById('btn-connect');
+        if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
+        if (btnConnect) { btnConnect.innerText = "Disconnect"; btnConnect.classList.add("disconnect"); }
+
+        await initYamahaELM327();
+        startPolling();
+
+      } catch (err) {
+        log("BLE Error: " + err.message);
+        disconnect();
+      }
+    }
+
+    function disconnect() {
+      if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
+      onDisconnected();
+    }
+
+    function onDisconnected() {
+      isPolling = false;
+      isLoggingCSV = false;
+      const statusEl = document.getElementById('status');
+      const btnConnect = document.getElementById('btn-connect');
+      if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+      if (btnConnect) { btnConnect.innerText = "Connect"; btnConnect.classList.remove("disconnect"); }
+      log("Disconnected.");
+    }
+
+    let responseResolver = null;
+    function handleNotification(event) {
+      const chunk = new TextDecoder().decode(event.target.value);
+      rxBuffer += chunk;
+
+      if (rxBuffer.includes('>')) {
+        if (responseResolver) {
+          const res = rxBuffer.replace(/>/g, '').trim();
+          rxBuffer = '';
+          responseResolver(res);
+          responseResolver = null;
+        }
+      }
+    }
+
+    async function writeBLE(data) {
+      if (!writeChar) return;
+      if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
+        await writeChar.writeValueWithoutResponse(data);
+      } else if (writeChar.writeValueWithResponse) {
+        await writeChar.writeValueWithResponse(data);
+      } else {
+        await writeChar.writeValue(data);
+      }
+    }
+
+    async function sendCommand(cmd, timeoutMs = 2500) {
+      if (isSimulator) {
+        return new Promise(resolve => {
+          setTimeout(() => resolve(getSimulatedResponse(cmd)), 35);
+        });
+      }
+
+      return new Promise(async (resolve) => {
+        rxBuffer = '';
+        logStream(cmd, 'tx');
+
+        const timer = setTimeout(() => {
+          responseResolver = null;
+          resolve("TIMEOUT");
+        }, timeoutMs);
+
+        responseResolver = (response) => {
+          clearTimeout(timer);
+          logStream(response, 'rx');
+          resolve(response);
+        };
+
+        const enc = new TextEncoder().encode(cmd + '\r');
+        try {
+          await writeBLE(enc);
+        } catch (e) {
+          clearTimeout(timer);
+          responseResolver = null;
+          resolve("WRITE_ERR");
+        }
+      });
+    }
+
+    /* Yamaha Init Sequence */
+    async function initYamahaELM327() {
+      await writeBLE(new TextEncoder().encode('\r\r\r'));
+      await new Promise(r => setTimeout(r, 200));
+
+      await sendCommand("ATD", 1500);
+      await sendCommand("ATZ", 3000);
+      await new Promise(r => setTimeout(r, 600));
+
+      await sendCommand("ATE0", 1500);
+      await sendCommand("ATL0", 1500);
+      await sendCommand("ATS0", 1500);
+      await sendCommand("ATH0", 1500);
+      await sendCommand("ATAT2", 1500);
+      await sendCommand("ATSTFF", 1500);
+      await sendCommand("ATSP6", 2000);   // CAN 11-bit 500k
+      await sendCommand("ATSH7E0", 1500); // Yamaha Engine ECU
+
+      log("Connected to Yamaha RMAX! Live telemetry active.");
+    }
+
+    /* Continuous Live Polling Loop */
+    async function startPolling() {
+      if (isPolling) return;
+      isPolling = true;
+
+      while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
+        const startT = performance.now();
+        const rawRes = await sendCommand("2101", 1200);
+        const rtt = Math.round(performance.now() - startT);
+
+        // Update Voltage
+        const voltRes = await sendCommand("ATRV", 800);
+        let atrvVal = 0;
+        const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
+        if (m && m[1]) {
+          atrvVal = parseFloat(m[1]);
+          const atrvEl = document.getElementById('val-dash-atrv');
+          if (atrvEl) atrvEl.innerText = `ATRV: ${m[1]}V`;
+        }
+
+        parseYamahaPayload(rawRes, atrvVal);
+
+        const rpmVal = document.getElementById('val-dash-rpm').innerText;
+        const spdVal = document.getElementById('val-dash-speed').innerText;
+        const cltVal = document.getElementById('val-dash-coolant').innerText;
+        log(`⚡ RMAX: ${spdVal} MPH | ${cltVal}°C | RPM ${rpmVal} | ${rtt}ms`);
+
+        await new Promise(r => setTimeout(r, 35));
+      }
+      isPolling = false;
+    }
+
+    /* ==========================================================
+       YAMAHA RMAX CALIBRATED TELEMETRY & BLACKBOX CSV PIPELINE
+       ========================================================== */
+    function parseYamahaPayload(raw, atrvVal = 0) {
+      if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
+
+      let hexStream = '';
+      const lines = raw.split(/[\r\n]+/);
+
+      for (const line of lines) {
+        const cleanLine = line.replace(/\s+/g, '');
+        const match = cleanLine.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+        if (match && match[1]) {
+          hexStream += match[1];
+        } else if (!cleanLine.match(/^[0-9A-Fa-f]{3}$/)) {
+          hexStream += cleanLine;
+        }
+      }
+
+      if (!hexStream.includes("6101")) return;
+
+      const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
+      const bytes = [];
+      for (let i = 0; i < payloadHex.length; i += 2) {
+        bytes.push(parseInt(payloadHex.substr(i, 2), 16));
+      }
+
+      if (bytes.length < 18) return;
+
+      // 1. Decoded Metrics Calculation
+      const rpm = (bytes[0] * 256) + bytes[1];
+      const rawMph = bytes[2];
+      const speedMph = rawMph;
+      const speedKmh = Math.round(rawMph * 1.60934);
+      
+      const coolantC = bytes[14] - 31;
+      const coolantF = Math.round((coolantC * 1.8) + 32);
+
+      const rawAPS = bytes[7];
+      const pedalPct = Math.min(100, Math.max(0, Math.round(((rawAPS - 35) / 162) * 100)));
+
+      const rawTPS = bytes[9];
+      const tpsPct = Math.min(100, Math.max(0, Math.round(((rawTPS - 33) / 177) * 100)));
+
+      const mapMbar = (bytes[5] * 256) + bytes[6];
+      const timingDeg = Math.round((bytes[16] - 80) / 2);
+      const ecuVolt = (bytes[13] * 0.0706).toFixed(1);
+
+      // Gear Position
+      const gearNibble = bytes[19] & 0x0F;
+      let gearText = (gearNibble === 0x02) ? 'H' : (gearNibble === 0x01) ? 'L' : 'N';
+
+      // D-Mode
+      const b20 = bytes[20];
+      let dmodeText = (b20 === 0x82) ? 'CRAWL' : (b20 === 0x81) ? 'TRAIL' : 'SPORT';
+
+      // EPS Mode
+      const b11 = bytes[11];
+      let epsText = (b11 === 0x02) ? 'HIGH' : (b11 === 0x01) ? 'STD' : 'LOW';
+
+      // Switches
+      const pBrakeState = (bytes[21] & 0x04) === 0x04 ? 'ON' : 'OFF';
+      const footBrakeState = (bytes[21] & 0x10) === 0x10 ? 'ON' : 'OFF';
+      const lightsState = (bytes[21] & 0x01) === 0x01 ? 'ON' : 'OFF';
+
+      // 2. UI Updates
+      if (!isNaN(rpm) && rpm <= 10000) {
+        document.getElementById('val-dash-rpm').innerText = rpm;
+        updateTachometer(rpm);
+      }
+
+      let displaySpeed = (speedUnit === 'kmh') ? speedKmh : speedMph;
+      document.getElementById('val-dash-speed').innerText = displaySpeed;
+      const speedBar = document.getElementById('bar-speed');
+      if (speedBar) speedBar.style.width = Math.min(100, (speedMph / 70) * 100) + '%';
+
+      let displayTemp = (tempUnit === 'f') ? coolantF : coolantC;
+      document.getElementById('val-dash-coolant').innerText = displayTemp;
+      const coolantBar = document.getElementById('bar-coolant');
+      if (coolantBar) {
+        const pct = Math.min(100, Math.max(0, ((coolantC - 20) / 95) * 100));
+        coolantBar.style.width = pct + '%';
+        coolantBar.style.background = coolantC > 98 ? 'var(--red)' : coolantC > 90 ? 'var(--amber)' : 'var(--cyan)';
+      }
+
+      document.getElementById('val-dash-pedal').innerText = pedalPct;
+      const pedalBar = document.getElementById('bar-pedal');
+      if (pedalBar) pedalBar.style.width = pedalPct + '%';
+
+      document.getElementById('val-dash-throttle').innerText = tpsPct;
+      const tpsBar = document.getElementById('bar-throttle');
+      if (tpsBar) tpsBar.style.width = tpsPct + '%';
+
+      document.getElementById('val-dash-map').innerText = mapMbar > 0 ? mapMbar : '--';
+      const mapBar = document.getElementById('bar-map');
+      if (mapBar) mapBar.style.width = Math.min(100, (mapMbar / 300) * 100) + '%';
+
+      document.getElementById('val-dash-timing').innerText = timingDeg > -10 && timingDeg < 55 ? timingDeg : (bytes[16] - 90);
+      const timingBar = document.getElementById('bar-timing');
+      if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timingDeg / 45) * 100)) + '%';
+
+      document.getElementById('val-dash-voltage').innerText = ecuVolt;
+      const voltBar = document.getElementById('bar-voltage');
+      if (voltBar) voltBar.style.width = Math.min(100, Math.max(0, ((parseFloat(ecuVolt) - 10) / 5) * 100)) + '%';
+
+      const gearEl = document.getElementById('val-dash-gear');
+      gearEl.className = `status-pill-val gear-${gearText.toLowerCase()}`;
+      gearEl.innerText = gearText;
+
+      const dmodeEl = document.getElementById('val-dash-dmode');
+      dmodeEl.className = `status-pill-val dmode-${dmodeText.toLowerCase()}`;
+      dmodeEl.innerText = dmodeText;
+
+      const epsEl = document.getElementById('val-dash-eps-mode');
+      epsEl.className = `status-pill-val eps-${epsText.toLowerCase()}`;
+      epsEl.innerText = epsText;
+
+      const pbrakeEl = document.getElementById('val-dash-pbrake');
+      pbrakeEl.innerText = pBrakeState;
+      pbrakeEl.className = `status-pill-val ${pBrakeState === 'ON' ? 'brake-on' : 'off'}`;
+
+      const brakeEl = document.getElementById('val-dash-brake');
+      brakeEl.innerText = footBrakeState;
+      brakeEl.className = `status-pill-val ${footBrakeState === 'ON' ? 'brake-on' : 'off'}`;
+
+      const lightsEl = document.getElementById('val-dash-lights');
+      lightsEl.innerText = lightsState;
+      lightsEl.className = `status-pill-val ${lightsState === 'ON' ? 'on' : 'off'}`;
+
+      // 3. FULL-SPECTRUM CSV ROW BUFFERING
+      if (isLoggingCSV) {
+        const elapsedSec = ((Date.now() - logStartTime) / 1000).toFixed(2);
+
+        // Build Row Object
+        const row = {
+          Time_Elapsed_Sec: elapsedSec,
+          Timestamp_ISO: new Date().toISOString(),
+          Engine_RPM: rpm,
+          Ground_Speed_MPH: speedMph,
+          Ground_Speed_KMH: speedKmh,
+          Coolant_Temp_C: coolantC,
+          Coolant_Temp_F: coolantF,
+          Gas_Pedal_APS_Pct: pedalPct,
+          Throttle_Blade_TPS_Pct: tpsPct,
+          Intake_MAP_mbar: mapMbar,
+          Spark_Timing_BTDC: timingDeg,
+          ECU_Voltage_V: ecuVolt,
+          Battery_ADC_Volt: atrvVal,
+          Gear_Position: gearText,
+          D_Mode: dmodeText,
+          EPS_Level: epsText,
+          Parking_Brake: pBrakeState,
+          Foot_Brake: footBrakeState,
+          Headlights: lightsState,
+          Pitch_Deg: livePitch,
+          Roll_Deg: liveRoll,
+          Altitude_Ft: liveAltitudeFt,
+          Raw_Hex_Payload: payloadHex
+        };
+
+        // Append every raw byte individually (B00..B24 in Hex and Decimal)
+        bytes.forEach((b, idx) => {
+          const padIdx = String(idx).padStart(2, '0');
+          row[`B${padIdx}_Hex`] = b.toString(16).toUpperCase().padStart(2, '0');
+          row[`B${padIdx}_Dec`] = b;
+        });
+
+        csvRows.push(row);
+
+        // Update Live Blackbox UI
+        const rowCount = csvRows.length;
+        document.getElementById('stat-row-count').innerText = rowCount;
+        document.getElementById('stat-duration').innerText = `${elapsedSec}s`;
+        document.getElementById('stat-fps').innerText = `${(rowCount / parseFloat(elapsedSec || 1)).toFixed(1)} Hz`;
+
+        // Update Live Preview Box (Last Row)
+        const previewBox = document.getElementById('csv-preview-box');
+        previewBox.innerText = `[ROW #${rowCount}] T+${elapsedSec}s | RPM: ${rpm} | Speed: ${speedMph} MPH | Coolant: ${coolantC}°C (${coolantF}°F) | Pedal: ${pedalPct}% | Gear: ${gearText} | D-Mode: ${dmodeText} | B14: 0x${bytes[14].toString(16).toUpperCase()} (${bytes[14]})\nRAW: ${payloadHex}`;
+      }
+    }
+
+    function updateTachometer(rpm) {
+      const maxRPM = 9000;
+      const arcLength = 293.2;
+      const pct = Math.min(1, Math.max(0, rpm / maxRPM));
+      const offset = arcLength - (pct * arcLength);
+
+      const bar = document.getElementById('gauge-rpm-bar');
+      const redlineEl = document.getElementById('redline-alert');
+
+      if (bar) {
+        bar.style.strokeDashoffset = offset;
+        if (rpm >= 7800) {
+          bar.style.stroke = 'var(--redline)';
+          bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
+          if (redlineEl) redlineEl.classList.add('active');
+        } else if (rpm >= 5500) {
+          bar.style.stroke = 'var(--amber)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
+          if (redlineEl) redlineEl.classList.remove('active');
+        } else {
+          bar.style.stroke = 'var(--cyan)';
+          bar.style.filter = 'drop-shadow(0 0 8px var(--cyan))';
+          if (redlineEl) redlineEl.classList.remove('active');
+        }
+      }
+    }
+
+    /* ==========================================================
+       FULL-SPECTRUM CSV BLACKBOX ENGINE
+       ========================================================== */
+    window.toggleCSVLogging = function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+
+      const btnMain = document.getElementById('btn-main-record');
+      const btnQuick = document.getElementById('btn-quick-rec');
+      const statusBadge = document.getElementById('status');
+      const downloadBtn = document.getElementById('btn-download-csv');
+      const dockLabel = document.getElementById('dock-csv-label');
+
+      if (!isLoggingCSV) {
+        // Start Logging
+        isLoggingCSV = true;
+        csvRows = [];
+        logStartTime = Date.now();
+
+        btnMain.innerText = "⏹️ Stop & Finalize Blackbox Log";
+        btnMain.classList.add('recording');
+        btnQuick.innerText = "⏹️";
+        btnQuick.style.background = "var(--red)";
+        
+        statusBadge.innerText = "RECORDING CSV";
+        statusBadge.className = "status-badge recording";
+        downloadBtn.disabled = true;
+
+        log("Blackbox recording active: Capturing all known metrics & raw byte streams...");
+      } else {
+        // Stop Logging
+        isLoggingCSV = false;
+        btnMain.innerText = "🔴 Start Blackbox CSV Recording";
+        btnMain.classList.remove('recording');
+        btnQuick.innerText = "🔴";
+        btnQuick.style.background = "";
+
+        statusBadge.innerText = "CONNECTED";
+        statusBadge.className = "status-badge connected";
+        downloadBtn.disabled = false;
+        dockLabel.innerText = `CSV (${csvRows.length})`;
+
+        log(`Blackbox session finalized (${csvRows.length} data rows). Ready to download.`);
+      }
+    };
+
+    window.downloadCSVFile = function() {
+      if (!csvRows.length) return alert("No telemetry recorded yet. Start recording first!");
+
+      log("Generating CSV file...");
+
+      // Extract Headers
+      const headers = Object.keys(csvRows[0]);
+      
+      // Build CSV String
+      let csvContent = headers.join(",") + "\n";
+
+      csvRows.forEach(row => {
+        const line = headers.map(header => {
+          let val = row[header] === null || row[header] === undefined ? '' : String(row[header]);
+          // Escape commas or quotes
+          if (val.includes(",") || val.includes('"') || val.includes("\n")) {
+            val = `"${val.replace(/"/g, '""')}"`;
+          }
+          return val;
+        }).join(",");
+        csvContent += line + "\n";
+      });
+
+      // Trigger iOS / Web Download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      const dateStr = new Date().toISOString().slice(0,10);
+      const timeStr = new Date().toTimeString().slice(0,8).replace(/:/g, '-');
+      link.setAttribute("href", url);
+      link.setAttribute("download", `rmax_blackbox_${dateStr}_${timeStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      log("CSV Download initiated! Check your Downloads / Files folder.");
+    };
+
+    window.clearCSVBuffer = function() {
+      csvRows = [];
+      document.getElementById('stat-row-count').innerText = '0';
+      document.getElementById('stat-duration').innerText = '0.0s';
+      document.getElementById('stat-fps').innerText = '0 Hz';
+      document.getElementById('btn-download-csv').disabled = true;
+      document.getElementById('dock-csv-label').innerText = 'CSV Log';
+      document.getElementById('csv-preview-box').innerHTML = '<div style="color:var(--text-muted);">Buffer cleared. Start recording to capture data...</div>';
+      log("Blackbox buffer cleared.");
+    };
+
+    /* ==========================================================
+       YAMAHA DTC DECODER
+       ========================================================== */
+    window.decodeYamahaDTCs = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const out = document.getElementById('dtc-display-box');
+      out.innerHTML = '<div style="color:var(--cyan);">Scanning Active (21 60) & Historic (21 61) DTCs...</div>';
+
+      await sendCommand("ATSH7E0", 1000);
+      const res60 = await sendCommand("2160", 2500);
+      const res61 = await sendCommand("2161", 2500);
+
+      let html = '<div style="font-weight:700; color:var(--amber);">--- ACTIVE FAULT MEMORY (d:60) ---</div>';
+      html += parseDTCBlock(res60);
+
+      html += '<div style="font-weight:700; color:var(--cyan); margin-top:0.75rem;">--- HISTORIC STORED FAULTS (d:61) ---</div>';
+      html += parseDTCBlock(res61);
+
+      out.innerHTML = html;
+    };
+
+    function parseDTCBlock(raw) {
+      let hexStream = '';
+      raw.split(/[\r\n]+/).forEach(line => {
+        const m = line.replace(/\s+/g, '').match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+        if (m) hexStream += m[1];
+      });
+
+      if (!hexStream.length) return '<div style="color:var(--green);">✅ System Clean (No Trouble Codes)</div>';
+
+      const bytes = [];
+      for (let i = 0; i < hexStream.length; i += 2) {
+        bytes.push(parseInt(hexStream.substr(i, 2), 16));
+      }
+
+      const foundCodes = [];
+      for (let i = 4; i < bytes.length; i += 2) {
+        const code = bytes[i];
+        if (code > 0 && code < 99 && !foundCodes.includes(code)) {
+          foundCodes.push(code);
+        }
+      }
+
+      if (!foundCodes.length) {
+        return '<div style="color:var(--green);">✅ No Fault Codes Stored</div>';
+      }
+
+      return foundCodes.map(code => {
+        const desc = YAMAHA_DTC_MAP[code] || "Yamaha Manufacturer Specific Diagnostic Code";
+        return `<div style="color:var(--red); padding:0.2rem 0;">⚠️ <strong>Code ${code}</strong>: ${desc}</div>`;
+      }).join('');
+    }
+
+    window.probeAuxiliaryModules = async function() {
+      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      isPolling = false;
+
+      const out = document.getElementById('dtc-display-box');
+      out.innerHTML = '<div style="color:var(--cyan);">Probing EPS (0x760) & Fox iQS (0x7E5) auxiliary units...</div>';
+
+      const probeTargets = [
+        { header: '760', label: 'EPS Power Steering', cmds: ['2100', '2101', '2102', '22F40C'] },
+        { header: '7E5', label: 'Fox iQS Suspension Unit', cmds: ['2100', '2101', '2164', '220101'] }
+      ];
+
+      for (const target of probeTargets) {
+        await sendCommand(`ATSH${target.header}`, 1000);
+        out.innerHTML += `<div style="color:var(--amber); margin-top:0.4rem;">Testing Node 0x${target.header} (${target.label}):</div>`;
+
+        for (const cmd of target.cmds) {
+          const res = await sendCommand(cmd, 1500);
+          const clean = res.replace(/[\s\r\n>]/g, '');
+          const isHit = !clean.includes('7F') && !clean.includes('NODATA') && !clean.includes('TIMEOUT');
+          out.innerHTML += `<div style="color:${isHit ? 'var(--green)' : 'var(--text-muted)'}; padding-left:0.5rem;">${cmd} &rarr; ${res}</div>`;
+        }
+      }
+
+      await sendCommand("ATSH7E0", 1000);
+    };
+
+    /* Simulation Mode */
+    window.toggleSimulator = function() {
+      isSimulator = !isSimulator;
+      const statusEl = document.getElementById('status');
+
+      if (isSimulator) {
+        if (bleDevice?.gatt?.connected) disconnect();
+        if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
+        log("Simulator active: Generating dynamic RMAX telemetry.");
+        startPolling();
+      } else {
+        isPolling = false;
+        if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+        log("Simulator deactivated.");
+      }
+    };
+
+    function getSimulatedResponse(cmd) {
+      if (cmd.startsWith("AT")) {
+        if (cmd === "ATDP") return "ISO 15765-4 (CAN 11/500)";
+        if (cmd === "ATRV") return "14.2V";
+        return "OK";
+      }
+      if (cmd === "2101") {
+        const time = Date.now() / 1000;
+        const rpm = Math.round(1320 + Math.sin(time * 0.9) * 4500);
+        const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
+        const rawMph = Math.round(15 + Math.sin(time * 0.4) * 12);
+        const coolantB14 = Math.round(124 + Math.sin(time * 0.1) * 4);
+        const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
+        const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
+        const timing = Math.round(105 + Math.sin(time * 0.5) * 40);
+        const lights = Math.sin(time * 0.3) > 0 ? 0x05 : 0x04;
+        
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2102 2:0200CF${coolantB14.toString(16).padStart(2,'0')}44${timing.toString(16).padStart(2,'0')}00 3:C18281${lights.toString(16).padStart(2,'0')}8000AA`;
+      }
+      if (cmd === "2160") return "01A 0:616000000000 1:00000000000000 2:00000000000000 3:00000000000000";
+      if (cmd === "2161") return "01A 0:616100000000 1:00000000000000 2:00000000000000 3:00000000000000";
+      return "OK";
+    }
+
+    initPhoneSensors();
+  </script>
+</body>
+</html>
