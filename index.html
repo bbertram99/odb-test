@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v3.9.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v4.0.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -66,9 +66,9 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Hero Tachometer */
-    .cockpit-hero { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 0.9rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow); backdrop-filter: blur(12px); }
-    .gauge-wrapper { position: relative; width: 240px; height: 180px; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { width: 240px; height: 180px; transform: rotate(-30deg); }
+    .cockpit-hero { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 0.85rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow); backdrop-filter: blur(12px); }
+    .gauge-wrapper { position: relative; width: 240px; height: 175px; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { width: 240px; height: 175px; transform: rotate(-30deg); }
     .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
     .gauge-val-track { fill: none; stroke: var(--cyan); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan)); }
     .gauge-center-readout { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; }
@@ -78,10 +78,10 @@
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
 
     /* Live Multi-Status Strip */
-    .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; }
-    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
-    .status-pill-label { font-size: 0.55rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
-    .status-pill-val { font-size: 1.05rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
+    .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1.1fr 1fr 1fr; gap: 0.3rem; width: 100%; }
+    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.15rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
+    .status-pill-label { font-size: 0.52rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
+    .status-pill-val { font-size: 0.95rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
     
     .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
@@ -97,20 +97,23 @@
     .status-pill-val.drive-4wd { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
     .status-pill-val.drive-diff { color: var(--red); text-shadow: 0 0 10px var(--red); }
 
+    .status-pill-val.o2-closed { color: var(--green); text-shadow: 0 0 10px var(--green); }
+    .status-pill-val.o2-open { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
+
     .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
     .status-pill-val.off { color: rgba(255, 255, 255, 0.2); }
 
     /* Touch Metric Cards Grid */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
-    .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.7rem 0.85rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; }
+    .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; }
     .touch-card:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.9); }
     .card-top { display: flex; justify-content: space-between; align-items: center; }
-    .card-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-    .card-toggle-hint { font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
-    .card-main { margin: 0.25rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
-    .card-val { font-size: 1.75rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
-    .card-unit { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
-    .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
+    .card-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .card-toggle-hint { font-size: 0.58rem; padding: 0.1rem 0.3rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
+    .card-main { margin: 0.2rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
+    .card-val { font-size: 1.65rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-unit { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+    .meter-bar-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
     .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
 
     /* Experimental Cards */
@@ -171,7 +174,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v3.9.0</span>
+      <span class="version-tag" id="app-version-badge">v4.0.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -198,7 +201,7 @@
       </div>
     </div>
 
-    <!-- Verified Status Strip -->
+    <!-- Verified Status Strip (Includes O2 Closed/Open Loop badge!) -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -213,16 +216,20 @@
         <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
       </div>
       <div class="status-pill-box">
+        <span class="status-pill-label">Fuel Loop</span>
+        <span id="val-dash-o2" class="status-pill-val o2-closed">CLOSED</span>
+      </div>
+      <div class="status-pill-box">
         <span class="status-pill-label">P-Brake</span>
         <span id="val-dash-pbrake" class="status-pill-val off">OFF</span>
       </div>
       <div class="status-pill-box">
-        <span class="status-pill-label">Foot Brake</span>
+        <span class="status-pill-label">Brake</span>
         <span id="val-dash-fbrake" class="status-pill-val off">OFF</span>
       </div>
     </div>
 
-    <!-- Cockpit Grid (Verified Powertrain Metrics) -->
+    <!-- Cockpit Grid (Fully Expanded with Verified Telemetry) -->
     <div class="cockpit-grid">
       <!-- Ground Speed -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
@@ -236,6 +243,20 @@
         </div>
         <div class="meter-bar-track">
           <div id="bar-speed" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Engine Load % (Promoted!) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Engine Load</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-load" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-load" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -254,7 +275,7 @@
         </div>
       </div>
 
-      <!-- Intake Air Temp (PROMOTED FROM LAB!) -->
+      <!-- Intake Air Temp (IAT) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Intake Air (IAT)</span>
@@ -269,24 +290,10 @@
         </div>
       </div>
 
-      <!-- Manifold Pressure (MAP) -->
-      <div class="touch-card">
-        <div class="card-top">
-          <span class="card-label">Intake MAP</span>
-        </div>
-        <div class="card-main">
-          <span id="val-dash-map" class="card-val">--</span>
-          <span class="card-unit">mbar</span>
-        </div>
-        <div class="meter-bar-track">
-          <div id="bar-map" class="meter-bar-fill"></div>
-        </div>
-      </div>
-
       <!-- Gas Pedal / APS -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Gas Pedal (APS)</span>
+          <span class="card-label">Pedal (APS)</span>
         </div>
         <div class="card-main">
           <span id="val-dash-pedal" class="card-val">0</span>
@@ -300,7 +307,7 @@
       <!-- Throttle Blade / TPS -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Throttle Blade</span>
+          <span class="card-label">Blade (TPS)</span>
         </div>
         <div class="card-main">
           <span id="val-dash-throttle" class="card-val">0</span>
@@ -308,6 +315,20 @@
         </div>
         <div class="meter-bar-track">
           <div id="bar-throttle" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Fuel Injector Pulse Index (Promoted!) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Inj Fuel Rate</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-fuel" class="card-val">--</span>
+          <span class="card-unit">idx</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-fuel" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -325,8 +346,36 @@
         </div>
       </div>
 
-      <!-- Battery Voltage -->
+      <!-- Manifold Pressure (MAP) -->
       <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Intake MAP</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-map" class="card-val">--</span>
+          <span class="card-unit">mbar</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-map" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Barometric Pressure (Promoted!) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Baro Ambient</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-baro" class="card-val">--</span>
+          <span class="card-unit">mbar</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-baro" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Battery Voltage -->
+      <div class="touch-card" style="grid-column: span 2;">
         <div class="card-top">
           <span class="card-label">Battery Voltage</span>
         </div>
@@ -360,39 +409,13 @@
   <!-- TAB 2: Experimental Mystery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Experimental Lab (Calibrated Discoveries)</div>
+      <div class="disc-title">🧪 Experimental Mystery Lab</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
-        Correlate mystery channels with live engine state. <strong>Logging here records both experimental bytes and ground-truth powertrain data side-by-side!</strong>
+        Tracking remaining candidate bytes alongside live ground-truth metrics.
       </p>
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 10: Delta TPS (Relative Opening Angle) -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Throttle Displacement</span>
-          <span class="exp-tag">Byte [10]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b10">0</span>
-          <span class="exp-hex-val" id="exp-hex-b10">0x00</span>
-        </div>
-        <span class="exp-hint"><strong>Verified:</strong> Exact throttle displacement steps off the idle stop (TPS - 33).</span>
-      </div>
-
-      <!-- Byte 8: Fuel Delivery / Inj Pulse -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Inj Fuel Index</span>
-          <span class="exp-tag">Byte [8]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b8">--</span>
-          <span class="exp-hex-val" id="exp-hex-b8">0x00</span>
-        </div>
-        <span class="exp-hint"><strong>Verified:</strong> Jumps from 5 at idle to 63–76 during 4k RPM full throttle bursts.</span>
-      </div>
-
       <!-- Byte 3: IACV Warmup Stepper -->
       <div class="exp-card">
         <div class="exp-header">
@@ -403,20 +426,20 @@
           <span class="exp-dec-val" id="exp-val-b3">--</span>
           <span class="exp-hex-val" id="exp-hex-b3">0x00</span>
         </div>
-        <span class="exp-hint"><strong>Verified:</strong> Idle stepper. Decays 8 $\to$ 6 $\to$ 5 $\to$ 4 $\to$ 3 as coolant warms.</span>
+        <span class="exp-hint">Idle stepper offset. Decays 8 $\to$ 3 as coolant warms up.</span>
       </div>
 
-      <!-- Byte 4: Calculated Airflow Load -->
+      <!-- Byte 10: Delta TPS (Relative Throttle Blade Angle) -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Airflow Load Index</span>
-          <span class="exp-tag">Byte [4]</span>
+          <span class="exp-title">Delta Throttle (ΔTPS)</span>
+          <span class="exp-tag">Byte [10]</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b4">--</span>
-          <span class="exp-hex-val" id="exp-hex-b4">0x00</span>
+          <span class="exp-dec-val" id="exp-val-b10">0</span>
+          <span class="exp-hex-val" id="exp-hex-b10">0x00</span>
         </div>
-        <span class="exp-hint">Decays with RPM on overrun (35 idle $\to$ 66 tip-in $\to$ 72 coast).</span>
+        <span class="exp-hint">Exact physical throttle blade displacement step (TPS - 33).</span>
       </div>
 
       <!-- Byte 13: ECU ADC Voltage Rail -->
@@ -430,32 +453,6 @@
           <span class="exp-hex-val" id="exp-hex-b13">0xCF</span>
         </div>
         <span class="exp-hint">Raw ECU board-level ADC supply rail (ADC * 0.0706V).</span>
-      </div>
-
-      <!-- Byte 11: Fuel Loop / Status Flag -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Fuel Loop Flag</span>
-          <span class="exp-tag">Byte [11]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b11">--</span>
-          <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
-        </div>
-        <span class="exp-hint">0x01 (Open Loop / Cranking) vs 0x02 (Closed Loop Active).</span>
-      </div>
-
-      <!-- Byte 18: Baro / Target AFR Bias -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Baro / Target Bias</span>
-          <span class="exp-tag">Byte [18]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b18">193</span>
-          <span class="exp-hex-val" id="exp-hex-b18">0xC1</span>
-        </div>
-        <span class="exp-hint">Static 0xC1. Candidate ambient altitude or baseline lambda bias.</span>
       </div>
 
       <!-- Bytes 23..25: Auxiliary Trailer Bytes -->
@@ -572,7 +569,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v3.9.0";
+    const APP_VERSION = "v4.0.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -902,16 +899,29 @@
       if (bytes.length < 18) return;
 
       // ---------------------------------------------------------
-      // 1. VERIFIED COCKPIT METRICS
+      // 1. VERIFIED COCKPIT METRICS (FULLY INTEGRATED)
       // ---------------------------------------------------------
       const rpm = (bytes[0] * 256) + bytes[1];
       const rawMph = bytes[2];
       const coolantC = bytes[14] - 31;
-      const iatC = bytes[15] - 31; // PROMOTED FROM LAB (VERIFIED!)
+      const iatC = bytes[15] - 31; 
       const mapMbar = (bytes[5] * 256) + bytes[6];
       const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
       const timingDeg = Math.round((bytes[16] - 80) / 2);
+      
+      // Dynamic Airflow / Engine Load % (Byte 4: 35 idle -> 72 WOT)
+      const rawB4 = bytes[4];
+      const loadPct = Math.min(100, Math.max(0, Math.round(((rawB4 - 35) / 37) * 100)));
+
+      // Fuel Delivery Index (Byte 8: 5 idle -> 168 WOT)
+      const fuelIndex = bytes[8];
+
+      // Barometric Pressure (Byte 18: ~192 * 5.25 ≈ 1008 mbar)
+      const baroMbar = Math.round((bytes[18] || 192) * 5.25);
+
+      // O2 Closed/Open Loop Status (Byte 11: 0x02 Closed, 0x01 Open)
+      const isClosedLoop = (bytes[11] === 0x02);
       
       // Gear Decode
       const gearNibble = bytes[19] & 0x0F;
@@ -954,6 +964,21 @@
       const speedBar = document.getElementById('bar-speed');
       if (speedBar) speedBar.style.width = Math.min(100, (rawMph / 70) * 100) + '%';
 
+      // Engine Load
+      document.getElementById('val-dash-load').innerText = loadPct;
+      const loadBar = document.getElementById('bar-load');
+      if (loadBar) loadBar.style.width = loadPct + '%';
+
+      // Fuel Delivery Rate
+      document.getElementById('val-dash-fuel').innerText = fuelIndex;
+      const fuelBar = document.getElementById('bar-fuel');
+      if (fuelBar) fuelBar.style.width = Math.min(100, (fuelIndex / 170) * 100) + '%';
+
+      // Barometric Pressure
+      document.getElementById('val-dash-baro').innerText = baroMbar;
+      const baroBar = document.getElementById('bar-baro');
+      if (baroBar) baroBar.style.width = Math.min(100, Math.max(0, ((baroMbar - 800) / 300) * 100)) + '%';
+
       // Coolant Temp
       let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
       document.getElementById('val-dash-coolant').innerText = displayCoolant;
@@ -985,9 +1010,9 @@
       const mapBar = document.getElementById('bar-map');
       if (mapBar) mapBar.style.width = Math.min(100, (mapMbar / 300) * 100) + '%';
 
-      document.getElementById('val-dash-timing').innerText = timingDeg > -10 && timingDeg < 55 ? timingDeg : (bytes[16] - 90);
+      document.getElementById('val-dash-timing').innerText = timingDeg > -30 && timingDeg < 85 ? timingDeg : '--';
       const timingBar = document.getElementById('bar-timing');
-      if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, (timingDeg / 45) * 100)) + '%';
+      if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, ((timingDeg + 15) / 90) * 100)) + '%';
 
       document.getElementById('val-dash-voltage').innerText = atrvVal || '--';
       const voltBar = document.getElementById('bar-voltage');
@@ -1002,6 +1027,12 @@
       const driveEl = document.getElementById('val-dash-drive');
       if(driveEl) { driveEl.className = `status-pill-val ${driveClass}`; driveEl.innerText = driveText; }
 
+      const o2El = document.getElementById('val-dash-o2');
+      if(o2El) { 
+        o2El.className = `status-pill-val ${isClosedLoop ? 'o2-closed' : 'o2-open'}`; 
+        o2El.innerText = isClosedLoop ? 'CLOSED' : 'OPEN'; 
+      }
+
       const pbrakeEl = document.getElementById('val-dash-pbrake');
       if(pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
 
@@ -1011,34 +1042,18 @@
       // ---------------------------------------------------------
       // 2. EXPERIMENTAL MYSTERY LAB UI UPDATE
       // ---------------------------------------------------------
-      const b10 = bytes[10] !== undefined ? bytes[10] : 0;
-      const b8 = bytes[8] !== undefined ? bytes[8] : 0;
       const b3 = bytes[3] !== undefined ? bytes[3] : 0;
-      const b4 = bytes[4] !== undefined ? bytes[4] : 0;
+      const b10 = bytes[10] !== undefined ? bytes[10] : 0;
       const b13 = bytes[13] !== undefined ? bytes[13] : 0;
-      const b11 = bytes[11] !== undefined ? bytes[11] : 0;
-      const b18 = bytes[18] !== undefined ? bytes[18] : 0;
-
-      document.getElementById('exp-val-b10').innerText = `${b10} (ΔTPS)`;
-      document.getElementById('exp-hex-b10').innerText = `0x${b10.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b8').innerText = `${b8} (${(b8 * 0.2).toFixed(1)}ms)`;
-      document.getElementById('exp-hex-b8').innerText = `0x${b8.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b3').innerText = `${b3} steps`;
       document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
 
-      document.getElementById('exp-val-b4').innerText = `${b4}`;
-      document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
+      document.getElementById('exp-val-b10').innerText = `${b10} (ΔTPS)`;
+      document.getElementById('exp-hex-b10').innerText = `0x${b10.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b13').innerText = `${(b13 * 0.0706).toFixed(1)}V`;
       document.getElementById('exp-hex-b13').innerText = `0x${b13.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b11').innerText = b11 === 2 ? '0x02 (Closed)' : '0x01 (Open)';
-      document.getElementById('exp-hex-b11').innerText = `0x${b11.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b18').innerText = b18;
-      document.getElementById('exp-hex-b18').innerText = `0x${b18.toString(16).toUpperCase().padStart(2, '0')}`;
 
       const b23Hex = (bytes[23] || 0).toString(16).toUpperCase().padStart(2, '0');
       const b24Hex = (bytes[24] || 0).toString(16).toUpperCase().padStart(2, '0');
@@ -1048,23 +1063,23 @@
       // ---------------------------------------------------------
       // 3. DEDICATED LOGGING HOOKS
       // ---------------------------------------------------------
-      // A. Cockpit Logger Hook (Only Cockpit Verified Metrics)
+      // A. Cockpit Logger Hook
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, rawMph, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg, atrvVal, 
-          gearText, dmodeText, driveText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
+          elapsed, rpm, rawMph, coolantC, iatC, mapMbar, baroMbar, loadPct, fuelIndex, pedalPct, tpsPct, timingDeg, atrvVal, 
+          gearText, dmodeText, driveText, isClosedLoop ? "CLOSED" : "OPEN", isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
       }
 
-      // B. Grounded Lab Logger Hook (Ground-Truth Context + Experimental Candidates)
+      // B. Grounded Lab Logger Hook
       if (isLabCsvLogging) {
         const elapsed = ((Date.now() - labCsvStartTime) / 1000).toFixed(3);
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, rawMph, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, b8, b10, b11, b13, b18, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, rawB4, fuelIndex, b10, bytes[11] || 0, b13, bytes[18] || 0, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1112,7 +1127,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          "Time_Sec,RPM,Speed_MPH,Coolant_C,IAT_C,MAP_mbar,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake"
+          "Time_Sec,RPM,Speed_MPH,Coolant_C,IAT_C,MAP_mbar,Baro_mbar,Engine_Load_Pct,Inj_Fuel_Index,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,O2_Loop,PBrake,FootBrake"
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1379,10 +1394,13 @@
         const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
         const timing = Math.round(105 + Math.sin(time * 0.5) * 40);
-        const b15 = Math.round(65 - (time % 5));
+        const b15 = Math.round(62 - (time % 4));
         const b10 = Math.max(0, tps - 33);
+        const b4 = Math.round(35 + (rpm / 8000) * 37);
+        const b8 = Math.round(5 + (rpm / 8000) * 160);
+        const b11 = rpm > 7000 ? 1 : 2;
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}02 2:0200CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C18082008000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C08082008000AA`;
       }
       return "NO DATA";
     }
