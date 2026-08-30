@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v3.8.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v3.9.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -66,20 +66,20 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     /* Hero Tachometer */
-    .cockpit-hero { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow); backdrop-filter: blur(12px); }
-    .gauge-wrapper { position: relative; width: 240px; height: 190px; display: flex; align-items: center; justify-content: center; }
-    .gauge-svg { width: 240px; height: 190px; transform: rotate(-30deg); }
+    .cockpit-hero { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px; padding: 0.9rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px var(--card-glow); backdrop-filter: blur(12px); }
+    .gauge-wrapper { position: relative; width: 240px; height: 180px; display: flex; align-items: center; justify-content: center; }
+    .gauge-svg { width: 240px; height: 180px; transform: rotate(-30deg); }
     .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
     .gauge-val-track { fill: none; stroke: var(--cyan); stroke-width: 14; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan)); }
     .gauge-center-readout { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; }
-    .gauge-center-val { font-size: 3.4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+    .gauge-center-val { font-size: 3.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
     .gauge-center-unit { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.2rem; }
     .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
 
     /* Live Multi-Status Strip */
     .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; }
-    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
+    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
     .status-pill-label { font-size: 0.55rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
     .status-pill-val { font-size: 1.05rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
     
@@ -101,27 +101,27 @@
     .status-pill-val.off { color: rgba(255, 255, 255, 0.2); }
 
     /* Touch Metric Cards Grid */
-    .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.75rem 0.9rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; }
+    .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+    .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.7rem 0.85rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; }
     .touch-card:active { transform: scale(0.98); background: rgba(30, 41, 59, 0.9); }
     .card-top { display: flex; justify-content: space-between; align-items: center; }
-    .card-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-    .card-toggle-hint { font-size: 0.62rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
-    .card-main { margin: 0.3rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
-    .card-val { font-size: 1.85rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+    .card-toggle-hint { font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.05); color: var(--cyan); font-weight: 600; }
+    .card-main { margin: 0.25rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
+    .card-val { font-size: 1.75rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
     .card-unit { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
     .meter-bar-track { width: 100%; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
     .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
 
     /* Experimental Cards */
-    .exp-card { background: rgba(15, 23, 42, 0.85); border: 1px dashed rgba(192, 132, 252, 0.35); border-radius: 12px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .exp-card { background: rgba(15, 23, 42, 0.85); border: 1px dashed rgba(192, 132, 252, 0.35); border-radius: 12px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; }
     .exp-header { display: flex; justify-content: space-between; align-items: center; }
     .exp-title { font-size: 0.72rem; font-weight: 700; color: var(--purple); text-transform: uppercase; }
     .exp-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; color: var(--cyan); background: rgba(56, 189, 248, 0.1); padding: 0.1rem 0.3rem; border-radius: 4px; }
     .exp-val-row { display: flex; justify-content: space-between; align-items: baseline; }
-    .exp-dec-val { font-size: 1.5rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
+    .exp-dec-val { font-size: 1.45rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace; }
     .exp-hex-val { font-size: 0.95rem; font-weight: 700; color: var(--amber); font-family: 'JetBrains Mono', monospace; }
-    .exp-hint { font-size: 0.65rem; color: var(--text-muted); line-height: 1.2; }
+    .exp-hint { font-size: 0.65rem; color: var(--text-muted); line-height: 1.25; }
 
     /* Compact Embedded Logger Bar */
     .logger-dock-bar { background: rgba(2, 6, 23, 0.9); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
@@ -130,7 +130,7 @@
     .logger-stats-frames { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 0.15rem; }
 
     /* Sections */
-    .disc-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.65rem; backdrop-filter: blur(8px); }
+    .disc-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.6rem; backdrop-filter: blur(8px); }
     .disc-title { font-size: 0.92rem; font-weight: 700; color: var(--cyan); text-transform: uppercase; }
 
     .instruction-card { background: rgba(2, 6, 23, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.78rem; }
@@ -171,7 +171,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v3.8.0</span>
+      <span class="version-tag" id="app-version-badge">v3.9.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -198,7 +198,7 @@
       </div>
     </div>
 
-    <!-- Verified Status Strip (Lights removed, Footbrake added) -->
+    <!-- Verified Status Strip -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -222,7 +222,7 @@
       </div>
     </div>
 
-    <!-- Cockpit Grid (Verified Powertrain Metrics Only) -->
+    <!-- Cockpit Grid (Verified Powertrain Metrics) -->
     <div class="cockpit-grid">
       <!-- Ground Speed -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
@@ -254,6 +254,35 @@
         </div>
       </div>
 
+      <!-- Intake Air Temp (PROMOTED FROM LAB!) -->
+      <div class="touch-card" onclick="toggleTempUnits()">
+        <div class="card-top">
+          <span class="card-label">Intake Air (IAT)</span>
+          <span class="card-toggle-hint" id="iat-unit-tag">°C</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-iat" class="card-val">--</span>
+          <span id="label-dash-iat-unit" class="card-unit">°C</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-iat" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Manifold Pressure (MAP) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Intake MAP</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-map" class="card-val">--</span>
+          <span class="card-unit">mbar</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-map" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
       <!-- Gas Pedal / APS -->
       <div class="touch-card">
         <div class="card-top">
@@ -282,20 +311,6 @@
         </div>
       </div>
 
-      <!-- Manifold Pressure (MAP) -->
-      <div class="touch-card">
-        <div class="card-top">
-          <span class="card-label">Intake MAP</span>
-        </div>
-        <div class="card-main">
-          <span id="val-dash-map" class="card-val">--</span>
-          <span class="card-unit">mbar</span>
-        </div>
-        <div class="meter-bar-track">
-          <div id="bar-map" class="meter-bar-fill"></div>
-        </div>
-      </div>
-
       <!-- Spark Advance -->
       <div class="touch-card">
         <div class="card-top">
@@ -311,7 +326,7 @@
       </div>
 
       <!-- Battery Voltage -->
-      <div class="touch-card" style="grid-column: span 2;">
+      <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Battery Voltage</span>
         </div>
@@ -345,102 +360,102 @@
   <!-- TAB 2: Experimental Mystery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Experimental Byte Discovery Lab</div>
+      <div class="disc-title">🧪 Experimental Lab (Calibrated Discoveries)</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
-        These candidate metrics isolate remaining unmapped bytes from the ECU. Perform actions in the vehicle (steer wheel, cycle accessories, observe warm-up) to detect responsive values!
+        Correlate mystery channels with live engine state. <strong>Logging here records both experimental bytes and ground-truth powertrain data side-by-side!</strong>
       </p>
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 15: Intake Air Temp Candidate -->
+      <!-- Byte 10: Delta TPS (Relative Opening Angle) -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Intake Air Temp?</span>
-          <span class="exp-tag">Byte [15]</span>
+          <span class="exp-title">Throttle Displacement</span>
+          <span class="exp-tag">Byte [10]</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b15">--</span>
-          <span class="exp-hex-val" id="exp-hex-b15">0x00</span>
+          <span class="exp-dec-val" id="exp-val-b10">0</span>
+          <span class="exp-hex-val" id="exp-hex-b10">0x00</span>
         </div>
-        <span class="exp-hint">Hypothesis: IAT (°C ≈ Raw - 31). Decreases as cooler air enters.</span>
+        <span class="exp-hint"><strong>Verified:</strong> Exact throttle displacement steps off the idle stop (TPS - 33).</span>
       </div>
 
-      <!-- Byte 13: ECU ADC / Voltage Reference -->
+      <!-- Byte 8: Fuel Delivery / Inj Pulse -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">ECU Ref ADC?</span>
-          <span class="exp-tag">Byte [13]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b13">--</span>
-          <span class="exp-hex-val" id="exp-hex-b13">0x00</span>
-        </div>
-        <span class="exp-hint">Hypothesis: Internal ECU 5V/12V ADC channel. Value * 0.0706.</span>
-      </div>
-
-      <!-- Byte 3: Idle Target / Air Valve Step -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">IACV Step / Airflow?</span>
-          <span class="exp-tag">Byte [3]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b3">--</span>
-          <span class="exp-hex-val" id="exp-hex-b3">0x00</span>
-        </div>
-        <span class="exp-hint">Changes from 00 at startup to 06, 05, 04 during warm-up idle.</span>
-      </div>
-
-      <!-- Byte 8: Injector Pulse / Target Load -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Inj Target / Load?</span>
+          <span class="exp-title">Inj Fuel Index</span>
           <span class="exp-tag">Byte [8]</span>
         </div>
         <div class="exp-val-row">
           <span class="exp-dec-val" id="exp-val-b8">--</span>
           <span class="exp-hex-val" id="exp-hex-b8">0x00</span>
         </div>
-        <span class="exp-hint">Fluctuates 03..07 with throttle blips and engine load.</span>
+        <span class="exp-hint"><strong>Verified:</strong> Jumps from 5 at idle to 63–76 during 4k RPM full throttle bursts.</span>
       </div>
 
-      <!-- Byte 11: Fuel Loop / Status Flag -->
+      <!-- Byte 3: IACV Warmup Stepper -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Closed-Loop Flag?</span>
-          <span class="exp-tag">Byte [11]</span>
+          <span class="exp-title">IACV Stepper Step</span>
+          <span class="exp-tag">Byte [3]</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b11">--</span>
-          <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
+          <span class="exp-dec-val" id="exp-val-b3">--</span>
+          <span class="exp-hex-val" id="exp-hex-b3">0x00</span>
         </div>
-        <span class="exp-hint">Bits toggle between 0x01 (Open Loop) & 0x02 (Closed Loop).</span>
+        <span class="exp-hint"><strong>Verified:</strong> Idle stepper. Decays 8 $\to$ 6 $\to$ 5 $\to$ 4 $\to$ 3 as coolant warms.</span>
       </div>
 
-      <!-- Byte 18: Barometric / Lambda Target -->
+      <!-- Byte 4: Calculated Airflow Load -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Baro / Target AFR?</span>
-          <span class="exp-tag">Byte [18]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b18">--</span>
-          <span class="exp-hex-val" id="exp-hex-b18">0x00</span>
-        </div>
-        <span class="exp-hint">Static 0xC1 (193). Potential ambient pressure or lambda bias.</span>
-      </div>
-
-      <!-- Byte 4: Mode Flag / Substate -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">ECU Mode Byte?</span>
+          <span class="exp-title">Airflow Load Index</span>
           <span class="exp-tag">Byte [4]</span>
         </div>
         <div class="exp-val-row">
           <span class="exp-dec-val" id="exp-val-b4">--</span>
           <span class="exp-hex-val" id="exp-hex-b4">0x00</span>
         </div>
-        <span class="exp-hint">Static 0x23 (35 dec). Check if it changes during Winch / Limp mode.</span>
+        <span class="exp-hint">Decays with RPM on overrun (35 idle $\to$ 66 tip-in $\to$ 72 coast).</span>
+      </div>
+
+      <!-- Byte 13: ECU ADC Voltage Rail -->
+      <div class="exp-card">
+        <div class="exp-header">
+          <span class="exp-title">ECU Ref ADC (0xCF)</span>
+          <span class="exp-tag">Byte [13]</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" id="exp-val-b13">14.6V</span>
+          <span class="exp-hex-val" id="exp-hex-b13">0xCF</span>
+        </div>
+        <span class="exp-hint">Raw ECU board-level ADC supply rail (ADC * 0.0706V).</span>
+      </div>
+
+      <!-- Byte 11: Fuel Loop / Status Flag -->
+      <div class="exp-card">
+        <div class="exp-header">
+          <span class="exp-title">Fuel Loop Flag</span>
+          <span class="exp-tag">Byte [11]</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" id="exp-val-b11">--</span>
+          <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
+        </div>
+        <span class="exp-hint">0x01 (Open Loop / Cranking) vs 0x02 (Closed Loop Active).</span>
+      </div>
+
+      <!-- Byte 18: Baro / Target AFR Bias -->
+      <div class="exp-card">
+        <div class="exp-header">
+          <span class="exp-title">Baro / Target Bias</span>
+          <span class="exp-tag">Byte [18]</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" id="exp-val-b18">193</span>
+          <span class="exp-hex-val" id="exp-hex-b18">0xC1</span>
+        </div>
+        <span class="exp-hint">Static 0xC1. Candidate ambient altitude or baseline lambda bias.</span>
       </div>
 
       <!-- Bytes 23..25: Auxiliary Trailer Bytes -->
@@ -461,11 +476,11 @@
     <div class="logger-dock-bar">
       <div class="logger-stats-col">
         <span class="logger-stats-time" id="lab-csv-time">00:00.0</span>
-        <span class="logger-stats-frames" id="lab-csv-frames">0 Lab Frames</span>
+        <span class="logger-stats-frames" id="lab-csv-frames">0 Grounded Lab Frames</span>
       </div>
       <div style="display:flex; gap:0.4rem;">
         <button class="btn-touch record-btn" id="btn-lab-record" onclick="toggleLabCsvLogger()" style="border-color:var(--purple); color:var(--purple);">
-          🧪 Log Lab .CSV
+          🧪 Log Grounded Lab .CSV
         </button>
         <button class="btn-touch" id="btn-lab-share" onclick="shareLabCsv()" style="background:rgba(192, 132, 252, 0.25); color:var(--purple); opacity:0.5; pointer-events:none;">
           📤 Share
@@ -557,7 +572,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v3.8.0";
+    const APP_VERSION = "v3.9.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -611,7 +626,7 @@
     let cockpitCsvStartTime = 0;
     let cockpitCsvInterval = null;
 
-    // 2. Lab Dedicated CSV Logger
+    // 2. Lab Dedicated Grounded CSV Logger
     let isLabCsvLogging = false;
     let labCsvFrames = [];
     let labCsvStartTime = 0;
@@ -662,14 +677,16 @@
       tempUnit = (tempUnit === 'c') ? 'f' : 'c';
       document.getElementById('temp-unit-tag').innerText = `°${tempUnit.toUpperCase()}`;
       document.getElementById('label-dash-temp-unit').innerText = `°${tempUnit.toUpperCase()}`;
+      document.getElementById('iat-unit-tag').innerText = `°${tempUnit.toUpperCase()}`;
+      document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
       log(`Temp: °${tempUnit.toUpperCase()}`);
     };
 
     window.toggleFullscreen = function() {
       const docEl = document.documentElement;
       const requestFs = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
-      const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
-      const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+      const exitFs = docEl.exitFullscreen || docEl.webkitExitFullscreen;
+      const isFs = docEl.fullscreenElement || docEl.webkitFullscreenElement;
       if (requestFs && exitFs) {
         if (!isFs) requestFs.call(docEl).catch(() => {});
         else exitFs.call(document).catch(() => {});
@@ -890,12 +907,13 @@
       const rpm = (bytes[0] * 256) + bytes[1];
       const rawMph = bytes[2];
       const coolantC = bytes[14] - 31;
+      const iatC = bytes[15] - 31; // PROMOTED FROM LAB (VERIFIED!)
       const mapMbar = (bytes[5] * 256) + bytes[6];
       const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
       const timingDeg = Math.round((bytes[16] - 80) / 2);
       
-      // Gear Decode (Fully Verified)
+      // Gear Decode
       const gearNibble = bytes[19] & 0x0F;
       let gearText = 'N';
       let gearClass = 'gear-n';
@@ -936,13 +954,23 @@
       const speedBar = document.getElementById('bar-speed');
       if (speedBar) speedBar.style.width = Math.min(100, (rawMph / 70) * 100) + '%';
 
-      let displayTemp = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
-      document.getElementById('val-dash-coolant').innerText = displayTemp;
+      // Coolant Temp
+      let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
+      document.getElementById('val-dash-coolant').innerText = displayCoolant;
       const coolantBar = document.getElementById('bar-coolant');
       if (coolantBar) {
         const pct = Math.min(100, Math.max(0, ((coolantC - 20) / 95) * 100));
         coolantBar.style.width = pct + '%';
         coolantBar.style.background = coolantC > 98 ? 'var(--red)' : coolantC > 90 ? 'var(--amber)' : 'var(--cyan)';
+      }
+
+      // Intake Air Temp
+      let displayIat = (tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
+      document.getElementById('val-dash-iat').innerText = displayIat;
+      const iatBar = document.getElementById('bar-iat');
+      if (iatBar) {
+        const pct = Math.min(100, Math.max(0, ((iatC - 10) / 60) * 100));
+        iatBar.style.width = pct + '%';
       }
 
       document.getElementById('val-dash-pedal').innerText = pedalPct;
@@ -983,34 +1011,34 @@
       // ---------------------------------------------------------
       // 2. EXPERIMENTAL MYSTERY LAB UI UPDATE
       // ---------------------------------------------------------
-      const b15 = bytes[15] !== undefined ? bytes[15] : 0;
-      const b13 = bytes[13] !== undefined ? bytes[13] : 0;
-      const b3 = bytes[3] !== undefined ? bytes[3] : 0;
+      const b10 = bytes[10] !== undefined ? bytes[10] : 0;
       const b8 = bytes[8] !== undefined ? bytes[8] : 0;
+      const b3 = bytes[3] !== undefined ? bytes[3] : 0;
+      const b4 = bytes[4] !== undefined ? bytes[4] : 0;
+      const b13 = bytes[13] !== undefined ? bytes[13] : 0;
       const b11 = bytes[11] !== undefined ? bytes[11] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
-      const b4 = bytes[4] !== undefined ? bytes[4] : 0;
 
-      document.getElementById('exp-val-b15').innerText = `${b15} (${b15 - 31}°C)`;
-      document.getElementById('exp-hex-b15').innerText = `0x${b15.toString(16).toUpperCase().padStart(2, '0')}`;
+      document.getElementById('exp-val-b10').innerText = `${b10} (ΔTPS)`;
+      document.getElementById('exp-hex-b10').innerText = `0x${b10.toString(16).toUpperCase().padStart(2, '0')}`;
+
+      document.getElementById('exp-val-b8').innerText = `${b8} (${(b8 * 0.2).toFixed(1)}ms)`;
+      document.getElementById('exp-hex-b8').innerText = `0x${b8.toString(16).toUpperCase().padStart(2, '0')}`;
+
+      document.getElementById('exp-val-b3').innerText = `${b3} steps`;
+      document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
+
+      document.getElementById('exp-val-b4').innerText = `${b4}`;
+      document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b13').innerText = `${(b13 * 0.0706).toFixed(1)}V`;
       document.getElementById('exp-hex-b13').innerText = `0x${b13.toString(16).toUpperCase().padStart(2, '0')}`;
 
-      document.getElementById('exp-val-b3').innerText = b3;
-      document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b8').innerText = b8;
-      document.getElementById('exp-hex-b8').innerText = `0x${b8.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b11').innerText = b11;
+      document.getElementById('exp-val-b11').innerText = b11 === 2 ? '0x02 (Closed)' : '0x01 (Open)';
       document.getElementById('exp-hex-b11').innerText = `0x${b11.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b18').innerText = b18;
       document.getElementById('exp-hex-b18').innerText = `0x${b18.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-b4').innerText = b4;
-      document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
 
       const b23Hex = (bytes[23] || 0).toString(16).toUpperCase().padStart(2, '0');
       const b24Hex = (bytes[24] || 0).toString(16).toUpperCase().padStart(2, '0');
@@ -1024,19 +1052,19 @@
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, rawMph, coolantC, mapMbar, pedalPct, tpsPct, timingDeg, atrvVal, 
+          elapsed, rpm, rawMph, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg, atrvVal, 
           gearText, dmodeText, driveText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
       }
 
-      // B. Lab Logger Hook (Only Experimental Candidate Metrics)
+      // B. Grounded Lab Logger Hook (Ground-Truth Context + Experimental Candidates)
       if (isLabCsvLogging) {
         const elapsed = ((Date.now() - labCsvStartTime) / 1000).toFixed(3);
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
-          elapsed, b3, b4, b8, bytes[10] || 0, b11, bytes[12] || 0, b13, b15, bytes[17] || 0, b18, 
-          bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          elapsed, rpm, rawMph, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
+          b3, b4, b8, b10, b11, b13, b18, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1084,7 +1112,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          "Time_Sec,RPM,Speed_MPH,Coolant_C,MAP_mbar,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake"
+          "Time_Sec,RPM,Speed_MPH,Coolant_C,IAT_C,MAP_mbar,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Drive,PBrake,FootBrake"
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1118,7 +1146,7 @@
     };
 
     /* ==========================================================
-       2. LAB DEDICATED CSV LOGGER & SHARE
+       2. LAB DEDICATED GROUNDED CSV LOGGER & SHARE
        ========================================================== */
     window.toggleLabCsvLogger = function() {
       const btn = document.getElementById('btn-lab-record');
@@ -1132,7 +1160,7 @@
         isLabCsvLogging = true;
         labCsvStartTime = Date.now();
         labCsvFrames = [
-          "Time_Sec,B3_IACV,B4_Mode,B8_InjLoad,B10_Sub,B11_Loop,B12_Sub,B13_ADC,B15_IAT,B17_Sub,B18_Baro,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex"
+          "Time_Sec,Ground_RPM,Ground_Speed,Ground_Coolant,Ground_IAT,Ground_MAP,Ground_APS,Ground_TPS,Ground_Timing,B3_IACV,B4_AirLoad,B8_InjPulse,B10_DeltaTPS,B11_FuelLoop,B13_ADC,B18_Baro,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex"
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1145,13 +1173,13 @@
           const mins = Math.floor(s / 60).toString().padStart(2, '0');
           const secs = (s % 60).toString().padStart(2, '0');
           timeEl.innerText = `${mins}:${secs}.0`;
-          frameEl.innerText = `${labCsvFrames.length - 1} Lab Frames`;
+          frameEl.innerText = `${labCsvFrames.length - 1} Grounded Frames`;
         }, 1000);
 
       } else {
         isLabCsvLogging = false;
         clearInterval(labCsvInterval);
-        btn.innerText = "🧪 Log Lab .CSV";
+        btn.innerText = "🧪 Log Grounded Lab .CSV";
         btn.classList.remove('recording');
 
         if (labCsvFrames.length > 1) {
@@ -1162,7 +1190,7 @@
     };
 
     window.shareLabCsv = function() {
-      exportCsvFile(labCsvFrames, `RMAX_Lab_Exp_Log_${getTimestampStr()}.csv`, 'RMAX Experimental Lab Data');
+      exportCsvFile(labCsvFrames, `RMAX_Grounded_Lab_Log_${getTimestampStr()}.csv`, 'RMAX Grounded Experimental Lab Data');
     };
 
     /* Unified Native iOS Exporter helper */
@@ -1213,7 +1241,6 @@
         statusBadge.innerText = "SWEEPING";
         statusBadge.className = "status-badge recording";
 
-        // Kill background polling to prevent BLE collision
         isPolling = false;
         await new Promise(r => setTimeout(r, 350));
 
@@ -1232,7 +1259,7 @@
           }
         }
 
-        await sendCommand("ATSH7E0", 1000); // restore ECU header
+        await sendCommand("ATSH7E0", 1000);
 
         let logBody = `Target Header: 0x${def.header} (UDS Service 22)\n\n--- ACTIVE RESPONSES ---\n`;
         logBody += results.length ? results.join('\n') : "No active PIDs responded. Module may require wake-up session or uses passive broadcasting.";
@@ -1316,13 +1343,13 @@
         });
     }
 
-    window.clearMasterReport = function() {
+    function clearMasterReport() {
       accumulatedReports = [];
       document.getElementById('accumulated-count').innerText = '0';
       document.getElementById('dock-report-badge').innerText = 'Diagnostics';
       document.getElementById('master-report-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run directives to compile reports...</div>';
       log("Diagnostics log cleared.");
-    };
+    }
 
     /* Simulation Mode */
     window.toggleSimulator = function() {
@@ -1353,8 +1380,9 @@
         const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
         const timing = Math.round(105 + Math.sin(time * 0.5) * 40);
         const b15 = Math.round(65 - (time % 5));
+        const b10 = Math.max(0, tps - 33);
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}2102 2:0200CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C18281008000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:2300C522${aps.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}02 2:0200CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C18082008000AA`;
       }
       return "NO DATA";
     }
