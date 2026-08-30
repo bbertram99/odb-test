@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v3.5.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v3.6.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -162,7 +162,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v3.5.0</span>
+      <span class="version-tag" id="app-version-badge">v3.6.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -306,7 +306,7 @@
     <div class="disc-section">
       <div class="disc-title">Continuous Data Logger</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">
-        Record all decoded metrics and <strong>every raw Hex byte in separate columns</strong>. Export direct to your iPhone via Share Sheet for reverse engineering in Excel (e.g. finding the Reverse Gear bit!).
+        Record all decoded metrics and every raw byte. <strong>Tip: Use the Drop Marker button between tests so you don't have to rev the engine to separate them!</strong>
       </p>
 
       <div style="background:rgba(2, 6, 23, 0.85); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:1.5rem 1rem; display:flex; flex-direction:column; align-items:center;">
@@ -318,6 +318,9 @@
       <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.5rem;">
         <button class="btn-touch record-btn" id="btn-csv-toggle" onclick="toggleCsvLogger()" style="padding:0.85rem; font-size:1rem;">
           🔴 Start CSV Recording
+        </button>
+        <button class="btn-touch secondary" onclick="dropCsvMarker()" style="padding:0.75rem; font-size:0.9rem; border-color:var(--amber); color:var(--amber);">
+          📍 Drop Timestamp Marker
         </button>
         <button class="btn-touch" id="btn-csv-export" onclick="exportCsv()" style="padding:0.85rem; font-size:0.9rem; background:rgba(56, 189, 248, 0.25); color:var(--cyan); opacity:0.5; pointer-events:none;">
           📤 Share CSV to AI / Excel
@@ -337,7 +340,7 @@
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT MISSION:</label>
         <select id="record-test-select" onchange="onTestSelectChanged()">
-          <option value="test_reverse">1. Reverse Gear Isolation [Target: 2101]</option>
+          <option value="test_gears">1. Full Gear Sweep (L, H, N, R)</option>
           <option value="test_eps_brute">2. EPS Module Sweep [Target: 0x760]</option>
           <option value="test_sus_brute">3. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
         </select>
@@ -418,7 +421,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v3.5.0";
+    const APP_VERSION = "v3.6.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -427,16 +430,18 @@
     };
 
     const TEST_DEFINITIONS = {
-      test_reverse: {
-        title: "Reverse Gear Isolation",
+      test_gears: {
+        title: "Full Gear Sweep (L, H, N, R)",
         targetCmd: "2101",
         header: "7E0",
         type: "poll",
         stateText: "Engine Running. Foot holding Brake Pedal firmly.",
         steps: [
-          "Start with shifter in <strong>Neutral (N)</strong>.",
+          "We found Reverse (0x82)! Now we need to map High and Low.",
+          "Start in <strong>Neutral (N)</strong>.",
           "Tap <strong>🔴 Start Session Record</strong>.",
-          "Shift to <strong>Reverse (R)</strong> (hold 3s).",
+          "Shift to <strong>High (H)</strong> (hold 3s).",
+          "Shift to <strong>Low (L)</strong> (hold 3s).",
           "Shift back to <strong>Neutral (N)</strong>.",
           "Tap <strong>⏹️ Stop & Append</strong>."
         ]
@@ -781,8 +786,11 @@
       const gearNibble = b19 & 0x0F;
       let gearText = 'N';
       let gearClass = 'gear-n';
-      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+      // v3.6.0 Fix: 0x82 is Reverse based on CSV data proof!
+      if (gearNibble === 0x02) { gearText = 'R'; gearClass = 'gear-r'; } 
       else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+      else if (gearNibble === 0x08) { gearText = 'H'; gearClass = 'gear-h'; } // Unconfirmed guess
+      else if (gearNibble === 0x04) { gearText = 'H'; gearClass = 'gear-h'; } // Unconfirmed guess
       else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; } 
 
       const b20 = bytes[20];
@@ -858,7 +866,6 @@
       // CONTINUOUS CSV DATA LOGGER HOOK
       if (isCsvLogging) {
         const elapsed = ((Date.now() - csvStartTime) / 1000).toFixed(3);
-        // Map all bytes cleanly for easy finding of Reverse in Excel
         const byteCols = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(',');
         
         const row = [
@@ -953,6 +960,23 @@
       }
     };
 
+    window.dropCsvMarker = function() {
+      if(isCsvLogging) {
+        const elapsed = ((Date.now() - csvStartTime) / 1000).toFixed(3);
+        const markerCols = new Array(39).fill("---").join(',');
+        const markerRow = `${elapsed},*** MARKER ***,${markerCols}`;
+        csvFrames.push(markerRow);
+        log("📍 Timestamp Marker Dropped!");
+        
+        // Brief visual flash for confirmation
+        const timerText = document.getElementById('csv-timer-text');
+        timerText.style.color = "var(--amber)";
+        setTimeout(() => timerText.style.color = "#fff", 300);
+      } else {
+        alert("You must Start CSV Recording first to drop a marker!");
+      }
+    };
+
     window.exportCsv = async function() {
       if (csvFrames.length <= 1) return alert("No data to export!");
       
@@ -961,7 +985,6 @@
       const filename = `RMAX_Telemetry_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
       const file = new File([blob], filename, { type: 'text/csv' });
 
-      // iOS Native Share Sheet support via WebShare API
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -973,7 +996,6 @@
           log("Share cancelled or failed: " + e.message);
         }
       } else {
-        // Fallback for browsers that don't support WebShare API (like Desktop Chrome)
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1062,6 +1084,8 @@
 
         if (def.type === 'sweep') {
           isPolling = false; 
+          await new Promise(r => setTimeout(r, 250)); // Ensure background polling is completely dead before sweeping
+          
           await sendCommand(`ATSH${def.header}`, 1000);
           
           for (let i = 0; i <= 0x20; i++) {
@@ -1091,7 +1115,7 @@
         if (def.type === 'sweep') {
           let logBody = `Target Node: ${def.header}\n\n--- ACTIVE PAYLOADS FOUND ---\n`;
           if (!recordedFrames.length) {
-            logBody += `No active LIDs responded.\n`;
+            logBody += `No active LIDs responded. Wait, if it says STOPPED, the ELM327 buffer was interrupted.\n`;
           } else {
             recordedFrames.forEach(f => {
               logBody += `LID ${f.lid} ➜ ${f.data}\n`;
