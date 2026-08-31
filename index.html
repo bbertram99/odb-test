@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v4.6.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v4.7.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -165,7 +165,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v4.6.0</span>
+      <span class="version-tag" id="app-version-badge">v4.7.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -243,7 +243,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp -->
+      <!-- Coolant Temp (With ~96°C Fan Watchdog Alert) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Coolant Temp</span>
@@ -273,7 +273,20 @@
         </div>
       </div>
 
-      <!-- Warmup Fuel Decay (ASE %) (NEW!) -->
+      <!-- Active Fuel Model Strategy (Alpha-N vs Speed-Density) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Fuel Model</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-fuelmodel" class="card-val" style="font-size:1.25rem; color:var(--cyan);">SD (MAP)</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-fuelmodel" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Warmup Fuel Decay (ASE %) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Warmup Fuel (ASE)</span>
@@ -284,20 +297,6 @@
         </div>
         <div class="meter-bar-track">
           <div id="bar-ase" class="meter-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- Fuel Injector Pulse Index -->
-      <div class="touch-card">
-        <div class="card-top">
-          <span class="card-label">Inj Fuel Rate</span>
-        </div>
-        <div class="card-main">
-          <span id="val-dash-fuel" class="card-val">--</span>
-          <span class="card-unit">idx</span>
-        </div>
-        <div class="meter-bar-track">
-          <div id="bar-fuel" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -329,17 +328,17 @@
         </div>
       </div>
 
-      <!-- Estimated Injector Duty % -->
+      <!-- Fuel Injector Pulse Index & Duty % -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Inj Duty Cycle</span>
+          <span class="card-label">Inj Rate / Duty</span>
         </div>
         <div class="card-main">
-          <span id="val-dash-duty" class="card-val">0</span>
-          <span class="card-unit">%</span>
+          <span id="val-dash-fuel" class="card-val">--</span>
+          <span class="card-unit" id="val-dash-duty">0%</span>
         </div>
         <div class="meter-bar-track">
-          <div id="bar-duty" class="meter-bar-fill"></div>
+          <div id="bar-fuel" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -406,24 +405,24 @@
   <!-- TAB 2: Experimental Discovery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Experimental Lab (Candidate Variables)</div>
+      <div class="disc-title">🧪 Mitsubishi ECU Discovery Lab</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
         Tracking unmapped sub-channels, dynamic motion variables, and transmission pulses.
       </p>
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 22: Dynamic Motion / Accelerometer Var -->
+      <!-- Byte 22: Dynamic Motion Variable -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
-          <span class="exp-title">Byte [22] Dynamic Motion Var</span>
+          <span class="exp-title">Byte [22] Motion / G-Var</span>
           <span class="exp-tag">Center = 128 (0x80)</span>
         </div>
         <div class="exp-val-row">
           <span class="exp-dec-val" id="exp-val-b22">128 (0x80)</span>
           <span class="exp-hex-val" id="exp-hex-b22">0x80</span>
         </div>
-        <span class="exp-hint">Only moves when driving ($124 \dots 143$). Does NOT react to steering or 4WD switch while parked. Candidate: Yaw/G-force or Axle Slip.</span>
+        <span class="exp-hint">Fluctuates ($124 \dots 143$) during dynamic driving. Inactive while parked. Candidate: Yaw/Lateral Acceleration or Dynamic Slip.</span>
       </div>
 
       <!-- Byte 11: After-Start Warmup Fuel Decay Counter -->
@@ -492,7 +491,7 @@
       </div>
 
       <!-- Sub-Error & Relays (Bytes 12 & 17) -->
-      <div class="exp-card">
+      <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
           <span class="exp-title">Chassis Flags</span>
           <span class="exp-tag">B[12] & B[17]</span>
@@ -501,7 +500,7 @@
           <span class="exp-dec-val" style="font-size:1.05rem;" id="exp-val-b1217">0x00 / 0x00</span>
           <span class="exp-hex-val">FLAGS</span>
         </div>
-        <span class="exp-hint">Watch for bit flips during fan activation, winch use, or limp-mode.</span>
+        <span class="exp-hint">Monitors cooling fan trigger relay (~96°C), winch circuits, and limp-mode.</span>
       </div>
     </div>
 
@@ -509,7 +508,7 @@
     <div class="disc-section">
       <div class="disc-title">📡 Live Custom ECU Query Pinger</div>
       <div style="display:flex; gap:0.4rem;">
-        <input type="text" id="custom-query-input" value="2102" placeholder="e.g. 2102, 2103, 2160" style="flex:1;" />
+        <input type="text" id="custom-query-input" value="22F188" placeholder="e.g. 22F188, 22F190, 2160" style="flex:1;" />
         <button class="btn-touch" onclick="sendCustomQuery()" style="padding:0.6rem 1rem;">Send Query</button>
       </div>
       <div id="custom-query-res" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--cyan); background:#020617; padding:0.5rem; border-radius:8px; border:1px solid var(--card-border);">Response: Standby</div>
@@ -532,30 +531,32 @@
     </div>
   </div>
 
-  <!-- TAB 3: Combined Directives & Sweeps -->
+  <!-- TAB 3: Advanced Diagnostics & ECU Interrogator -->
   <div id="tab-diagnostics" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Target Directives & Sweeps</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Execute automated diagnostics against auxiliary modules and discover secondary ECU data tables.
+        Execute automated diagnostics against Mitsubishi software tables, fault registers, and auxiliary modules.
       </p>
       
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT DIRECTIVE:</label>
         <select id="diag-directive-select" onchange="onDirectiveChanged()">
-          <option value="test_ecu_lids">1. ECU Full Data Table Sweep [Target: 21 00..21 25]</option>
-          <option value="test_eps_uds">2. EPS Module UDS Sweep [Target: 0x760]</option>
-          <option value="test_sus_uds">3. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
+          <option value="test_ecu_id">1. Scan ECU Flash Metadata & Calibration ID [Svc 22 F1xx]</option>
+          <option value="test_dtc_scan">2. Scan Active & Historic DTC Fault Codes [21 60 / 19 02]</option>
+          <option value="test_ext_session">3. Unlock Extended Session & Deep Probe [10 03]</option>
+          <option value="test_eps_uds">4. EPS Module UDS Sweep [Target: 0x760]</option>
+          <option value="test_sus_uds">5. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
         </select>
       </div>
 
       <div class="instruction-card" id="instruction-box">
         <div class="inst-header">🔑 REQUIRED STATE</div>
-        <div class="inst-state" id="inst-state-text">Engine Running, Vehicle Parked.</div>
+        <div class="inst-state" id="inst-state-text">Engine Running or Key ON.</div>
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Tap <strong>🔴 Execute Directive</strong>.</li>
-          <li>App sweeps LIDs 0x00..0x25 on the Engine ECU to locate 4WD & Reverse tables.</li>
+          <li>App queries standard Mitsubishi DIDs to retrieve software and calibration IDs.</li>
           <li>Results automatically append to the Master Report below.</li>
         </ol>
       </div>
@@ -616,7 +617,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v4.6.0";
+    const APP_VERSION = "v4.7.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -625,13 +626,33 @@
     };
 
     const DIRECTIVE_DEFINITIONS = {
-      test_ecu_lids: {
-        title: "ECU Secondary Table Sweep [21 00..21 25]",
+      test_ecu_id: {
+        title: "Scan ECU Flash Metadata & Calibration ID [Svc 22 F1xx]",
         header: "7E0",
-        stateText: "Engine Running, Vehicle Parked.",
+        stateText: "Engine Running or Key ON.",
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
-          "App sweeps LIDs 0x00..0x25 on the Engine ECU to locate 4WD & Reverse tables.",
+          "App queries standard Mitsubishi DIDs to retrieve software and calibration IDs.",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_dtc_scan: {
+        title: "Scan Active & Historic DTC Fault Codes",
+        header: "7E0",
+        stateText: "Engine Running or Key ON.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App scans diagnostic fault tables 21 60, 21 61, and UDS 19 02 FF.",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_ext_session: {
+        title: "Unlock Extended Diagnostic Session & Deep Probe [10 03]",
+        header: "7E0",
+        stateText: "Key ON, Engine Running.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App sends UDS Extended Session (10 03) and sweeps secondary tables.",
           "Results append directly to Master Report."
         ]
       },
@@ -881,7 +902,7 @@
       });
     }
 
-    /* Yamaha Init Sequence */
+    /* Yamaha Mitsubishi ECU Init Sequence */
     async function initYamahaELM327() {
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
@@ -899,7 +920,7 @@
       await sendCommand("ATSP6", 1800);
       await sendCommand("ATSH7E0", 1200);
 
-      log("Connected to Yamaha RMAX! Live telemetry active.");
+      log("Connected to Yamaha RMAX (Mitsubishi ECU)! Live telemetry active.");
     }
 
     /* Continuous Live Polling Loop */
@@ -922,7 +943,7 @@
 
           const rpmVal = document.getElementById('val-dash-rpm').innerText;
           const spdVal = document.getElementById('val-dash-speed').innerText;
-          log(`⚡ Live RMAX: ${spdVal} ${speedUnit.toUpperCase()} | RPM ${rpmVal} | ${rtt}ms`);
+          log(`⚡ RMAX Live: ${spdVal} ${speedUnit.toUpperCase()} | RPM ${rpmVal} | ${rtt}ms`);
         }
         await new Promise(r => setTimeout(r, 35));
       }
@@ -967,6 +988,7 @@
       const mapMbar = (bytes[5] * 256) + bytes[6];
       const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
+      const deltaTps = bytes[10] !== undefined ? bytes[10] : 0;
       const timingDeg = Math.round((bytes[16] - 80) / 2);
       
       // Baro & Speed-Density Engine Load %
@@ -980,6 +1002,10 @@
       // Warmup Fuel Enrichment Decay % (Byte 11: 48 cold -> 2 warm idle)
       const rawB11 = bytes[11] !== undefined ? bytes[11] : 2;
       const asePct = Math.min(100, Math.max(0, Math.round(((rawB11 - 2) / 46) * 100)));
+
+      // Active Fuel Strategy: Alpha-N vs Speed-Density
+      const isAlphaN = (deltaTps > 15 || pedalPct > 40 || rpm > 5500);
+      const fuelStrategy = isAlphaN ? 'Alpha-N (TPS)' : 'SD (MAP)';
 
       // Brakes: Handbrake (Bit 2: 0x04) & Footbrake (Bit 4: 0x10)
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
@@ -1027,23 +1053,29 @@
       const aseBar = document.getElementById('bar-ase');
       if (aseBar) aseBar.style.width = asePct + '%';
 
+      // Active Fuel Model (Alpha-N vs Speed Density)
+      const fmEl = document.getElementById('val-dash-fuelmodel');
+      if (fmEl) {
+        fmEl.innerText = fuelStrategy;
+        fmEl.style.color = isAlphaN ? 'var(--amber)' : 'var(--cyan)';
+      }
+      const fmBar = document.getElementById('bar-fuelmodel');
+      if (fmBar) fmBar.style.width = isAlphaN ? '100%' : '35%';
+
       // Fuel Delivery & Injector Duty
       document.getElementById('val-dash-fuel').innerText = fuelIndex;
+      document.getElementById('val-dash-duty').innerText = `${estDutyPct}%`;
       const fuelBar = document.getElementById('bar-fuel');
       if (fuelBar) fuelBar.style.width = Math.min(100, (fuelIndex / 170) * 100) + '%';
 
-      document.getElementById('val-dash-duty').innerText = estDutyPct;
-      const dutyBar = document.getElementById('bar-duty');
-      if (dutyBar) dutyBar.style.width = estDutyPct + '%';
-
-      // Coolant Temp
+      // Coolant Temp with Factory Fan Alert (~96°C)
       let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
       document.getElementById('val-dash-coolant').innerText = displayCoolant;
       const coolantBar = document.getElementById('bar-coolant');
       if (coolantBar) {
         const pct = Math.min(100, Math.max(0, ((coolantC - 20) / 95) * 100));
         coolantBar.style.width = pct + '%';
-        coolantBar.style.background = coolantC > 98 ? 'var(--red)' : coolantC > 90 ? 'var(--amber)' : 'var(--cyan)';
+        coolantBar.style.background = coolantC >= 96 ? 'var(--red)' : coolantC >= 88 ? 'var(--amber)' : 'var(--cyan)';
       }
 
       // Intake Air Temp
@@ -1092,7 +1124,6 @@
       // ---------------------------------------------------------
       const b3 = bytes[3] !== undefined ? bytes[3] : 0;
       const b4 = bytes[4] !== undefined ? bytes[4] : 0;
-      const b10 = bytes[10] !== undefined ? bytes[10] : 0;
       const b12 = bytes[12] !== undefined ? bytes[12] : 0;
       const b17 = bytes[17] !== undefined ? bytes[17] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
@@ -1109,8 +1140,8 @@
       document.getElementById('exp-val-b4').innerText = b4;
       document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
 
-      document.getElementById('exp-val-b10').innerText = `${b10} (ΔTPS)`;
-      document.getElementById('exp-hex-b10').innerText = `0x${b10.toString(16).toUpperCase().padStart(2, '0')}`;
+      document.getElementById('exp-val-b10').innerText = `${deltaTps} (ΔTPS)`;
+      document.getElementById('exp-hex-b10').innerText = `0x${deltaTps.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b3').innerText = `${b3} steps`;
       document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
@@ -1127,7 +1158,7 @@
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
+          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelStrategy, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
           gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
@@ -1139,7 +1170,7 @@
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, fuelIndex, b10, rawB11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, b4, fuelIndex, deltaTps, rawB11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1207,7 +1238,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Fuel_Model,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1319,7 +1350,7 @@
     }
 
     /* ==========================================================
-       3. CONSOLIDATED DIAGNOSTICS & ECU DATA TABLE SWEEPER
+       3. CONSOLIDATED DIAGNOSTICS & MITSUBISHI PROBER
        ========================================================== */
     window.toggleDirectiveExecution = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
@@ -1342,19 +1373,61 @@
         let results = [];
         await sendCommand(`ATSH${def.header}`, 1000);
 
-        if (key === 'test_ecu_lids') {
-          for (let i = 0; i <= 0x25; i++) {
+        if (key === 'test_ecu_id') {
+          // Probe Standard Mitsubishi Identification DIDs
+          const dids = [
+            { id: "22F188", desc: "Calibration Software ID" },
+            { id: "22F187", desc: "Spare Part Number" },
+            { id: "22F190", desc: "Stored VIN Number" },
+            { id: "22F191", desc: "Hardware Architecture Version" },
+            { id: "22F18A", desc: "System Supplier ID" },
+            { id: "22F180", desc: "Boot Software Version" }
+          ];
+
+          for (const did of dids) {
             if (!isDirectiveRunning) break;
-            const hexLID = i.toString(16).toUpperCase().padStart(2, '0');
-            document.getElementById('directive-status-text').innerText = `🔴 Sweeping ECU Data Table (21 ${hexLID})...`;
-            
-            const res = await sendCommand(`21${hexLID}`, 1000);
+            document.getElementById('directive-status-text').innerText = `🔴 Reading: ${did.desc} (${did.id})...`;
+            const res = await sendCommand(did.id, 1200);
             const clean = res.replace(/[\s\r\n>]/g, '');
             if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
-              results.push(`LID 21 ${hexLID} ➜ ${res.trim()}`);
+              results.push(`${did.desc} [${did.id}] ➜ ${res.trim()}`);
             }
           }
+
+        } else if (key === 'test_dtc_scan') {
+          // Probe DTC Fault Registers
+          document.getElementById('directive-status-text').innerText = `🔴 Scanning Active Faults (21 60)...`;
+          const activeRes = await sendCommand("2160", 1200);
+          if (!activeRes.includes("7F") && !activeRes.includes("NODATA")) results.push(`Active DTCs (21 60) ➜ ${activeRes.trim()}`);
+
+          document.getElementById('directive-status-text').innerText = `🔴 Scanning Historic Faults (21 61)...`;
+          const histRes = await sendCommand("2161", 1200);
+          if (!histRes.includes("7F") && !histRes.includes("NODATA")) results.push(`Historic DTCs (21 61) ➜ ${histRes.trim()}`);
+
+          document.getElementById('directive-status-text').innerText = `🔴 Scanning UDS Fault Register (19 02 FF)...`;
+          const udsRes = await sendCommand("1902FF", 1200);
+          if (!udsRes.includes("7F") && !udsRes.includes("NODATA")) results.push(`UDS DTC Mask (19 02 FF) ➜ ${udsRes.trim()}`);
+
+        } else if (key === 'test_ext_session') {
+          // Unlock Extended Session (10 03) and sweep
+          document.getElementById('directive-status-text').innerText = `🔴 Unlocking Extended Session (10 03)...`;
+          const sessRes = await sendCommand("1003", 1000);
+          results.push(`Session 10 03 Response ➜ ${sessRes.trim()}`);
+
+          for (let i = 0; i <= 0x15; i++) {
+            if (!isDirectiveRunning) break;
+            const hexDID = i.toString(16).toUpperCase().padStart(2, '0');
+            document.getElementById('directive-status-text').innerText = `🔴 Probing Extended DID 22 01 ${hexDID}...`;
+            const res = await sendCommand(`2201${hexDID}`, 800);
+            const clean = res.replace(/[\s\r\n>]/g, '');
+            if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
+              results.push(`Extended DID 22 01 ${hexDID} ➜ ${res.trim()}`);
+            }
+          }
+          await sendCommand("1001", 800); // Return to default session
+
         } else {
+          // Auxiliary Module UDS Sweep (Service 22)
           for (let i = 0; i <= 0x20; i++) {
             if (!isDirectiveRunning) break;
             const hexPID = i.toString(16).toUpperCase().padStart(2, '0');
@@ -1370,8 +1443,8 @@
 
         await sendCommand("ATSH7E0", 1000);
 
-        let logBody = `Target Header: 0x${def.header}\n\n--- ACTIVE RESPONDING TABLES ---\n`;
-        logBody += results.length ? results.join('\n') : "No active secondary data tables responded.";
+        let logBody = `Target: ${def.title} [0x${def.header}]\n\n--- RESULTS / ACTIVE RESPONSES ---\n`;
+        logBody += results.length ? results.join('\n') : "No active responses returned. Module may be locked or silent in current state.";
         
         appendMasterReport(def.title, def.stateText, logBody);
 
@@ -1380,7 +1453,7 @@
         btn.classList.remove('recording');
         statusBadge.innerText = "CONNECTED";
         statusBadge.className = "status-badge connected";
-        document.getElementById('directive-status-text').innerText = `✅ Sweep Complete! Total reports: ${accumulatedReports.length}`;
+        document.getElementById('directive-status-text').innerText = `✅ Directive Complete! Total reports: ${accumulatedReports.length}`;
 
         startPolling();
       } else {
