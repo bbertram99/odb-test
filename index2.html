@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v5.2.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v5.3.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -165,7 +165,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v5.2.0</span>
+      <span class="version-tag" id="app-version-badge">v5.3.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -211,9 +211,9 @@
       </div>
     </div>
 
-    <!-- Cockpit Grid -->
+    <!-- Cockpit Grid (12 Confirmed Performance Cards) -->
     <div class="cockpit-grid">
-      <!-- Ground Speed (KM/H Default) -->
+      <!-- 1. Ground Speed (KM/H Default) -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
           <span class="card-label">Ground Speed</span>
@@ -228,7 +228,7 @@
         </div>
       </div>
 
-      <!-- Engine Load % (Speed-Density MAP/Baro Ratio) -->
+      <!-- 2. Engine Load % (Speed-Density MAP/Baro Ratio) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Engine Load</span>
@@ -242,7 +242,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (With ~96°C Fan Alert) -->
+      <!-- 3. Coolant Temp (With ~96°C Fan Alert) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Coolant Temp</span>
@@ -257,7 +257,7 @@
         </div>
       </div>
 
-      <!-- Intake Air Temp (IAT) -->
+      <!-- 4. Intake Air Temp (IAT) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Intake Air (IAT)</span>
@@ -272,7 +272,7 @@
         </div>
       </div>
 
-      <!-- Active Fuel Model Strategy (Alpha-N vs Speed-Density) -->
+      <!-- 5. Active Fuel Strategy (Alpha-N vs Speed-Density) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Fuel Model</span>
@@ -285,7 +285,7 @@
         </div>
       </div>
 
-      <!-- Warmup Fuel Decay (ASE %) -->
+      <!-- 6. Warmup Fuel Decay (ASE %) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Warmup Fuel (ASE)</span>
@@ -299,7 +299,7 @@
         </div>
       </div>
 
-      <!-- Gas Pedal / APS -->
+      <!-- 7. Gas Pedal / APS -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Pedal (APS)</span>
@@ -313,7 +313,7 @@
         </div>
       </div>
 
-      <!-- Throttle Blade / TPS -->
+      <!-- 8. Throttle Blade / TPS -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Blade (TPS)</span>
@@ -327,7 +327,7 @@
         </div>
       </div>
 
-      <!-- Fuel Injector Pulse Index & Duty % -->
+      <!-- 9. Fuel Injector Pulse Index & Duty % -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Inj Rate / Duty</span>
@@ -341,7 +341,7 @@
         </div>
       </div>
 
-      <!-- Spark Advance -->
+      <!-- 10. Spark Advance -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Spark Timing</span>
@@ -355,7 +355,7 @@
         </div>
       </div>
 
-      <!-- Manifold Pressure (MAP) -->
+      <!-- 11. Manifold Pressure (MAP) -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Intake MAP</span>
@@ -369,7 +369,7 @@
         </div>
       </div>
 
-      <!-- ECU Rail Voltage & Harness Voltage Drop (GRADUATED!) -->
+      <!-- 12. ECU Rail Voltage & Harness Voltage Drop -->
       <div class="touch-card">
         <div class="card-top">
           <span class="card-label">ECU Rail / Drop</span>
@@ -412,7 +412,7 @@
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 22: Dynamic G-Force / IMU Load Gauge -->
+      <!-- 1. Byte 22: Dynamic G-Force / IMU Load Gauge -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
           <span class="exp-title">Dynamic IMU / G-Force Vector</span>
@@ -428,7 +428,7 @@
         <span class="exp-hint">Signed motion sensor. Center = 128 (0x80). Deflects left (&lt;128) and right (&gt;128) under dynamic driving.</span>
       </div>
 
-      <!-- Drive-by-Wire Response Latency / Delta -->
+      <!-- 2. Drive-by-Wire Response Latency / Delta -->
       <div class="exp-card">
         <div class="exp-header">
           <span class="exp-title">DBW Throttle Lag</span>
@@ -441,7 +441,7 @@
         <span class="exp-hint">Measures electronic throttle body delay introduced by D-Mode filtering.</span>
       </div>
 
-      <!-- ECU Board Voltage Drop -->
+      <!-- 3. ECU Board Voltage Drop -->
       <div class="exp-card">
         <div class="exp-header">
           <span class="exp-title">ECU Rail Voltage Drop</span>
@@ -454,20 +454,20 @@
         <span class="exp-hint">Difference between harness pin voltage and internal ECU regulated rail.</span>
       </div>
 
-      <!-- Byte 11: After-Start Warmup Fuel Decay Counter -->
+      <!-- 4. Thermal Gradient (ECT - IAT) -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Warmup Fuel Decay</span>
-          <span class="exp-tag">Byte [11]</span>
+          <span class="exp-title">Thermal Delta (ΔT)</span>
+          <span class="exp-tag">ECT - IAT</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b11">0</span>
-          <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
+          <span class="exp-dec-val" id="exp-val-tdelta">0°C</span>
+          <span class="exp-hex-val" id="exp-val-thermaleff">NORMAL</span>
         </div>
-        <span class="exp-hint">Counts down $48 \to 2$ over 25 seconds after starting to taper cold enrichment.</span>
+        <span class="exp-hint">Engine thermal gradient between cylinder block and intake air.</span>
       </div>
 
-      <!-- Byte 10: Delta TPS -->
+      <!-- 5. Delta Throttle Displacement -->
       <div class="exp-card">
         <div class="exp-header">
           <span class="exp-title">Delta Throttle (ΔTPS)</span>
@@ -480,7 +480,7 @@
         <span class="exp-hint">Exact physical throttle blade displacement step ($\text{TPS} - 33$).</span>
       </div>
 
-      <!-- Byte 4: VE Lookup Table Column -->
+      <!-- 6. Byte 4: VE Lookup Table Column -->
       <div class="exp-card">
         <div class="exp-header">
           <span class="exp-title">VE Table Col Index</span>
@@ -493,7 +493,7 @@
         <span class="exp-hint">Fuel map table column index. Caps at 72 ($0\text{x48}$) in Park/Neutral.</span>
       </div>
 
-      <!-- Byte 3: IACV Warmup Stepper -->
+      <!-- 7. Byte 3: IACV Warmup Stepper -->
       <div class="exp-card">
         <div class="exp-header">
           <span class="exp-title">IACV Stepper Step</span>
@@ -506,7 +506,7 @@
         <span class="exp-hint">Idle stepper offset. Decays $8 \to 3$ as coolant warms up.</span>
       </div>
 
-      <!-- Sub-Error & Relays (Bytes 12 & 17) -->
+      <!-- 8. Sub-Error & Relays (Bytes 12 & 17) -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
           <span class="exp-title">Chassis Flags</span>
@@ -561,12 +561,12 @@
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT DIRECTIVE:</label>
         <select id="diag-directive-select" onchange="onDirectiveChanged()">
-          <option value="test_security_seed">1. Security Access Seed Probe [Service 0x27]</option>
-          <option value="test_aux_ext_session">2. Wake Auxiliary Modules with Extended Session [10 03]</option>
-          <option value="test_mitsubishi_dids">3. Probe Mitsubishi Supplier DIDs [Session 10 60]</option>
-          <option value="test_ecu_id">4. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
-          <option value="test_dtc_scan">5. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
-          <option value="test_actuators">6. Actuator Routine Test Probe [Service 0x31 / 0x2F]</option>
+          <option value="test_mitsubishi_dids">1. Probe Mitsubishi Supplier DIDs [Session 10 60]</option>
+          <option value="test_security_seed">2. Security Access Seed Probe [Service 0x27]</option>
+          <option value="test_actuators">3. Actuator Routine Test Probe [Service 0x31 / 0x2F]</option>
+          <option value="test_aux_ext_session">4. Wake Auxiliary Modules with Extended Session [10 03]</option>
+          <option value="test_ecu_id">5. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
+          <option value="test_dtc_scan">6. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
           <option value="test_mem_read">7. Read Memory By Address (Service 0x23) Flash Test</option>
         </select>
       </div>
@@ -577,7 +577,7 @@
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Tap <strong>🔴 Execute Directive</strong>.</li>
-          <li>App queries security seed levels 27 01, 27 61, and 27 03 inside active session.</li>
+          <li>App enters Mitsubishi Supplier Session 0x60 and probes extended DIDs.</li>
           <li>Results automatically append to the Master Report below.</li>
         </ol>
       </div>
@@ -683,7 +683,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v5.2.0";
+    const APP_VERSION = "v5.3.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -765,6 +765,16 @@
     }
 
     const DIRECTIVE_DEFINITIONS = {
+      test_mitsubishi_dids: {
+        title: "Probe Mitsubishi Supplier DIDs [Session 10 60]",
+        header: "7E0",
+        stateText: "Key ON, Engine Running.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App enters Supplier Session 0x60 and sweeps MUT-III & Extended DIDs (22 00xx / 22 F0xx).",
+          "Results append directly to Master Report."
+        ]
+      },
       test_security_seed: {
         title: "Security Access Seed Probe [Service 0x27]",
         header: "7E0",
@@ -775,6 +785,16 @@
           "Results append directly to Master Report."
         ]
       },
+      test_actuators: {
+        title: "Actuator Routine Test Probe [Service 0x31 / 0x2F]",
+        header: "7E0",
+        stateText: "Key ON, Engine OFF.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App probes routine control addresses (Fan, Fuel Pump, Relays) in Extended Session.",
+          "Results append directly to Master Report."
+        ]
+      },
       test_aux_ext_session: {
         title: "Wake Auxiliary Modules with Extended Session [10 03]",
         header: "760",
@@ -782,16 +802,6 @@
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
           "App sets hardware CAN filters and sends 10 03 to EPS (0x760) and Fox (0x7E5).",
-          "Results append directly to Master Report."
-        ]
-      },
-      test_mitsubishi_dids: {
-        title: "Probe Mitsubishi Supplier DIDs [Session 10 60]",
-        header: "7E0",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App enters Supplier Session 0x60 and sweeps MUT-III & Extended DIDs (22 00xx / 22 F0xx).",
           "Results append directly to Master Report."
         ]
       },
@@ -812,16 +822,6 @@
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
           "App scans diagnostic fault tables 21 60, 21 61, and UDS 19 02 FF.",
-          "Results append directly to Master Report."
-        ]
-      },
-      test_actuators: {
-        title: "Actuator Routine Test Probe [Service 0x31 / 0x2F]",
-        header: "7E0",
-        stateText: "Key ON, Engine OFF.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App probes routine control addresses (Fan, Fuel Pump, Relays) in Extended Session.",
           "Results append directly to Master Report."
         ]
       },
@@ -1142,6 +1142,7 @@
       const rawMph = bytes[2];
       const coolantC = bytes[14] - 31;
       const iatC = bytes[15] - 31; 
+      const deltaTemp = coolantC - iatC;
       const mapMbar = (bytes[5] * 256) + bytes[6];
       const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
@@ -1167,7 +1168,7 @@
       // DBW Throttle Tracking Lag (Difference between Pedal and Blade)
       const dbwLagPct = Math.abs(tpsPct - pedalPct);
 
-      // ECU Regulated Rail vs Battery Voltage Drop (GRADUATED!)
+      // ECU Regulated Rail vs Battery Voltage Drop
       const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
       const ecuRailV = rawB13 * 0.0706;
       const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
@@ -1314,19 +1315,23 @@
       document.getElementById('exp-val-vdrop').innerText = `${vDrop}V Drop`;
       document.getElementById('exp-val-vrail').innerText = `${ecuRailV.toFixed(1)}V Rail`;
 
-      // Byte 11 (Warmup Fuel Enrichment Decay Counter)
-      document.getElementById('exp-val-b11').innerText = `${rawB11} (${asePct}%)`;
-      document.getElementById('exp-hex-b11').innerText = `0x${rawB11.toString(16).toUpperCase().padStart(2, '0')}`;
+      // Thermal Gradient
+      document.getElementById('exp-val-tdelta').innerText = `${deltaTemp}°C`;
+      document.getElementById('exp-val-thermaleff').innerText = deltaTemp > 50 ? 'HOT BLOCK' : 'BALANCED';
 
-      document.getElementById('exp-val-b4').innerText = b4;
-      document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
-
+      // Byte 10 (Delta TPS)
       document.getElementById('exp-val-b10').innerText = `${deltaTps} (ΔTPS)`;
       document.getElementById('exp-hex-b10').innerText = `0x${deltaTps.toString(16).toUpperCase().padStart(2, '0')}`;
 
+      // Byte 4 (VE Table Index)
+      document.getElementById('exp-val-b4').innerText = b4;
+      document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
+
+      // Byte 3 (IACV Stepper Step)
       document.getElementById('exp-val-b3').innerText = `${b3} steps`;
       document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
 
+      // Sub-flags (Bytes 12 & 17)
       document.getElementById('exp-val-b1217').innerText = `0x${b12.toString(16).toUpperCase().padStart(2, '0')} / 0x${b17.toString(16).toUpperCase().padStart(2, '0')}`;
 
       // ---------------------------------------------------------
@@ -1663,7 +1668,7 @@
             if (!isDirectiveRunning) break;
             document.getElementById('directive-status-text').innerText = `🔴 Setting Filter & Waking ${mod.name}...`;
             await sendCommand(`ATSH${mod.header}`, 800);
-            await sendCommand(`ATCRA${mod.cra}`, 800); // Set CAN Receive Address
+            await sendCommand(`ATCRA${mod.cra}`, 800);
             await new Promise(r => setTimeout(r, 50));
 
             const sessRes = await sendCommand("1003", 1200);
@@ -1675,12 +1680,11 @@
             const teleRes = await sendCommand("2101", 1200);
             results.push(`${mod.name} Telemetry (21 01) ➜ ${decodeUdsResponse(teleRes)}`);
 
-            await sendCommand("ATAR", 500); // Reset CAN receive filter
+            await sendCommand("ATAR", 500);
             await sendCommand("1001", 800);
           }
 
         } else if (key === 'test_mitsubishi_dids') {
-          // Enter Supplier Session 0x60 first
           document.getElementById('directive-status-text').innerText = `🔴 Entering Mitsubishi Session 10 60...`;
           const sessRes = await sendCommand("1060", 1200);
           results.push(`Session 10 60 ➜ ${decodeUdsResponse(sessRes)}`);
