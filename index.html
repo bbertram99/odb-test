@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v4.4.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v4.5.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -77,11 +77,11 @@
     .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
 
-    /* Live Multi-Status Strip */
-    .drive-status-strip { display: grid; grid-template-columns: 1fr 1.3fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; }
-    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.15rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
-    .status-pill-label { font-size: 0.54rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
-    .status-pill-val { font-size: 0.98rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
+    /* Grounded Status Strip (Pure Ground-Truth Verified Badges) */
+    .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1fr; gap: 0.4rem; width: 100%; }
+    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
+    .status-pill-label { font-size: 0.56rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
+    .status-pill-val { font-size: 1rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
     
     .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); font-weight: 900; }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
@@ -166,7 +166,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v4.4.0</span>
+      <span class="version-tag" id="app-version-badge">v4.5.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -193,15 +193,11 @@
       </div>
     </div>
 
-    <!-- Verified Status Strip -->
+    <!-- Verified Ground-Truth Status Strip -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
         <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
-      </div>
-      <div class="status-pill-box">
-        <span class="status-pill-label">Steering</span>
-        <span id="val-dash-steer" class="status-pill-val">CENTER</span>
       </div>
       <div class="status-pill-box">
         <span class="status-pill-label">D-Mode</span>
@@ -219,10 +215,10 @@
 
     <!-- Cockpit Grid -->
     <div class="cockpit-grid">
-      <!-- Ground Speed (Includes Reverse Auto-Recovery!) -->
+      <!-- Ground Speed (KM/H Default) -->
       <div class="touch-card" onclick="toggleSpeedUnits()">
         <div class="card-top">
-          <span class="card-label" id="label-speed-heading">Ground Speed</span>
+          <span class="card-label">Ground Speed</span>
           <span class="card-toggle-hint" id="speed-unit-tag">KM/H</span>
         </div>
         <div class="card-main">
@@ -397,50 +393,37 @@
   <!-- TAB 2: Experimental Discovery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Experimental Lab & Reverse Analyzer</div>
+      <div class="disc-title">🧪 Experimental Lab (Candidate Variables)</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
-        Tracking unmapped sub-channels, steering registers, and transmission pulses.
+        Tracking unmapped sub-channels, dynamic motion variables, and transmission pulses.
       </p>
     </div>
 
     <div class="cockpit-grid">
-      <!-- Reverse Dual Signature Analyzer -->
-      <div class="exp-card" style="grid-column: span 2; border-color:var(--amber);">
+      <!-- Byte 22: Unknown Dynamic Motion / G-force Variable -->
+      <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
-          <span class="exp-title" style="color:var(--amber);">Dual Reverse Signature</span>
-          <span class="exp-tag">B[19] & B[21]</span>
+          <span class="exp-title">Byte [22] Dynamic Motion Var</span>
+          <span class="exp-tag">Center = 128 (0x80)</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" style="font-size:1.1rem;" id="exp-val-revsig">Gear: N | Flag: 0x00</span>
-          <span class="exp-hex-val" id="exp-hex-revsig">B21: 0x00</span>
+          <span class="exp-dec-val" id="exp-val-b22">128 (0x80)</span>
+          <span class="exp-hex-val" id="exp-hex-b22">0x80</span>
         </div>
-        <span class="exp-hint">Detects Reverse gear when $B19=0\text{x80}$ and $B21=0\text{x04}$.</span>
-      </div>
-
-      <!-- Byte 22: Live Steering Angle / Torque Sensor -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Steering Sensor</span>
-          <span class="exp-tag">Byte [22]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-steer">0 (Center)</span>
-          <span class="exp-hex-val" id="exp-hex-steer">0x80</span>
-        </div>
-        <span class="exp-hint">Center = 128 ($0\text{x80}$). Left turns $< 128$, Right turns $> 128$.</span>
+        <span class="exp-hint">Only moves when driving ($124 \dots 143$). Does NOT react to steering or 4WD switch while parked. Candidate: Yaw/G-force or Axle Slip.</span>
       </div>
 
       <!-- Byte 11: Drivetrain Output Speed Pulse -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Trans Pulse Speed</span>
+          <span class="exp-title">Drivetrain Pulse</span>
           <span class="exp-tag">Byte [11]</span>
         </div>
         <div class="exp-val-row">
           <span class="exp-dec-val" id="exp-val-b11">0</span>
           <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
         </div>
-        <span class="exp-hint">Secondary pulley speed. Used as speedometer backup in reverse.</span>
+        <span class="exp-hint">Secondary pulley speed pulses. Correlates directly with vehicle road speed.</span>
       </div>
 
       <!-- Byte 10: Delta TPS -->
@@ -492,13 +475,13 @@
           <span class="exp-dec-val" id="exp-val-baro">1008 mbar</span>
           <span class="exp-hex-val" id="exp-hex-b18">0xC0</span>
         </div>
-        <span class="exp-hint">Altitude pressure reference. Used for Engine Load calculations.</span>
+        <span class="exp-hint">Altitude pressure reference. Baseline for Speed-Density Engine Load.</span>
       </div>
 
       <!-- Sub-Error & Relays (Bytes 12 & 17) -->
-      <div class="exp-card" style="grid-column: span 2;">
+      <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Chassis Relays / Flags</span>
+          <span class="exp-title">Chassis Flags</span>
           <span class="exp-tag">B[12] & B[17]</span>
         </div>
         <div class="exp-val-row">
@@ -513,7 +496,7 @@
     <div class="disc-section">
       <div class="disc-title">📡 Live Custom ECU Query Pinger</div>
       <div style="display:flex; gap:0.4rem;">
-        <input type="text" id="custom-query-input" value="2102" placeholder="e.g. 2102, 2160, 22F190" style="flex:1;" />
+        <input type="text" id="custom-query-input" value="2102" placeholder="e.g. 2102, 2103, 2160" style="flex:1;" />
         <button class="btn-touch" onclick="sendCustomQuery()" style="padding:0.6rem 1rem;">Send Query</button>
       </div>
       <div id="custom-query-res" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--cyan); background:#020617; padding:0.5rem; border-radius:8px; border:1px solid var(--card-border);">Response: Standby</div>
@@ -536,29 +519,30 @@
     </div>
   </div>
 
-  <!-- TAB 3: Combined Directives & Reports -->
+  <!-- TAB 3: Combined Directives & Sweeps -->
   <div id="tab-diagnostics" class="view-panel">
     <div class="disc-section">
       <div class="disc-title">Target Directives & Sweeps</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Execute automated diagnostics against auxiliary modules. Results accumulate automatically in the master report below.
+        Execute automated diagnostics against auxiliary modules and discover secondary ECU data tables.
       </p>
       
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT DIRECTIVE:</label>
         <select id="diag-directive-select" onchange="onDirectiveChanged()">
-          <option value="test_eps_uds">1. EPS UDS Module Sweep [Target: 0x760]</option>
-          <option value="test_sus_uds">2. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
+          <option value="test_ecu_lids">1. ECU Full Data Table Sweep [Target: 21 00..21 25]</option>
+          <option value="test_eps_uds">2. EPS Module UDS Sweep [Target: 0x760]</option>
+          <option value="test_sus_uds">3. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
         </select>
       </div>
 
       <div class="instruction-card" id="instruction-box">
         <div class="inst-header">🔑 REQUIRED STATE</div>
-        <div class="inst-state" id="inst-state-text">Key ON, Engine Running.</div>
+        <div class="inst-state" id="inst-state-text">Engine Running, Vehicle Parked.</div>
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Tap <strong>🔴 Execute Directive</strong>.</li>
-          <li>App pauses live polling and sweeps PIDs 0x00..0x20.</li>
+          <li>App sweeps LIDs 0x00..0x25 on the Engine ECU to locate 4WD & Reverse tables.</li>
           <li>Results automatically append to the Master Report below.</li>
         </ol>
       </div>
@@ -619,7 +603,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v4.4.0";
+    const APP_VERSION = "v4.5.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -628,6 +612,16 @@
     };
 
     const DIRECTIVE_DEFINITIONS = {
+      test_ecu_lids: {
+        title: "ECU Secondary Table Sweep [21 00..21 25]",
+        header: "7E0",
+        stateText: "Engine Running, Vehicle Parked.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App sweeps LIDs 0x00..0x25 on the Engine ECU to locate 4WD & Reverse tables.",
+          "Results append directly to Master Report."
+        ]
+      },
       test_eps_uds: {
         title: "EPS Module UDS Sweep [0x760]",
         header: "760",
@@ -951,7 +945,7 @@
       if (bytes.length < 18) return;
 
       // ---------------------------------------------------------
-      // 1. CORE TELEMETRY
+      // 1. CORE GROUND-TRUTH TELEMETRY
       // ---------------------------------------------------------
       const rpm = (bytes[0] * 256) + bytes[1];
       const rawMph = bytes[2];
@@ -962,61 +956,29 @@
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
       const timingDeg = Math.round((bytes[16] - 80) / 2);
       
-      // Altitude Baro
+      // Baro & Speed-Density Engine Load %
       const baroMbar = Math.round((bytes[18] && bytes[18] > 100 ? bytes[18] : 192) * 5.25);
-
-      // Speed-Density Engine Load %
       const engineLoadPct = Math.min(100, Math.max(0, Math.round((mapMbar / baroMbar) * 100)));
 
       // Fuel Delivery Index & Estimated Duty Cycle %
       const fuelIndex = bytes[8];
       const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
 
-      // Brakes
+      // Brakes: Handbrake (Bit 2: 0x04) & Footbrake (Bit 4: 0x10)
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
       const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
 
-      // ---------------------------------------------------------
-      // DUAL REVERSE SIGNATURE ENGINE
-      // ---------------------------------------------------------
+      // Gear Position (Ground-Truth Decoded)
       const b19 = bytes[19];
       const gearNibble = b19 & 0x0F;
-      const b21 = bytes[21];
-      
-      // Dual Check: Primary H/L registers OR Reverse transmission switch on B21 (0x04) when B19 is 0x80
-      const isReverse = ((b19 === 0x80 || gearNibble === 0x00) && (b21 & 0x04) === 0x04);
-      
       let gearText = 'N';
       let gearClass = 'gear-n';
-      if (isReverse) { 
-        gearText = 'R'; 
-        gearClass = 'gear-r'; 
-      } else if (gearNibble === 0x02) { 
-        gearText = 'H'; 
-        gearClass = 'gear-h'; 
-      } else if (gearNibble === 0x01) { 
-        gearText = 'L'; 
-        gearClass = 'gear-l'; 
-      } else if (gearNibble === 0x00) { 
-        gearText = 'N'; 
-        gearClass = 'gear-n'; 
-      }
+      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+      else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
 
-      // ---------------------------------------------------------
-      // SPEED CALCULATION (WITH REVERSE AUTO-RECOVERY!)
-      // ---------------------------------------------------------
-      let speed = 0;
-      const b11TransPulse = bytes[11] || 0;
-      
-      if (isReverse && rawMph === 0 && b11TransPulse > 2) {
-        // Estimate Reverse speed from transmission secondary speed pulse (Byte 11)
-        const revKmh = Math.round((b11TransPulse - 2) * 0.68);
-        speed = (speedUnit === 'kmh') ? revKmh : Math.round(revKmh / 1.60934);
-        document.getElementById('label-speed-heading').innerText = "Rev Speed (Trans)";
-      } else {
-        speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
-        document.getElementById('label-speed-heading').innerText = "Ground Speed";
-      }
+      // Ground Speed (KM/H by default)
+      let speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
 
       // D-Mode Decode
       const b20 = bytes[20];
@@ -1025,15 +987,6 @@
       if (b20 === 0x82) { dmodeText = 'CRAWL'; dmodeClass = 'dmode-crawl'; }
       else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
       else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
-
-      // ---------------------------------------------------------
-      // STEERING ANGLE / SENSOR DECODER (BYTE 22: CENTER = 128)
-      // ---------------------------------------------------------
-      const rawB22 = bytes[22] !== undefined ? bytes[22] : 128;
-      const steerDelta = rawB22 - 128;
-      let steerText = 'CENTER';
-      if (steerDelta < -1) steerText = `LEFT (${Math.abs(steerDelta)})`;
-      else if (steerDelta > 1) steerText = `RIGHT (${steerDelta})`;
 
       // ---------------------------------------------------------
       // UPDATE VERIFIED COCKPIT UI
@@ -1106,9 +1059,6 @@
       const dmodeEl = document.getElementById('val-dash-dmode');
       if(dmodeEl) { dmodeEl.className = `status-pill-val ${dmodeClass}`; dmodeEl.innerText = dmodeText; }
 
-      const steerEl = document.getElementById('val-dash-steer');
-      if(steerEl) { steerEl.innerText = steerText; }
-
       const pbrakeEl = document.getElementById('val-dash-pbrake');
       if(pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
 
@@ -1121,21 +1071,19 @@
       const b3 = bytes[3] !== undefined ? bytes[3] : 0;
       const b4 = bytes[4] !== undefined ? bytes[4] : 0;
       const b10 = bytes[10] !== undefined ? bytes[10] : 0;
+      const b11 = bytes[11] !== undefined ? bytes[11] : 0;
       const b12 = bytes[12] !== undefined ? bytes[12] : 0;
       const b17 = bytes[17] !== undefined ? bytes[17] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
+      const rawB22 = bytes[22] !== undefined ? bytes[22] : 128;
 
-      // Reverse Diagnostic Investigator
-      document.getElementById('exp-val-revsig').innerText = `Gear: ${gearText} | Flag: 0x${b21.toString(16).toUpperCase().padStart(2, '0')}`;
-      document.getElementById('exp-hex-revsig').innerText = `B19: 0x${b19.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      // Byte 22: Steering Sensor
-      document.getElementById('exp-val-steer').innerText = `${steerDelta} (${steerText})`;
-      document.getElementById('exp-hex-steer').innerText = `0x${rawB22.toString(16).toUpperCase().padStart(2, '0')}`;
+      // Byte 22: Unknown Dynamic Variable
+      document.getElementById('exp-val-b22').innerText = `${rawB22} (0x${rawB22.toString(16).toUpperCase().padStart(2, '0')})`;
+      document.getElementById('exp-hex-b22').innerText = `Δ: ${rawB22 - 128}`;
 
       // Byte 11 (Drivetrain / Output Pulse Candidate)
-      document.getElementById('exp-val-b11').innerText = b11TransPulse;
-      document.getElementById('exp-hex-b11').innerText = `0x${b11TransPulse.toString(16).toUpperCase().padStart(2, '0')}`;
+      document.getElementById('exp-val-b11').innerText = b11;
+      document.getElementById('exp-hex-b11').innerText = `0x${b11.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b4').innerText = b4;
       document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
@@ -1159,7 +1107,7 @@
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
-          gearText, dmodeText, steerDelta, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
+          gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
       }
@@ -1170,7 +1118,7 @@
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, fuelIndex, b10, b11TransPulse, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, b4, fuelIndex, b10, b11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1238,7 +1186,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,Steering_Delta,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1286,7 +1234,7 @@
         isLabCsvLogging = true;
         labCsvStartTime = Date.now();
         labCsvFrames = [
-          `Time_Sec,Ground_RPM,Ground_Speed_${speedUnit.toUpperCase()},Ground_Coolant_C,Ground_IAT_C,Ground_MAP_mbar,Ground_APS_Pct,Ground_TPS_Pct,Ground_Timing_Deg,B3_IACV,B4_VETableCol,B8_InjPulse,B10_DeltaTPS,B11_DrivePulse,B13_ADC,B18_Baro,B22_SteeringAngle,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex`
+          `Time_Sec,Ground_RPM,Ground_Speed_${speedUnit.toUpperCase()},Ground_Coolant_C,Ground_IAT_C,Ground_MAP_mbar,Ground_APS_Pct,Ground_TPS_Pct,Ground_Timing_Deg,B3_IACV,B4_VETableCol,B8_InjPulse,B10_DeltaTPS,B11_DrivePulse,B13_ADC,B18_Baro,B22_RawMotion,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1350,7 +1298,7 @@
     }
 
     /* ==========================================================
-       3. CONSOLIDATED DIAGNOSTICS & MASTER REPORT
+       3. CONSOLIDATED DIAGNOSTICS & ECU DATA TABLE SWEEPER
        ========================================================== */
     window.toggleDirectiveExecution = async function() {
       if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
@@ -1373,22 +1321,38 @@
         let results = [];
         await sendCommand(`ATSH${def.header}`, 1000);
 
-        for (let i = 0; i <= 0x20; i++) {
-          if (!isDirectiveRunning) break;
-          const hexPID = i.toString(16).toUpperCase().padStart(2, '0');
-          document.getElementById('directive-status-text').innerText = `🔴 Sweeping Node ${def.header} (22 01 ${hexPID})...`;
-          
-          const res = await sendCommand(`2201${hexPID}`, 1000);
-          const clean = res.replace(/[\s\r\n>]/g, '');
-          if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
-            results.push(`PID 22 01 ${hexPID} ➜ ${res.trim()}`);
+        if (key === 'test_ecu_lids') {
+          // ECU Full Local Identifier Sweep (21 00 .. 21 25)
+          for (let i = 0; i <= 0x25; i++) {
+            if (!isDirectiveRunning) break;
+            const hexLID = i.toString(16).toUpperCase().padStart(2, '0');
+            document.getElementById('directive-status-text').innerText = `🔴 Sweeping ECU Data Table (21 ${hexLID})...`;
+            
+            const res = await sendCommand(`21${hexLID}`, 1000);
+            const clean = res.replace(/[\s\r\n>]/g, '');
+            if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
+              results.push(`LID 21 ${hexLID} ➜ ${res.trim()}`);
+            }
+          }
+        } else {
+          // Auxiliary Module UDS Sweep (Service 22)
+          for (let i = 0; i <= 0x20; i++) {
+            if (!isDirectiveRunning) break;
+            const hexPID = i.toString(16).toUpperCase().padStart(2, '0');
+            document.getElementById('directive-status-text').innerText = `🔴 Sweeping Node ${def.header} (22 01 ${hexPID})...`;
+            
+            const res = await sendCommand(`2201${hexPID}`, 1000);
+            const clean = res.replace(/[\s\r\n>]/g, '');
+            if (!clean.includes("7F") && !clean.includes("NODATA") && !clean.includes("TIMEOUT")) {
+              results.push(`PID 22 01 ${hexPID} ➜ ${res.trim()}`);
+            }
           }
         }
 
         await sendCommand("ATSH7E0", 1000);
 
-        let logBody = `Target Header: 0x${def.header} (UDS Service 22)\n\n--- ACTIVE RESPONSES ---\n`;
-        logBody += results.length ? results.join('\n') : "No active PIDs responded. Module may require wake-up session or uses passive broadcasting.";
+        let logBody = `Target Header: 0x${def.header}\n\n--- ACTIVE RESPONDING TABLES ---\n`;
+        logBody += results.length ? results.join('\n') : "No active secondary data tables responded.";
         
         appendMasterReport(def.title, def.stateText, logBody);
 
@@ -1510,9 +1474,8 @@
         const b4 = Math.round(35 + (rpm / 8000) * 37);
         const b8 = Math.round(5 + (rpm / 8000) * 160);
         const b11 = Math.round(2 + (rawMph * 2.4));
-        const b22 = Math.round(128 + Math.sin(time * 0.3) * 15);
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C0808200${b22.toString(16).padStart(2,'0')}00AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C08082008000AA`;
       }
       return "NO DATA";
     }
