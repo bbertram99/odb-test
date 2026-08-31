@@ -1,3 +1,5 @@
+--- START OF FILE index.html ---
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v5.0.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v5.1.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -163,11 +165,10 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v5.0.0</span>
+      <span class="version-tag" id="app-version-badge">v5.1.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
-      <button class="btn-hud-icon" onclick="toggleSimulator()" title="Toggle Simulator">⚡</button>
       <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
     </div>
   </header>
@@ -241,7 +242,7 @@
         </div>
       </div>
 
-      <!-- Coolant Temp (With ~96°C Fan Watchdog Alert) -->
+      <!-- Coolant Temp (With ~96°C Fan Alert) -->
       <div class="touch-card" onclick="toggleTempUnits()">
         <div class="card-top">
           <span class="card-label">Coolant Temp</span>
@@ -403,24 +404,53 @@
   <!-- TAB 2: Experimental Discovery Lab Dashboard -->
   <div id="tab-lab" class="view-panel">
     <div class="disc-section">
-      <div class="disc-title">🧪 Mitsubishi ECU Discovery Lab</div>
+      <div class="disc-title">🧪 Mitsubishi MELCO Discovery Lab</div>
       <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.35;">
-        Tracking unmapped sub-channels, dynamic motion variables, and transmission pulses.
+        Tracking unmapped sub-channels, dynamic motion variables, and live ECU parameters.
       </p>
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 22: Dynamic Motion Variable -->
+      <!-- Byte 22: Dynamic G-Force / IMU Load Gauge -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
-          <span class="exp-title">Byte [22] Motion / G-Var</span>
-          <span class="exp-tag">Center = 128 (0x80)</span>
+          <span class="exp-title">Dynamic IMU / G-Force Vector</span>
+          <span class="exp-tag">Byte [22] (128 Center)</span>
         </div>
         <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-b22">128 (0x80)</span>
+          <span class="exp-dec-val" id="exp-val-b22">0 (Center)</span>
           <span class="exp-hex-val" id="exp-hex-b22">0x80</span>
         </div>
-        <span class="exp-hint">Fluctuates ($124 \dots 143$) during dynamic driving. Inactive while parked. Candidate: Yaw/Lateral Acceleration or Dynamic Slip.</span>
+        <div class="meter-bar-track">
+          <div id="bar-gforce" class="meter-bar-fill" style="width:50%; background:var(--purple);"></div>
+        </div>
+        <span class="exp-hint">Signed motion sensor. Center = 128 (0x80). Deflects left (&lt;128) and right (&gt;128) under dynamic driving.</span>
+      </div>
+
+      <!-- Drive-by-Wire Response Latency / Delta -->
+      <div class="exp-card">
+        <div class="exp-header">
+          <span class="exp-title">DBW Throttle Lag</span>
+          <span class="exp-tag">APS vs TPS</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" id="exp-val-dbwlag">0%</span>
+          <span class="exp-hex-val" id="exp-val-dbwmode">SYNC</span>
+        </div>
+        <span class="exp-hint">Measures electronic throttle body delay introduced by D-Mode filtering.</span>
+      </div>
+
+      <!-- ECU Board Voltage Drop -->
+      <div class="exp-card">
+        <div class="exp-header">
+          <span class="exp-title">ECU Rail Voltage Drop</span>
+          <span class="exp-tag">Byte [13] vs ATRV</span>
+        </div>
+        <div class="exp-val-row">
+          <span class="exp-dec-val" id="exp-val-vdrop">0.0V</span>
+          <span class="exp-hex-val" id="exp-val-vrail">14.6V</span>
+        </div>
+        <span class="exp-hint">Difference between harness pin voltage and internal ECU regulated rail.</span>
       </div>
 
       <!-- Byte 11: After-Start Warmup Fuel Decay Counter -->
@@ -475,19 +505,6 @@
         <span class="exp-hint">Idle stepper offset. Decays $8 \to 3$ as coolant warms up.</span>
       </div>
 
-      <!-- Byte 18: Barometric Pressure -->
-      <div class="exp-card">
-        <div class="exp-header">
-          <span class="exp-title">Baro Pressure</span>
-          <span class="exp-tag">Byte [18]</span>
-        </div>
-        <div class="exp-val-row">
-          <span class="exp-dec-val" id="exp-val-baro">1008 mbar</span>
-          <span class="exp-hex-val" id="exp-hex-b18">0xC0</span>
-        </div>
-        <span class="exp-hint">Altitude pressure reference. Baseline for Speed-Density Engine Load.</span>
-      </div>
-
       <!-- Sub-Error & Relays (Bytes 12 & 17) -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
@@ -499,6 +516,17 @@
           <span class="exp-hex-val">FLAGS</span>
         </div>
         <span class="exp-hint">Monitors cooling fan trigger relay (~96°C), winch circuits, and limp-mode.</span>
+      </div>
+    </div>
+
+    <!-- Live One-Touch DTC Fault Reader -->
+    <div class="disc-section">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="disc-title">⚠️ Live DTC Fault Code Scanner</div>
+        <button class="btn-touch" onclick="scanLiveDtcCodes()" style="padding:0.4rem 0.8rem; font-size:0.75rem;">Scan Faults (21 60/61)</button>
+      </div>
+      <div id="live-dtc-output" style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--green); background:#020617; padding:0.55rem; border-radius:8px; border:1px solid var(--card-border);">
+        DTC Status: No scan performed yet.
       </div>
     </div>
 
@@ -519,26 +547,26 @@
     </div>
   </div>
 
-  <!-- TAB 3: Advanced Diagnostics & UDS ISO 14229 Suite -->
+  <!-- TAB 3: Advanced Diagnostics & UDS Suite -->
   <div id="tab-diagnostics" class="view-panel">
     
     <!-- Section A: Automated UDS Directives -->
     <div class="disc-section">
-      <div class="disc-title">UDS ISO 14229 Automated Directives</div>
+      <div class="disc-title">UDS ISO 14229 Exploration Directives</div>
       <p style="font-size:0.75rem; color:var(--text-muted);">
-        Execute automated diagnostics against Mitsubishi software tables, fault registers, memory addresses, and auxiliary modules.
+        Execute automated diagnostics against Mitsubishi software tables, security seeds, actuator tests, and auxiliary modules.
       </p>
       
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT DIRECTIVE:</label>
         <select id="diag-directive-select" onchange="onDirectiveChanged()">
-          <option value="test_ecu_id">1. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
-          <option value="test_dtc_scan">2. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
-          <option value="test_ext_session">3. Unlock Extended Session & Deep DID Probe [10 03 + 22]</option>
-          <option value="test_supplier_session">4. Mitsubishi Supplier Session Probe [10 60..10 7E]</option>
-          <option value="test_mem_read">5. Read Memory By Address (Service 0x23) Flash Test</option>
-          <option value="test_eps_uds">6. EPS Module UDS Sweep [Target: 0x760]</option>
-          <option value="test_sus_uds">7. Fox iQS Suspension Sweep [Target: 0x7E5]</option>
+          <option value="test_mitsubishi_dids">1. Probe Mitsubishi Supplier DIDs [Session 10 60]</option>
+          <option value="test_security_seed">2. Security Access Seed Probe [Service 0x27]</option>
+          <option value="test_actuators">3. Actuator Routine Test Probe [Service 0x31 / 0x2F]</option>
+          <option value="test_aux_ext_session">4. Wake Auxiliary Modules with Extended Session [10 03]</option>
+          <option value="test_ecu_id">5. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
+          <option value="test_dtc_scan">6. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
+          <option value="test_mem_read">7. Read Memory By Address (Service 0x23) Flash Test</option>
         </select>
       </div>
 
@@ -548,7 +576,7 @@
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Tap <strong>🔴 Execute Directive</strong>.</li>
-          <li>App queries standard Mitsubishi DIDs to retrieve software and calibration IDs.</li>
+          <li>App enters Mitsubishi Supplier Session 0x60 and probes extended DIDs.</li>
           <li>Results automatically append to the Master Report below.</li>
         </ol>
       </div>
@@ -596,7 +624,7 @@
       <div style="display:flex; flex-direction:column; gap:0.3rem; margin-top:0.3rem;">
         <label style="font-size:0.7rem; color:var(--text-muted); font-weight:700;">CUSTOM UDS / DID COMMAND:</label>
         <div style="display:flex; gap:0.35rem;">
-          <input type="text" id="custom-query-input" value="22F188" placeholder="e.g. 22F188, 22F190, 2101, 1902FF" style="flex:1;" />
+          <input type="text" id="custom-query-input" value="22F18A" placeholder="e.g. 22F18A, 22F190, 2701, 2160" style="flex:1;" />
           <button class="btn-touch" onclick="sendCustomQuery()" style="padding:0.5rem 0.9rem;">Send</button>
         </div>
       </div>
@@ -654,7 +682,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v5.0.0";
+    const APP_VERSION = "v5.1.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -706,6 +734,12 @@
         return `✅ DID 0x${did} ➜ Hex: ${data} ${ascii ? `[ASCII: "${ascii}"]` : ''}`;
       }
 
+      // Check Service 0x27 Security Seed Response (67 <Level> <Seed>)
+      const match67 = clean.match(/67([0-9A-F]{2})([0-9A-F]*)/);
+      if (match67) {
+        return `🔑 Security Seed Level 0x${match67[1]} OK ➜ Seed: ${match67[2]}`;
+      }
+
       // Check Service 0x10 Positive Response (50 <SubFunc>)
       const match50 = clean.match(/50([0-9A-F]{2})/);
       if (match50) {
@@ -722,6 +756,46 @@
     }
 
     const DIRECTIVE_DEFINITIONS = {
+      test_mitsubishi_dids: {
+        title: "Probe Mitsubishi Supplier DIDs [Session 10 60]",
+        header: "7E0",
+        stateText: "Key ON, Engine Running.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App enters Supplier Session 0x60 and sweeps MUT-III & Extended DIDs (22 00xx / 22 F0xx).",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_security_seed: {
+        title: "Security Access Seed Probe [Service 0x27]",
+        header: "7E0",
+        stateText: "Key ON, Engine OFF.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App queries security seed levels 27 01, 27 61, and 27 03 inside active session.",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_actuators: {
+        title: "Actuator Routine Test Probe [Service 0x31 / 0x2F]",
+        header: "7E0",
+        stateText: "Key ON, Engine OFF.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App probes routine control addresses (Fan, Fuel Pump, Relays) in Extended Session.",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_aux_ext_session: {
+        title: "Wake Auxiliary Modules with Extended Session [10 03]",
+        header: "760",
+        stateText: "Key ON, Engine Running.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App sends Session 10 03 to EPS (0x760) and Fox iQS (0x7E5) before querying metadata.",
+          "Results append directly to Master Report."
+        ]
+      },
       test_ecu_id: {
         title: "Scan ECU Flash Metadata & Calibration ID [Svc 22 F1xx]",
         header: "7E0",
@@ -742,26 +816,6 @@
           "Results append directly to Master Report."
         ]
       },
-      test_ext_session: {
-        title: "Unlock Extended Diagnostic Session & Deep Probe [10 03]",
-        header: "7E0",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App sends UDS Extended Session (10 03) and sweeps secondary tables.",
-          "Results append directly to Master Report."
-        ]
-      },
-      test_supplier_session: {
-        title: "Mitsubishi Supplier Session Probe [10 60..10 7E]",
-        header: "7E0",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App sweeps manufacturer specific session IDs (10 60..10 7E) on Mitsubishi ECU.",
-          "Results append directly to Master Report."
-        ]
-      },
       test_mem_read: {
         title: "Read Memory By Address (Service 0x23) Flash Test",
         header: "7E0",
@@ -769,26 +823,6 @@
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
           "App probes memory address ranges using ISO 14229 Service 23.",
-          "Results append directly to Master Report."
-        ]
-      },
-      test_eps_uds: {
-        title: "EPS Module UDS Sweep [0x760]",
-        header: "760",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App queries UDS Service 22 (PIDs 0x00..0x20) on EPS module.",
-          "Results append directly to Master Report."
-        ]
-      },
-      test_sus_uds: {
-        title: "Fox iQS Suspension Sweep [0x7E5]",
-        header: "7E5",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App queries UDS Service 22 (PIDs 0x00..0x20) on Fox module.",
           "Results append directly to Master Report."
         ]
       }
@@ -805,7 +839,6 @@
     let readChar = null;
     let rxBuffer = '';
     let isPolling = false;
-    let isSimulator = false;
     let isDirectiveRunning = false;
     let activeTab = 'tab-cockpit';
     
@@ -858,7 +891,7 @@
         if (panel) panel.style.display = (t === tabId) ? 'flex' : 'none';
       });
 
-      if ((bleDevice?.gatt?.connected || isSimulator) && !isPolling && !isDirectiveRunning) {
+      if (bleDevice?.gatt?.connected && !isPolling && !isDirectiveRunning) {
         startPolling();
       }
     };
@@ -897,7 +930,6 @@
     };
 
     async function connect() {
-      if (isSimulator) toggleSimulator();
       try {
         if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable.");
 
@@ -995,12 +1027,6 @@
     }
 
     async function sendCommand(cmd, timeoutMs = 2500) {
-      if (isSimulator) {
-        return new Promise(resolve => {
-          setTimeout(() => resolve(getSimulatedResponse(cmd)), 30);
-        });
-      }
-
       return new Promise(async (resolve) => {
         rxBuffer = '';
 
@@ -1042,7 +1068,7 @@
       await sendCommand("ATSP6", 1800);
       await sendCommand("ATSH7E0", 1200);
 
-      log("Connected to Yamaha RMAX (Mitsubishi ECU)! Live telemetry active.");
+      log("Connected to Yamaha RMAX (Mitsubishi MELCO ECU)! Live telemetry active.");
     }
 
     /* Continuous Live Polling Loop */
@@ -1050,7 +1076,7 @@
       if (isPolling) return;
       isPolling = true;
 
-      while (isPolling && (bleDevice?.gatt?.connected || isSimulator)) {
+      while (isPolling && bleDevice?.gatt?.connected) {
         if (!isDirectiveRunning) {
           const startT = performance.now();
           const rawRes = await sendCommand("2101", 1200);
@@ -1128,6 +1154,14 @@
       // Active Fuel Strategy: Alpha-N vs Speed-Density
       const isAlphaN = (deltaTps > 15 || pedalPct > 40 || rpm > 5500);
       const fuelStrategy = isAlphaN ? 'Alpha-N (TPS)' : 'SD (MAP)';
+
+      // DBW Throttle Tracking Lag (Difference between Pedal and Blade)
+      const dbwLagPct = Math.abs(tpsPct - pedalPct);
+
+      // ECU Regulated Rail vs Battery Voltage Drop
+      const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
+      const ecuRailV = rawB13 * 0.0706;
+      const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
 
       // Brakes: Handbrake (Bit 2: 0x04) & Footbrake (Bit 4: 0x10)
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
@@ -1250,10 +1284,24 @@
       const b17 = bytes[17] !== undefined ? bytes[17] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
       const rawB22 = bytes[22] !== undefined ? bytes[22] : 128;
+      const gDelta = rawB22 - 128;
 
-      // Byte 22: Unknown Dynamic Variable
-      document.getElementById('exp-val-b22').innerText = `${rawB22} (0x${rawB22.toString(16).toUpperCase().padStart(2, '0')})`;
-      document.getElementById('exp-hex-b22').innerText = `Δ: ${rawB22 - 128}`;
+      // Byte 22: Dynamic G-Force / IMU Gauge
+      document.getElementById('exp-val-b22').innerText = `${gDelta > 0 ? '+' : ''}${gDelta} (${gDelta === 0 ? 'Center' : gDelta > 0 ? 'Right/Acc' : 'Left/Dec'})`;
+      document.getElementById('exp-hex-b22').innerText = `0x${rawB22.toString(16).toUpperCase().padStart(2, '0')}`;
+      const gBar = document.getElementById('bar-gforce');
+      if (gBar) {
+        const gPct = Math.min(100, Math.max(0, 50 + (gDelta * 2.5)));
+        gBar.style.width = `${gPct}%`;
+      }
+
+      // DBW Throttle Tracking & Delay
+      document.getElementById('exp-val-dbwlag').innerText = `${dbwLagPct}%`;
+      document.getElementById('exp-val-dbwmode').innerText = dbwLagPct > 10 ? 'GATED' : 'SYNC';
+
+      // ECU Voltage Drop
+      document.getElementById('exp-val-vdrop').innerText = `${vDrop}V Drop`;
+      document.getElementById('exp-val-vrail').innerText = `${ecuRailV.toFixed(1)}V Rail`;
 
       // Byte 11 (Warmup Fuel Enrichment Decay Counter)
       document.getElementById('exp-val-b11').innerText = `${rawB11} (${asePct}%)`;
@@ -1267,9 +1315,6 @@
 
       document.getElementById('exp-val-b3').innerText = `${b3} steps`;
       document.getElementById('exp-hex-b3').innerText = `0x${b3.toString(16).toUpperCase().padStart(2, '0')}`;
-
-      document.getElementById('exp-val-baro').innerText = `${baroMbar} mbar`;
-      document.getElementById('exp-hex-b18').innerText = `0x${b18.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b1217').innerText = `0x${b12.toString(16).toUpperCase().padStart(2, '0')} / 0x${b17.toString(16).toUpperCase().padStart(2, '0')}`;
 
@@ -1292,7 +1337,7 @@
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, fuelIndex, deltaTps, rawB11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, b4, fuelIndex, deltaTps, rawB11, rawB13, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1326,10 +1371,28 @@
     }
 
     /* ==========================================================
+       LIVE DTC QUICK READER (LAB TAB)
+       ========================================================== */
+    window.scanLiveDtcCodes = async function() {
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
+      const out = document.getElementById('live-dtc-output');
+      out.innerText = "Scanning Active & Historic DTCs...";
+
+      isPolling = false;
+      await new Promise(r => setTimeout(r, 200));
+
+      const activeRes = await sendCommand("2160", 1500);
+      const histRes = await sendCommand("2161", 1500);
+
+      out.innerText = `Active (21 60) ➜ ${decodeUdsResponse(activeRes)}\nHistoric (21 61) ➜ ${decodeUdsResponse(histRes)}`;
+      startPolling();
+    };
+
+    /* ==========================================================
        UDS SESSION MANAGER & S3 TESTER PRESENT HEARTBEAT
        ========================================================== */
     window.switchDiagnosticSession = async function(sessionHex) {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first!");
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
       
       const badge = document.getElementById('session-status-badge');
       badge.innerText = `Switching to Session 0x${sessionHex}...`;
@@ -1354,7 +1417,7 @@
 
     function startS3Heartbeat() {
       stopS3Heartbeat();
-      if (currentSessionId === "01") return; // Default session doesn't need heartbeat
+      if (currentSessionId === "01") return;
       
       s3HeartbeatTimer = setInterval(async () => {
         if (bleDevice?.gatt?.connected && !isPolling && !isDirectiveRunning) {
@@ -1374,13 +1437,12 @@
        SERVICE 0x23: READ MEMORY BY ADDRESS
        ========================================================== */
     window.executeMemoryRead = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first!");
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
       
       const addr = document.getElementById('mem-addr-input').value.trim().toUpperCase().padStart(8, '0');
       const len = document.getElementById('mem-len-input').value.trim().toUpperCase().padStart(2, '0');
       const out = document.getElementById('custom-query-res');
 
-      // ISO 14229 Service 23 with ALFID 0x14 (4-Byte Address, 1-Byte Length)
       const cmd = `2314${addr}${len}`;
       out.innerText = `Requesting: ${cmd}...`;
 
@@ -1397,7 +1459,7 @@
        CUSTOM UDS & DID QUERY PINGER
        ========================================================== */
     window.sendCustomQuery = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first!");
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
       const input = document.getElementById('custom-query-input');
       const out = document.getElementById('custom-query-res');
       const cmd = input.value.trim().toUpperCase();
@@ -1423,7 +1485,7 @@
       const frameEl = document.getElementById('cockpit-csv-frames');
 
       if (!isCockpitCsvLogging) {
-        if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first!");
+        if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
 
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
@@ -1471,7 +1533,7 @@
       const frameEl = document.getElementById('lab-csv-frames');
 
       if (!isLabCsvLogging) {
-        if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first!");
+        if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
 
         isLabCsvLogging = true;
         labCsvStartTime = Date.now();
@@ -1543,7 +1605,7 @@
        3. CONSOLIDATED DIAGNOSTICS & MITSUBISHI PROBER
        ========================================================== */
     window.toggleDirectiveExecution = async function() {
-      if (!bleDevice?.gatt?.connected && !isSimulator) return alert("Connect to OBD-II first.");
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first.");
 
       const btn = document.getElementById('btn-directive-exec');
       const statusBadge = document.getElementById('status');
@@ -1563,8 +1625,97 @@
         let results = [];
         await sendCommand(`ATSH${def.header}`, 1000);
 
-        if (key === 'test_ecu_id') {
-          // Probe Standard Mitsubishi Identification DIDs (Service 0x22)
+        if (key === 'test_mitsubishi_dids') {
+          // Enter Supplier Session 0x60 first
+          document.getElementById('directive-status-text').innerText = `🔴 Entering Mitsubishi Session 10 60...`;
+          const sessRes = await sendCommand("1060", 1200);
+          results.push(`Session 10 60 ➜ ${decodeUdsResponse(sessRes)}`);
+          
+          // Sweep MUT-III Ranges (22 00 00..20) and Extended Engineering Ranges (22 F0 00..20)
+          const didRanges = [
+            { prefix: "00", start: 0x00, end: 0x15, name: "MUT-III Standard (22 00 xx)" },
+            { prefix: "F0", start: 0x00, end: 0x15, name: "Mitsubishi Extended (22 F0 xx)" },
+            { prefix: "02", start: 0x00, end: 0x15, name: "Drivetrain DIDs (22 02 xx)" }
+          ];
+
+          for (const range of didRanges) {
+            for (let i = range.start; i <= range.end; i++) {
+              if (!isDirectiveRunning) break;
+              const hexDID = `${range.prefix}${i.toString(16).toUpperCase().padStart(2, '0')}`;
+              document.getElementById('directive-status-text').innerText = `🔴 Probing ${range.name}: 22 ${hexDID}...`;
+              
+              const res = await sendCommand(`22${hexDID}`, 800);
+              if (!res.includes("7F11") && !res.includes("7F12") && !res.includes("NODATA")) {
+                results.push(`[${range.name}] DID 22 ${hexDID} ➜ ${decodeUdsResponse(res)}`);
+              }
+              // Send S3 keepalive periodically
+              if (i % 4 === 0) await sendCommand("3E80", 300);
+            }
+          }
+          await sendCommand("1001", 800);
+
+        } else if (key === 'test_security_seed') {
+          // Probe Security Access Seeds in Extended and Supplier sessions
+          const seedTests = [
+            { session: "03", level: "01", desc: "Standard Extended Seed (27 01)" },
+            { session: "03", level: "03", desc: "Engineering Level 3 Seed (27 03)" },
+            { session: "60", level: "61", desc: "Mitsubishi Supplier Level 61 Seed (27 61)" },
+            { session: "60", level: "01", desc: "Supplier Level 1 Seed (27 01)" }
+          ];
+
+          for (const st of seedTests) {
+            if (!isDirectiveRunning) break;
+            document.getElementById('directive-status-text').innerText = `🔴 Testing ${st.desc} in Session 10 ${st.session}...`;
+            await sendCommand(`10${st.session}`, 1000);
+            await new Promise(r => setTimeout(r, 100));
+
+            const res = await sendCommand(`27${st.level}`, 1500);
+            results.push(`${st.desc} [Session 10 ${st.session}] ➜ ${decodeUdsResponse(res)} (Raw: ${res.trim()})`);
+          }
+          await sendCommand("1001", 800);
+
+        } else if (key === 'test_actuators') {
+          // Probe Actuator / Routine Controls in Extended Session
+          document.getElementById('directive-status-text').innerText = `🔴 Unlocking Extended Session 10 03...`;
+          await sendCommand("1003", 1000);
+
+          const routinePIDs = ["0100", "0101", "0102", "0103", "0200", "0201", "0300"];
+          for (const pid of routinePIDs) {
+            if (!isDirectiveRunning) break;
+            document.getElementById('directive-status-text').innerText = `🔴 Probing Routine 31 01 ${pid}...`;
+            const res = await sendCommand(`3101${pid}`, 1000);
+            if (!res.includes("7F11") && !res.includes("7F12")) {
+              results.push(`RoutineControl 31 01 ${pid} ➜ ${decodeUdsResponse(res)}`);
+            }
+          }
+          await sendCommand("1001", 800);
+
+        } else if (key === 'test_aux_ext_session') {
+          // Wake EPS and Fox with 10 03
+          const modules = [
+            { header: "760", name: "EPS Module (0x760)" },
+            { header: "7E5", name: "Fox iQS Suspension (0x7E5)" }
+          ];
+
+          for (const mod of modules) {
+            if (!isDirectiveRunning) break;
+            document.getElementById('directive-status-text').innerText = `🔴 Waking ${mod.name} with Session 10 03...`;
+            await sendCommand(`ATSH${mod.header}`, 800);
+            const sessRes = await sendCommand("1003", 1200);
+            results.push(`${mod.name} Session 10 03 ➜ ${decodeUdsResponse(sessRes)}`);
+
+            // Probe Supplier ID
+            const idRes = await sendCommand("22F18A", 1200);
+            results.push(`${mod.name} Supplier ID (22 F1 8A) ➜ ${decodeUdsResponse(idRes)}`);
+
+            // Probe 21 01 telemetry
+            const teleRes = await sendCommand("2101", 1200);
+            results.push(`${mod.name} Telemetry (21 01) ➜ ${decodeUdsResponse(teleRes)}`);
+
+            await sendCommand("1001", 800);
+          }
+
+        } else if (key === 'test_ecu_id') {
           const dids = [
             { id: "22F188", desc: "Software Calibration ID" },
             { id: "22F187", desc: "Spare Part Number" },
@@ -1580,12 +1731,10 @@
             if (!isDirectiveRunning) break;
             document.getElementById('directive-status-text').innerText = `🔴 Reading: ${did.desc} (${did.id})...`;
             const res = await sendCommand(did.id, 1500);
-            const decoded = decodeUdsResponse(res);
-            results.push(`${did.desc} [${did.id}] ➜ ${decoded} (Raw: ${res.trim()})`);
+            results.push(`${did.desc} [${did.id}] ➜ ${decodeUdsResponse(res)} (Raw: ${res.trim()})`);
           }
 
         } else if (key === 'test_dtc_scan') {
-          // Probe DTC Fault Registers
           document.getElementById('directive-status-text').innerText = `🔴 Scanning Active Faults (21 60)...`;
           const activeRes = await sendCommand("2160", 1200);
           results.push(`Active DTCs (21 60) ➜ ${decodeUdsResponse(activeRes)}`);
@@ -1598,60 +1747,13 @@
           const udsRes = await sendCommand("1902FF", 1200);
           results.push(`UDS DTC Mask (19 02 FF) ➜ ${decodeUdsResponse(udsRes)}`);
 
-        } else if (key === 'test_ext_session') {
-          // Unlock Extended Session (10 03) and sweep DIDs with S3 keepalive
-          document.getElementById('directive-status-text').innerText = `🔴 Unlocking Extended Session (10 03)...`;
-          const sessRes = await sendCommand("1003", 1000);
-          results.push(`Session 10 03 ➜ ${decodeUdsResponse(sessRes)}`);
-
-          // Sweep standard dynamic DID ranges (22 01 00..20 and 22 02 00..20)
-          for (let i = 0; i <= 0x15; i++) {
-            if (!isDirectiveRunning) break;
-            const hexDID = i.toString(16).toUpperCase().padStart(2, '0');
-            document.getElementById('directive-status-text').innerText = `🔴 Probing Extended DID 22 01 ${hexDID}...`;
-            const res = await sendCommand(`2201${hexDID}`, 800);
-            if (!res.includes("7F11") && !res.includes("NODATA")) {
-              results.push(`DID 22 01 ${hexDID} ➜ ${decodeUdsResponse(res)}`);
-            }
-          }
-          await sendCommand("1001", 800); // Return to default
-
-        } else if (key === 'test_supplier_session') {
-          // Probe Manufacturer Specific Sessions (10 40..10 7E)
-          for (let s = 0x60; s <= 0x75; s++) {
-            if (!isDirectiveRunning) break;
-            const hexSess = s.toString(16).toUpperCase();
-            document.getElementById('directive-status-text').innerText = `🔴 Probing Supplier Session 10 ${hexSess}...`;
-            const res = await sendCommand(`10${hexSess}`, 800);
-            if (!res.includes("7F12") && !res.includes("7F11") && !res.includes("NODATA")) {
-              results.push(`Session 10 ${hexSess} ➜ ${decodeUdsResponse(res)}`);
-            }
-          }
-          await sendCommand("1001", 800);
-
         } else if (key === 'test_mem_read') {
-          // Probe Service 0x23 on known Renesas/Mitsubishi memory offsets
-          const memAddresses = [
-            "00000000", "00020000", "00040000", "00100000", "FFFF0000"
-          ];
+          const memAddresses = ["00000000", "00020000", "00040000", "00100000", "FFFF0000"];
           for (const addr of memAddresses) {
             if (!isDirectiveRunning) break;
             document.getElementById('directive-status-text').innerText = `🔴 Probing Service 23 @ 0x${addr}...`;
             const res = await sendCommand(`2314${addr}08`, 1200);
             results.push(`ReadMemory 0x${addr} (8B) ➜ ${decodeUdsResponse(res)}`);
-          }
-
-        } else {
-          // Auxiliary Module UDS Sweep (Service 22)
-          for (let i = 0; i <= 0x20; i++) {
-            if (!isDirectiveRunning) break;
-            const hexPID = i.toString(16).toUpperCase().padStart(2, '0');
-            document.getElementById('directive-status-text').innerText = `🔴 Sweeping Node ${def.header} (22 01 ${hexPID})...`;
-            
-            const res = await sendCommand(`2201${hexPID}`, 1000);
-            if (!res.includes("7F11") && !res.includes("NODATA") && !res.includes("TIMEOUT")) {
-              results.push(`PID 22 01 ${hexPID} ➜ ${decodeUdsResponse(res)}`);
-            }
           }
         }
 
@@ -1745,50 +1847,6 @@
       document.getElementById('dock-report-badge').innerText = 'Diagnostics';
       document.getElementById('master-report-output').innerHTML = '<div style="color:var(--text-muted);">Cleared. Run directives to compile reports...</div>';
       log("Diagnostics log cleared.");
-    }
-
-    /* Simulation Mode */
-    window.toggleSimulator = function() {
-      isSimulator = !isSimulator;
-      const statusEl = document.getElementById('status');
-
-      if (isSimulator) {
-        if (bleDevice?.gatt?.connected) disconnect();
-        if (statusEl) { statusEl.innerText = "SIMULATOR"; statusEl.className = "status-badge simulated"; }
-        log("Simulator active.");
-        startPolling();
-      } else {
-        isPolling = false;
-        if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
-        log("Simulator deactivated.");
-      }
-    };
-
-    function getSimulatedResponse(cmd) {
-      if (cmd.startsWith("AT")) return "OK";
-      if (cmd === "2101") {
-        const time = Date.now() / 1000;
-        const rpm = Math.round(1320 + Math.sin(time * 0.9) * 4500);
-        const a = (rpm >> 8) & 0xFF, b = rpm & 0xFF;
-        const rawMph = Math.round(15 + Math.sin(time * 0.4) * 12);
-        const coolantB14 = Math.round(100 + Math.sin(time * 0.1) * 5);
-        const aps = Math.round(35 + Math.sin(time * 0.8) * 80);
-        const tps = Math.round(33 + Math.sin(time * 0.8) * 88);
-        const timing = Math.round(105 + Math.sin(time * 0.5) * 40);
-        const b15 = Math.round(62 - (time % 4));
-        const b10 = Math.max(0, tps - 33);
-        const b4 = Math.round(35 + (rpm / 8000) * 37);
-        const b8 = Math.round(5 + (rpm / 8000) * 160);
-        const b11 = Math.max(2, Math.round(48 - (time % 25) * 1.8));
-        const b22 = 128;
-        
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C0808200${b22.toString(16).padStart(2,'0')}00AA`;
-      }
-      if (cmd === "22F188") return "62 F1 88 42 32 30 32 35 5F 52 4D 41 58";
-      if (cmd === "22F190") return "62 F1 90 4A 59 34 41 47 30 33 45 30 53 41 30 30 30 30 30 31";
-      if (cmd.startsWith("10")) return "50 " + cmd.substr(2);
-      if (cmd === "3E80") return "";
-      return "7F " + cmd.substr(0, 2) + " 11";
     }
 
     onDirectiveChanged();
