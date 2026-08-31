@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v5.1.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v5.2.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -165,7 +165,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v5.1.0</span>
+      <span class="version-tag" id="app-version-badge">v5.2.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -369,10 +369,11 @@
         </div>
       </div>
 
-      <!-- Battery Voltage -->
+      <!-- ECU Rail Voltage & Harness Voltage Drop (GRADUATED!) -->
       <div class="touch-card">
         <div class="card-top">
-          <span class="card-label">Battery Voltage</span>
+          <span class="card-label">ECU Rail / Drop</span>
+          <span class="card-toggle-hint" id="label-dash-vdrop">0.0V Drop</span>
         </div>
         <div class="card-main">
           <span id="val-dash-voltage" class="card-val">--</span>
@@ -560,12 +561,12 @@
       <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">SELECT DIRECTIVE:</label>
         <select id="diag-directive-select" onchange="onDirectiveChanged()">
-          <option value="test_mitsubishi_dids">1. Probe Mitsubishi Supplier DIDs [Session 10 60]</option>
-          <option value="test_security_seed">2. Security Access Seed Probe [Service 0x27]</option>
-          <option value="test_actuators">3. Actuator Routine Test Probe [Service 0x31 / 0x2F]</option>
-          <option value="test_aux_ext_session">4. Wake Auxiliary Modules with Extended Session [10 03]</option>
-          <option value="test_ecu_id">5. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
-          <option value="test_dtc_scan">6. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
+          <option value="test_security_seed">1. Security Access Seed Probe [Service 0x27]</option>
+          <option value="test_aux_ext_session">2. Wake Auxiliary Modules with Extended Session [10 03]</option>
+          <option value="test_mitsubishi_dids">3. Probe Mitsubishi Supplier DIDs [Session 10 60]</option>
+          <option value="test_ecu_id">4. Scan ECU Flash Calibration & Metadata [Svc 22 F1xx]</option>
+          <option value="test_dtc_scan">5. Scan Active & Historic Fault Codes [21 60 / 19 02 FF]</option>
+          <option value="test_actuators">6. Actuator Routine Test Probe [Service 0x31 / 0x2F]</option>
           <option value="test_mem_read">7. Read Memory By Address (Service 0x23) Flash Test</option>
         </select>
       </div>
@@ -576,7 +577,7 @@
         <div class="inst-header" style="color:var(--cyan); margin-top:0.2rem;">📋 PROCEDURE</div>
         <ol class="inst-steps" id="inst-steps-list">
           <li>Tap <strong>🔴 Execute Directive</strong>.</li>
-          <li>App enters Mitsubishi Supplier Session 0x60 and probes extended DIDs.</li>
+          <li>App queries security seed levels 27 01, 27 61, and 27 03 inside active session.</li>
           <li>Results automatically append to the Master Report below.</li>
         </ol>
       </div>
@@ -682,7 +683,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v5.1.0";
+    const APP_VERSION = "v5.2.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -721,6 +722,14 @@
         return `❌ NRC 0x${nrc} (${nrcDesc}) on Service 0x${sid}`;
       }
 
+      // Check Service 0x21 Positive Response (61 <LID> <Payload>)
+      const match61 = clean.match(/^61([0-9A-F]{2})([0-9A-F]*)/);
+      if (match61) {
+        const lid = match61[1];
+        const payload = match61[2];
+        return `✅ Table 0x${lid} OK ➜ Length: ${payload.length / 2} Bytes [Raw: ${payload}]`;
+      }
+
       // Check Service 0x22 Positive Response (62 <DID_2B> <Data>)
       const match62 = clean.match(/62([0-9A-F]{4})([0-9A-F]*)/);
       if (match62) {
@@ -756,16 +765,6 @@
     }
 
     const DIRECTIVE_DEFINITIONS = {
-      test_mitsubishi_dids: {
-        title: "Probe Mitsubishi Supplier DIDs [Session 10 60]",
-        header: "7E0",
-        stateText: "Key ON, Engine Running.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App enters Supplier Session 0x60 and sweeps MUT-III & Extended DIDs (22 00xx / 22 F0xx).",
-          "Results append directly to Master Report."
-        ]
-      },
       test_security_seed: {
         title: "Security Access Seed Probe [Service 0x27]",
         header: "7E0",
@@ -776,23 +775,23 @@
           "Results append directly to Master Report."
         ]
       },
-      test_actuators: {
-        title: "Actuator Routine Test Probe [Service 0x31 / 0x2F]",
-        header: "7E0",
-        stateText: "Key ON, Engine OFF.",
-        steps: [
-          "Tap <strong>🔴 Execute Directive</strong>.",
-          "App probes routine control addresses (Fan, Fuel Pump, Relays) in Extended Session.",
-          "Results append directly to Master Report."
-        ]
-      },
       test_aux_ext_session: {
         title: "Wake Auxiliary Modules with Extended Session [10 03]",
         header: "760",
         stateText: "Key ON, Engine Running.",
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
-          "App sends Session 10 03 to EPS (0x760) and Fox iQS (0x7E5) before querying metadata.",
+          "App sets hardware CAN filters and sends 10 03 to EPS (0x760) and Fox (0x7E5).",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_mitsubishi_dids: {
+        title: "Probe Mitsubishi Supplier DIDs [Session 10 60]",
+        header: "7E0",
+        stateText: "Key ON, Engine Running.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App enters Supplier Session 0x60 and sweeps MUT-III & Extended DIDs (22 00xx / 22 F0xx).",
           "Results append directly to Master Report."
         ]
       },
@@ -813,6 +812,16 @@
         steps: [
           "Tap <strong>🔴 Execute Directive</strong>.",
           "App scans diagnostic fault tables 21 60, 21 61, and UDS 19 02 FF.",
+          "Results append directly to Master Report."
+        ]
+      },
+      test_actuators: {
+        title: "Actuator Routine Test Probe [Service 0x31 / 0x2F]",
+        header: "7E0",
+        stateText: "Key ON, Engine OFF.",
+        steps: [
+          "Tap <strong>🔴 Execute Directive</strong>.",
+          "App probes routine control addresses (Fan, Fuel Pump, Relays) in Extended Session.",
           "Results append directly to Master Report."
         ]
       },
@@ -1158,7 +1167,7 @@
       // DBW Throttle Tracking Lag (Difference between Pedal and Blade)
       const dbwLagPct = Math.abs(tpsPct - pedalPct);
 
-      // ECU Regulated Rail vs Battery Voltage Drop
+      // ECU Regulated Rail vs Battery Voltage Drop (GRADUATED!)
       const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
       const ecuRailV = rawB13 * 0.0706;
       const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
@@ -1259,7 +1268,9 @@
       const timingBar = document.getElementById('bar-timing');
       if (timingBar) timingBar.style.width = Math.min(100, Math.max(0, ((timingDeg + 15) / 90) * 100)) + '%';
 
-      document.getElementById('val-dash-voltage').innerText = atrvVal || '--';
+      // Battery & ECU Rail Voltage with Drop Indicator
+      document.getElementById('val-dash-voltage').innerText = atrvVal || ecuRailV.toFixed(1);
+      document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop (Rail: ${ecuRailV.toFixed(1)}V)`;
       const voltBar = document.getElementById('bar-voltage');
       if (voltBar && atrvVal > 0) voltBar.style.width = Math.min(100, Math.max(0, ((atrvVal - 10) / 5) * 100)) + '%';
 
@@ -1325,7 +1336,7 @@
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelStrategy, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
+          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelStrategy, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, ecuRailV.toFixed(1), vDrop, 
           gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
@@ -1490,7 +1501,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Fuel_Model,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Fuel_Model,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1625,17 +1636,58 @@
         let results = [];
         await sendCommand(`ATSH${def.header}`, 1000);
 
-        if (key === 'test_mitsubishi_dids') {
+        if (key === 'test_security_seed') {
+          // Probe Security Access Seeds in Extended (10 03)
+          document.getElementById('directive-status-text').innerText = `🔴 Unlocking Extended Session (10 03)...`;
+          await sendCommand("1003", 1000);
+          await new Promise(r => setTimeout(r, 100));
+
+          const seedLevels = ["01", "03", "11", "61"];
+          for (const lvl of seedLevels) {
+            if (!isDirectiveRunning) break;
+            document.getElementById('directive-status-text').innerText = `🔴 Requesting Seed Level 27 ${lvl}...`;
+            const res = await sendCommand(`27${lvl}`, 1500);
+            results.push(`Security Seed Level 0x${lvl} ➜ ${decodeUdsResponse(res)} (Raw: ${res.trim()})`);
+            await new Promise(r => setTimeout(r, 60));
+          }
+          await sendCommand("1001", 800);
+
+        } else if (key === 'test_aux_ext_session') {
+          // Wake EPS and Fox with 10 03 + ATCRA filters
+          const modules = [
+            { header: "760", cra: "768", name: "EPS Module (0x760)" },
+            { header: "7E5", cra: "7ED", name: "Fox iQS Suspension (0x7E5)" }
+          ];
+
+          for (const mod of modules) {
+            if (!isDirectiveRunning) break;
+            document.getElementById('directive-status-text').innerText = `🔴 Setting Filter & Waking ${mod.name}...`;
+            await sendCommand(`ATSH${mod.header}`, 800);
+            await sendCommand(`ATCRA${mod.cra}`, 800); // Set CAN Receive Address
+            await new Promise(r => setTimeout(r, 50));
+
+            const sessRes = await sendCommand("1003", 1200);
+            results.push(`${mod.name} Session 10 03 ➜ ${decodeUdsResponse(sessRes)}`);
+
+            const idRes = await sendCommand("22F18A", 1200);
+            results.push(`${mod.name} Supplier ID (22 F1 8A) ➜ ${decodeUdsResponse(idRes)}`);
+
+            const teleRes = await sendCommand("2101", 1200);
+            results.push(`${mod.name} Telemetry (21 01) ➜ ${decodeUdsResponse(teleRes)}`);
+
+            await sendCommand("ATAR", 500); // Reset CAN receive filter
+            await sendCommand("1001", 800);
+          }
+
+        } else if (key === 'test_mitsubishi_dids') {
           // Enter Supplier Session 0x60 first
           document.getElementById('directive-status-text').innerText = `🔴 Entering Mitsubishi Session 10 60...`;
           const sessRes = await sendCommand("1060", 1200);
           results.push(`Session 10 60 ➜ ${decodeUdsResponse(sessRes)}`);
           
-          // Sweep MUT-III Ranges (22 00 00..20) and Extended Engineering Ranges (22 F0 00..20)
           const didRanges = [
             { prefix: "00", start: 0x00, end: 0x15, name: "MUT-III Standard (22 00 xx)" },
-            { prefix: "F0", start: 0x00, end: 0x15, name: "Mitsubishi Extended (22 F0 xx)" },
-            { prefix: "02", start: 0x00, end: 0x15, name: "Drivetrain DIDs (22 02 xx)" }
+            { prefix: "F0", start: 0x00, end: 0x15, name: "Mitsubishi Extended (22 F0 xx)" }
           ];
 
           for (const range of didRanges) {
@@ -1648,34 +1700,12 @@
               if (!res.includes("7F11") && !res.includes("7F12") && !res.includes("NODATA")) {
                 results.push(`[${range.name}] DID 22 ${hexDID} ➜ ${decodeUdsResponse(res)}`);
               }
-              // Send S3 keepalive periodically
-              if (i % 4 === 0) await sendCommand("3E80", 300);
+              await new Promise(r => setTimeout(r, 40));
             }
           }
           await sendCommand("1001", 800);
 
-        } else if (key === 'test_security_seed') {
-          // Probe Security Access Seeds in Extended and Supplier sessions
-          const seedTests = [
-            { session: "03", level: "01", desc: "Standard Extended Seed (27 01)" },
-            { session: "03", level: "03", desc: "Engineering Level 3 Seed (27 03)" },
-            { session: "60", level: "61", desc: "Mitsubishi Supplier Level 61 Seed (27 61)" },
-            { session: "60", level: "01", desc: "Supplier Level 1 Seed (27 01)" }
-          ];
-
-          for (const st of seedTests) {
-            if (!isDirectiveRunning) break;
-            document.getElementById('directive-status-text').innerText = `🔴 Testing ${st.desc} in Session 10 ${st.session}...`;
-            await sendCommand(`10${st.session}`, 1000);
-            await new Promise(r => setTimeout(r, 100));
-
-            const res = await sendCommand(`27${st.level}`, 1500);
-            results.push(`${st.desc} [Session 10 ${st.session}] ➜ ${decodeUdsResponse(res)} (Raw: ${res.trim()})`);
-          }
-          await sendCommand("1001", 800);
-
         } else if (key === 'test_actuators') {
-          // Probe Actuator / Routine Controls in Extended Session
           document.getElementById('directive-status-text').innerText = `🔴 Unlocking Extended Session 10 03...`;
           await sendCommand("1003", 1000);
 
@@ -1687,33 +1717,9 @@
             if (!res.includes("7F11") && !res.includes("7F12")) {
               results.push(`RoutineControl 31 01 ${pid} ➜ ${decodeUdsResponse(res)}`);
             }
+            await new Promise(r => setTimeout(r, 40));
           }
           await sendCommand("1001", 800);
-
-        } else if (key === 'test_aux_ext_session') {
-          // Wake EPS and Fox with 10 03
-          const modules = [
-            { header: "760", name: "EPS Module (0x760)" },
-            { header: "7E5", name: "Fox iQS Suspension (0x7E5)" }
-          ];
-
-          for (const mod of modules) {
-            if (!isDirectiveRunning) break;
-            document.getElementById('directive-status-text').innerText = `🔴 Waking ${mod.name} with Session 10 03...`;
-            await sendCommand(`ATSH${mod.header}`, 800);
-            const sessRes = await sendCommand("1003", 1200);
-            results.push(`${mod.name} Session 10 03 ➜ ${decodeUdsResponse(sessRes)}`);
-
-            // Probe Supplier ID
-            const idRes = await sendCommand("22F18A", 1200);
-            results.push(`${mod.name} Supplier ID (22 F1 8A) ➜ ${decodeUdsResponse(idRes)}`);
-
-            // Probe 21 01 telemetry
-            const teleRes = await sendCommand("2101", 1200);
-            results.push(`${mod.name} Telemetry (21 01) ➜ ${decodeUdsResponse(teleRes)}`);
-
-            await sendCommand("1001", 800);
-          }
 
         } else if (key === 'test_ecu_id') {
           const dids = [
@@ -1732,6 +1738,7 @@
             document.getElementById('directive-status-text').innerText = `🔴 Reading: ${did.desc} (${did.id})...`;
             const res = await sendCommand(did.id, 1500);
             results.push(`${did.desc} [${did.id}] ➜ ${decodeUdsResponse(res)} (Raw: ${res.trim()})`);
+            await new Promise(r => setTimeout(r, 50));
           }
 
         } else if (key === 'test_dtc_scan') {
@@ -1754,6 +1761,7 @@
             document.getElementById('directive-status-text').innerText = `🔴 Probing Service 23 @ 0x${addr}...`;
             const res = await sendCommand(`2314${addr}08`, 1200);
             results.push(`ReadMemory 0x${addr} (8B) ➜ ${decodeUdsResponse(res)}`);
+            await new Promise(r => setTimeout(r, 50));
           }
         }
 
