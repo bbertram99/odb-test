@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v4.5.0)</title>
+  <title>Yamaha RMAX Pro Cockpit (v4.6.0)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -77,13 +77,12 @@
     .redline-indicator { position: absolute; bottom: 8px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
     .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
 
-    /* Grounded Status Strip (Pure Ground-Truth Verified Badges) */
+    /* Ground-Truth Status Strip */
     .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1fr; gap: 0.4rem; width: 100%; }
     .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.15rem; backdrop-filter: blur(8px); }
     .status-pill-label { font-size: 0.56rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
     .status-pill-val { font-size: 1rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
     
-    .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 12px var(--amber); font-weight: 900; }
     .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
     .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
     .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
@@ -166,7 +165,7 @@
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag" id="app-version-badge">v4.5.0</span>
+      <span class="version-tag" id="app-version-badge">v4.6.0</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
@@ -274,6 +273,34 @@
         </div>
       </div>
 
+      <!-- Warmup Fuel Decay (ASE %) (NEW!) -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Warmup Fuel (ASE)</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-ase" class="card-val">0</span>
+          <span class="card-unit">%</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-ase" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Fuel Injector Pulse Index -->
+      <div class="touch-card">
+        <div class="card-top">
+          <span class="card-label">Inj Fuel Rate</span>
+        </div>
+        <div class="card-main">
+          <span id="val-dash-fuel" class="card-val">--</span>
+          <span class="card-unit">idx</span>
+        </div>
+        <div class="meter-bar-track">
+          <div id="bar-fuel" class="meter-bar-fill"></div>
+        </div>
+      </div>
+
       <!-- Gas Pedal / APS -->
       <div class="touch-card">
         <div class="card-top">
@@ -299,20 +326,6 @@
         </div>
         <div class="meter-bar-track">
           <div id="bar-throttle" class="meter-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- Fuel Injector Delivery Rate -->
-      <div class="touch-card">
-        <div class="card-top">
-          <span class="card-label">Inj Fuel Rate</span>
-        </div>
-        <div class="card-main">
-          <span id="val-dash-fuel" class="card-val">--</span>
-          <span class="card-unit">idx</span>
-        </div>
-        <div class="meter-bar-track">
-          <div id="bar-fuel" class="meter-bar-fill"></div>
         </div>
       </div>
 
@@ -359,7 +372,7 @@
       </div>
 
       <!-- Battery Voltage -->
-      <div class="touch-card" style="grid-column: span 2;">
+      <div class="touch-card">
         <div class="card-top">
           <span class="card-label">Battery Voltage</span>
         </div>
@@ -400,7 +413,7 @@
     </div>
 
     <div class="cockpit-grid">
-      <!-- Byte 22: Unknown Dynamic Motion / G-force Variable -->
+      <!-- Byte 22: Dynamic Motion / Accelerometer Var -->
       <div class="exp-card" style="grid-column: span 2;">
         <div class="exp-header">
           <span class="exp-title">Byte [22] Dynamic Motion Var</span>
@@ -413,17 +426,17 @@
         <span class="exp-hint">Only moves when driving ($124 \dots 143$). Does NOT react to steering or 4WD switch while parked. Candidate: Yaw/G-force or Axle Slip.</span>
       </div>
 
-      <!-- Byte 11: Drivetrain Output Speed Pulse -->
+      <!-- Byte 11: After-Start Warmup Fuel Decay Counter -->
       <div class="exp-card">
         <div class="exp-header">
-          <span class="exp-title">Drivetrain Pulse</span>
+          <span class="exp-title">Warmup Fuel Decay</span>
           <span class="exp-tag">Byte [11]</span>
         </div>
         <div class="exp-val-row">
           <span class="exp-dec-val" id="exp-val-b11">0</span>
           <span class="exp-hex-val" id="exp-hex-b11">0x00</span>
         </div>
-        <span class="exp-hint">Secondary pulley speed pulses. Correlates directly with vehicle road speed.</span>
+        <span class="exp-hint">Counts down $48 \to 2$ over 25 seconds after starting to taper cold enrichment.</span>
       </div>
 
       <!-- Byte 10: Delta TPS -->
@@ -603,7 +616,7 @@
     /* ==========================================================
        APP CONFIGURATION & VERSION
        ========================================================== */
-    const APP_VERSION = "v4.5.0";
+    const APP_VERSION = "v4.6.0";
     document.getElementById('app-version-badge').innerText = APP_VERSION;
 
     window.onerror = function(msg, url, line) {
@@ -964,11 +977,15 @@
       const fuelIndex = bytes[8];
       const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
 
+      // Warmup Fuel Enrichment Decay % (Byte 11: 48 cold -> 2 warm idle)
+      const rawB11 = bytes[11] !== undefined ? bytes[11] : 2;
+      const asePct = Math.min(100, Math.max(0, Math.round(((rawB11 - 2) / 46) * 100)));
+
       // Brakes: Handbrake (Bit 2: 0x04) & Footbrake (Bit 4: 0x10)
       const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
       const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
 
-      // Gear Position (Ground-Truth Decoded)
+      // Gear Position (Verified: 0x82=H, 0x81=L, 0x80=N)
       const b19 = bytes[19];
       const gearNibble = b19 & 0x0F;
       let gearText = 'N';
@@ -1004,6 +1021,11 @@
       document.getElementById('val-dash-load').innerText = engineLoadPct;
       const loadBar = document.getElementById('bar-load');
       if (loadBar) loadBar.style.width = engineLoadPct + '%';
+
+      // Warmup Fuel Enrichment Decay % (ASE)
+      document.getElementById('val-dash-ase').innerText = asePct;
+      const aseBar = document.getElementById('bar-ase');
+      if (aseBar) aseBar.style.width = asePct + '%';
 
       // Fuel Delivery & Injector Duty
       document.getElementById('val-dash-fuel').innerText = fuelIndex;
@@ -1071,7 +1093,6 @@
       const b3 = bytes[3] !== undefined ? bytes[3] : 0;
       const b4 = bytes[4] !== undefined ? bytes[4] : 0;
       const b10 = bytes[10] !== undefined ? bytes[10] : 0;
-      const b11 = bytes[11] !== undefined ? bytes[11] : 0;
       const b12 = bytes[12] !== undefined ? bytes[12] : 0;
       const b17 = bytes[17] !== undefined ? bytes[17] : 0;
       const b18 = bytes[18] !== undefined ? bytes[18] : 0;
@@ -1081,9 +1102,9 @@
       document.getElementById('exp-val-b22').innerText = `${rawB22} (0x${rawB22.toString(16).toUpperCase().padStart(2, '0')})`;
       document.getElementById('exp-hex-b22').innerText = `Δ: ${rawB22 - 128}`;
 
-      // Byte 11 (Drivetrain / Output Pulse Candidate)
-      document.getElementById('exp-val-b11').innerText = b11;
-      document.getElementById('exp-hex-b11').innerText = `0x${b11.toString(16).toUpperCase().padStart(2, '0')}`;
+      // Byte 11 (Warmup Fuel Enrichment Decay Counter)
+      document.getElementById('exp-val-b11').innerText = `${rawB11} (${asePct}%)`;
+      document.getElementById('exp-hex-b11').innerText = `0x${rawB11.toString(16).toUpperCase().padStart(2, '0')}`;
 
       document.getElementById('exp-val-b4').innerText = b4;
       document.getElementById('exp-hex-b4').innerText = `0x${b4.toString(16).toUpperCase().padStart(2, '0')}`;
@@ -1106,7 +1127,7 @@
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
-          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
+          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, atrvVal, 
           gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
         ].join(',');
         cockpitCsvFrames.push(row);
@@ -1118,7 +1139,7 @@
         const allHex = bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ');
         const row = [
           elapsed, rpm, speed, coolantC, iatC, mapMbar, pedalPct, tpsPct, timingDeg,
-          b3, b4, fuelIndex, b10, b11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
+          b3, b4, fuelIndex, b10, rawB11, bytes[13] || 0, b18, rawB22, bytes[23] || 0, bytes[24] || 0, bytes[25] || 0, `"${allHex}"`
         ].join(',');
         labCsvFrames.push(row);
       }
@@ -1186,7 +1207,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_C,IAT_C,MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1234,7 +1255,7 @@
         isLabCsvLogging = true;
         labCsvStartTime = Date.now();
         labCsvFrames = [
-          `Time_Sec,Ground_RPM,Ground_Speed_${speedUnit.toUpperCase()},Ground_Coolant_C,Ground_IAT_C,Ground_MAP_mbar,Ground_APS_Pct,Ground_TPS_Pct,Ground_Timing_Deg,B3_IACV,B4_VETableCol,B8_InjPulse,B10_DeltaTPS,B11_DrivePulse,B13_ADC,B18_Baro,B22_RawMotion,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex`
+          `Time_Sec,Ground_RPM,Ground_Speed_${speedUnit.toUpperCase()},Ground_Coolant_C,Ground_IAT_C,Ground_MAP_mbar,Ground_APS_Pct,Ground_TPS_Pct,Ground_Timing_Deg,B3_IACV,B4_VETableCol,B8_InjPulse,B10_DeltaTPS,B11_WarmupDecay,B13_ADC,B18_Baro,B22_RawMotion,B23_Aux,B24_Aux,B25_Aux,Raw_26_Hex`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1322,7 +1343,6 @@
         await sendCommand(`ATSH${def.header}`, 1000);
 
         if (key === 'test_ecu_lids') {
-          // ECU Full Local Identifier Sweep (21 00 .. 21 25)
           for (let i = 0; i <= 0x25; i++) {
             if (!isDirectiveRunning) break;
             const hexLID = i.toString(16).toUpperCase().padStart(2, '0');
@@ -1335,7 +1355,6 @@
             }
           }
         } else {
-          // Auxiliary Module UDS Sweep (Service 22)
           for (let i = 0; i <= 0x20; i++) {
             if (!isDirectiveRunning) break;
             const hexPID = i.toString(16).toUpperCase().padStart(2, '0');
@@ -1473,9 +1492,10 @@
         const b10 = Math.max(0, tps - 33);
         const b4 = Math.round(35 + (rpm / 8000) * 37);
         const b8 = Math.round(5 + (rpm / 8000) * 160);
-        const b11 = Math.round(2 + (rawMph * 2.4));
+        const b11 = Math.max(2, Math.round(48 - (time % 25) * 1.8));
+        const b22 = 128;
         
-        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C08082008000AA`;
+        return `01A 0:6101${a.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}${rawMph.toString(16).padStart(2,'0')}04 1:${b4.toString(16).padStart(2,'0')}00C522${b8.toString(16).padStart(2,'0')}${tps.toString(16).padStart(2,'0')}21${b10.toString(16).padStart(2,'0')}${b11.toString(16).padStart(2,'0')}00 2:CF${coolantB14.toString(16).padStart(2,'0')}${b15.toString(16).padStart(2,'0')}${timing.toString(16).padStart(2,'0')}00 3:C0808200${b22.toString(16).padStart(2,'0')}00AA`;
       }
       return "NO DATA";
     }
