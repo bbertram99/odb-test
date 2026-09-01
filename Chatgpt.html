@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>RMAX ECU Research Cockpit v5.4.0</title>
+
+  <style>
+    :root {
+      --bg:#05070e;
+      --panel:rgba(15,23,42,.88);
+      --panel2:#020617;
+      --border:rgba(56,189,248,.20);
+      --text:#f8fafc;
+      --muted:#7f8da3;
+      --cyan:#38bdf8;
+      --green:#4ade80;
+      --amber:#f59e0b;
+      --red:#ef4444;
+      --purple:#c084fc;
+    }
+
+    * {
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+      -webkit-tap-highlight-color:transparent;
+    }
+
+    body {
+      min-height:100vh;
+      padding:.75rem .75rem 5.8rem;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 50% 0,rgba(56,189,248,.09),transparent 55%),
+        linear-gradient(#070b14,#030408);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+
+    button,input,select,textarea {
+      font:inherit;
+    }
+
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.5rem;
+      margin-bottom:.75rem;
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:.45rem;
+      font-weight:900;
+      letter-spacing:.08em;
+    }
+
+    .dot {
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      background:var(--cyan);
+      box-shadow:0 0 12px var(--cyan);
+    }
+
+    .version,.badge {
+      padding:.25rem .5rem;
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:var(--cyan);
+      background:rgba(56,189,248,.10);
+      font-family:ui-monospace,monospace;
+      font-size:.68rem;
+      font-weight:800;
+    }
+
+    .badge.off {
+      color:var(--muted);
+      background:rgba(30,41,59,.85);
+      border-color:rgba(255,255,255,.09);
+    }
+
+    .badge.on {
+      color:var(--green);
+      border-color:var(--green);
+      background:rgba(74,222,128,.12);
+    }
+
+    .view {
+      display:none;
+      flex-direction:column;
+      gap:.7rem;
+    }
+
+    .view.active {
+      display:flex;
+    }
+
+    .panel {
+      padding:.8rem;
+      border:1px solid var(--border);
+      border-radius:15px;
+      background:var(--panel);
+      box-shadow:0 8px 28px rgba(0,0,0,.30);
+    }
+
+    .title {
+      margin-bottom:.5rem;
+      color:var(--cyan);
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+
+    .subtitle {
+      color:var(--muted);
+      font-size:.76rem;
+      line-height:1.4;
+    }
+
+    .warning {
+      padding:.65rem;
+      border-left:4px solid var(--amber);
+      border-radius:8px;
+      color:#fde3aa;
+      background:rgba(245,158,11,.10);
+      font-size:.76rem;
+      line-height:1.4;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:.55rem;
+    }
+
+    .metric {
+      min-width:0;
+      padding:.7rem;
+      border:1px solid var(--border);
+      border-radius:13px;
+      background:var(--panel);
+    }
+
+    .metric.wide {
+      grid-column:1/-1;
+    }
+
+    .label {
+      overflow:hidden;
+      color:var(--muted);
+      font-size:.65rem;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-overflow:ellipsis;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+
+    .value {
+      margin-top:.2rem;
+      font-size:1.5rem;
+      font-weight:900;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .unit {
+      color:var(--muted);
+      font-size:.72rem;
+      font-weight:700;
+    }
+
+    .small {
+      color:var(--muted);
+      font-size:.7rem;
+      line-height:1.35;
+    }
+
+    .bar {
+      height:4px;
+      margin-top:.45rem;
+      overflow:hidden;
+      border-radius:99px;
+      background:rgba(255,255,255,.08);
+    }
+
+    .fill {
+      width:0;
+      height:100%;
+      background:var(--cyan);
+      box-shadow:0 0 8px var(--cyan);
+      transition:width .12s linear;
+    }
+
+    .actions {
+      display:flex;
+      flex-wrap:wrap;
+      gap:.4rem;
+    }
+
+    .btn {
+      min-height:42px;
+      padding:.55rem .75rem;
+      border:1px solid var(--cyan);
+      border-radius:9px;
+      color:white;
+      background:rgba(56,189,248,.14);
+      font-size:.76rem;
+      font-weight:800;
+      cursor:pointer;
+    }
+
+    .btn.secondary {
+      border-color:rgba(255,255,255,.15);
+      background:#1e293b;
+    }
+
+    .btn.purple {
+      color:var(--purple);
+      border-color:var(--purple);
+      background:rgba(192,132,252,.10);
+    }
+
+    .btn.red {
+      color:#fff;
+      border-color:var(--red);
+      background:rgba(239,68,68,.22);
+    }
+
+    .btn:active {
+      transform:scale(.97);
+    }
+
+    input,select,textarea {
+      width:100%;
+      padding:.6rem;
+      border:1px solid var(--border);
+      border-radius:8px;
+      color:white;
+      background:var(--panel2);
+      font-family:ui-monospace,monospace;
+      font-size:.78rem;
+    }
+
+    textarea {
+      min-height:90px;
+      resize:vertical;
+    }
+
+    .row {
+      display:flex;
+      gap:.4rem;
+      align-items:center;
+    }
+
+    .row > * {
+      min-width:0;
+      flex:1;
+    }
+
+    .terminal {
+      max-height:320px;
+      overflow:auto;
+      padding:.65rem;
+      border:1px solid var(--border);
+      border-radius:10px;
+      color:#b9e9ff;
+      background:#020617;
+      font-family:ui-monospace,monospace;
+      font-size:.69rem;
+      line-height:1.45;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .byte-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:.4rem;
+    }
+
+    .byte-card {
+      padding:.55rem;
+      border:1px dashed rgba(192,132,252,.38);
+      border-radius:10px;
+      background:rgba(15,23,42,.82);
+      font-family:ui-monospace,monospace;
+    }
+
+    .byte-top {
+      display:flex;
+      justify-content:space-between;
+      gap:.3rem;
+      color:var(--purple);
+      font-size:.68rem;
+      font-weight:800;
+    }
+
+    .byte-main {
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      margin:.25rem 0;
+    }
+
+    .byte-dec {
+      font-size:1.15rem;
+      font-weight:900;
+    }
+
+    .byte-hex {
+      color:var(--amber);
+      font-weight:800;
+    }
+
+    .byte-stats {
+      color:var(--muted);
+      font-size:.61rem;
+      line-height:1.35;
+    }
+
+    .hypothesis {
+      color:var(--amber);
+    }
+
+    .dock {
+      position:fixed;
+      z-index:50;
+      right:.7rem;
+      bottom:.7rem;
+      left:.7rem;
+      display:flex;
+      gap:.3rem;
+      padding:.42rem;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      background:rgba(8,14,27,.95);
+      backdrop-filter:blur(18px);
+    }
+
+    .dock button {
+      flex:1;
+      min-width:0;
+      padding:.6rem .15rem;
+      border:0;
+      border-radius:11px;
+      color:var(--muted);
+      background:transparent;
+      font-size:.66rem;
+      font-weight:900;
+    }
+
+    .dock button.active {
+      color:var(--cyan);
+      background:rgba(56,189,248,.12);
+    }
+
+    .dock .connect {
+      color:#041019;
+      background:var(--cyan);
+    }
+
+    .dock .connect.disconnect {
+      color:white;
+      background:var(--red);
+    }
+
+    #log {
+      position:relative;
+      margin-top:.7rem;
+      padding:.45rem .55rem;
+      border:1px solid var(--border);
+      border-radius:8px;
+      color:var(--muted);
+      background:#020617;
+      font-family:ui-monospace,monospace;
+      font-size:.67rem;
+    }
+
+    @media(min-width:760px) {
+      body {
+        max-width:1050px;
+        margin:auto;
+      }
+
+      .grid {
+        grid-template-columns:repeat(4,minmax(0,1fr));
+      }
+
+      .byte-grid {
+        grid-template-columns:repeat(4,minmax(0,1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    RMAX ECU RESEARCH
+    <span class="version">v5.4.0</span>
+  </div>
+  <span id="status" class="badge off">DISCONNECTED</span>
+</header>
+
+<section id="cockpit" class="view active">
+  <div class="panel">
+    <div class="title">Live Cockpit</div>
+    <div class="subtitle">
+      Values decoded from the observed 0x21 0x01 response. Derived values are
+      estimates and should be validated against controlled tests.
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="metric wide">
+      <div class="label">Engine Speed</div>
+      <div><span id="rpm" class="value">--</span> <span class="unit">RPM</span></div>
+      <div class="bar"><div id="rpmBar" class="fill"></div></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Ground Speed</div>
+      <div><span id="speed" class="value">--</span> <span class="unit">km/h</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Coolant</div>
+      <div><span id="coolant" class="value">--</span> <span class="unit">°C</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Intake Air</div>
+      <div><span id="iat" class="value">--</span> <span class="unit">°C</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">MAP</div>
+      <div><span id="map" class="value">--</span> <span class="unit">mbar</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Pedal APS</div>
+      <div><span id="aps" class="value">--</span> <span class="unit">%</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Throttle TPS</div>
+      <div><span id="tps" class="value">--</span> <span class="unit">%</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Spark Estimate</div>
+      <div><span id="spark" class="value">--</span> <span class="unit">°</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Adapter Voltage</div>
+      <div><span id="voltage" class="value">--</span> <span class="unit">V</span></div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Gear Hypothesis</div>
+      <div id="gear" class="value hypothesis">--</div>
+    </div>
+
+    <div class="metric">
+      <div class="label">D-Mode Hypothesis</div>
+      <div id="dmode" class="value hypothesis">--</div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Parking Brake Bit</div>
+      <div id="pbrake" class="value hypothesis">--</div>
+    </div>
+
+    <div class="metric">
+      <div class="label">Foot Brake Bit</div>
+      <div id="fbrake" class="value hypothesis">--</div>
+    </div>
+  </div>
+</section>
+
+<section id="lab" class="view">
+  <div class="panel">
+    <div class="title">Experimental Lab</div>
+    <div class="warning">
+      Unknown bytes are deliberately labeled as hypotheses. A changing byte is
+      evidence of association, not proof that it directly represents a sensor.
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="metric"><div class="label">MAP Rate</div><div><span id="mapRate" class="value">0</span> <span class="unit">mbar/s</span></div></div>
+    <div class="metric"><div class="label">TPS Rate</div><div><span id="tpsRate" class="value">0</span> <span class="unit">%/s</span></div></div>
+    <div class="metric"><div class="label">APS Rate</div><div><span id="apsRate" class="value">0</span> <span class="unit">%/s</span></div></div>
+    <div class="metric"><div class="label">RPM Acceleration</div><div><span id="rpmRate" class="value">0</span> <span class="unit">RPM/s</span></div></div>
+    <div class="metric"><div class="label">APS-TPS Error</div><div><span id="trackingError" class="value">0</span> <span class="unit">%</span></div></div>
+    <div class="metric"><div class="label">Estimated TPS Lag</div><div><span id="lagMs" class="value">--</span> <span class="unit">ms</span></div></div>
+    <div class="metric"><div class="label">Thermal Delta</div><div><span id="thermalDelta" class="value">0</span> <span class="unit">°C</span></div></div>
+    <div class="metric"><div class="label">Idle Stability</div><div><span id="idleStability" class="value">--</span> <span class="unit">σ RPM</span></div></div>
+    <div class="metric"><div class="label">Charging State</div><div id="charging" class="value">--</div></div>
+    <div class="metric"><div class="label">Frame RTT</div><div><span id="rtt" class="value">--</span> <span class="unit">ms</span></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Experiment Controls</div>
+    <div class="row">
+      <input id="markerText" value="throttle blip"
+             placeholder="Marker, for example fan turned on">
+      <button class="btn purple" onclick="addMarker()">Add Marker</button>
+    </div>
+
+    <div class="actions" style="margin-top:.5rem">
+      <button id="recordBtn" class="btn red" onclick="toggleRecording()">Start Lab CSV</button>
+      <button class="btn secondary" onclick="captureBaseline()">Capture Baseline</button>
+      <button class="btn secondary" onclick="resetByteStats()">Reset Statistics</button>
+      <button class="btn" onclick="analyzeCorrelations()">Analyze Correlations</button>
+      <button class="btn" onclick="exportLabCsv()">Export CSV</button>
+    </div>
+
+    <div id="recordState" class="small" style="margin-top:.5rem">
+      Recorder idle. No baseline captured.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Payload Byte Inspector</div>
+    <div class="subtitle" style="margin-bottom:.55rem">
+      Min/max and change counts persist until reset. Δ compares against the
+      captured baseline when available, otherwise against the previous frame.
+    </div>
+    <div id="byteGrid" class="byte-grid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Correlation Results</div>
+    <div id="correlationOutput" class="terminal">
+      Record a controlled experiment, then select Analyze Correlations.
+    </div>
+  </div>
+</section>
+
+<section id="diagnostics" class="view">
+  <div class="panel">
+    <div class="title">Read-Only Diagnostics</div>
+    <div class="warning">
+      Automated functions in this build are restricted to read requests.
+      Programming session, SecurityAccess key submission, actuator control,
+      clearing DTCs, write services, and arbitrary memory reads are intentionally
+      not automated.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="title">ECU Identification</div>
+    <div class="actions">
+      <button class="btn" onclick="scanEcuIdentity()">Read Identification DIDs</button>
+      <button class="btn" onclick="scanDtcs()">Read DTC Registers</button>
+      <button class="btn secondary" onclick="sendTesterPresent()">Tester Present</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Paced Read-Only DID Discovery</div>
+
+    <div class="row">
+      <input id="didStart" value="0000" maxlength="4" placeholder="Start DID">
+      <input id="didEnd" value="001F" maxlength="4" placeholder="End DID">
+    </div>
+
+    <div class="row" style="margin-top:.4rem">
+      <input id="didDelay" value="150" inputmode="numeric"
+             placeholder="Delay milliseconds">
+      <select id="didSession">
+        <option value="01">Default session 0x01</option>
+        <option value="03">Extended session 0x03</option>
+        <option value="60">Supplier hypothesis 0x60</option>
+      </select>
+    </div>
+
+    <div class="actions" style="margin-top:.5rem">
+      <button id="sweepBtn" class="btn purple" onclick="startDidSweep()">Start DID Sweep</button>
+      <button class="btn red" onclick="stopDidSweep()">Stop</button>
+    </div>
+
+    <div id="sweepState" class="small" style="margin-top:.45rem">Sweep idle.</div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Restricted Custom Read Query</div>
+    <div class="row">
+      <input id="customQuery" value="22F18A"
+             placeholder="Allowed examples: 22F18A, 2160, 1902FF">
+      <button class="btn" onclick="sendRestrictedQuery()">Send Read</button>
+    </div>
+    <div class="small" style="margin-top:.4rem">
+      Allowed service IDs: 0x21, 0x22, 0x19, 0x1A, 0x3E, and diagnostic
+      session control 0x10. Programming session 0x02 is blocked.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="title">Diagnostic Report</div>
+    <div class="actions" style="margin-bottom:.5rem">
+      <button class="btn" onclick="exportReport()">Export Report</button>
+      <button class="btn secondary" onclick="clearReport()">Clear</button>
+    </div>
+    <div id="report" class="terminal">RMAX read-only diagnostic report ready.</div>
+  </div>
+</section>
+
+<div id="log">System ready. Connect to a compatible BLE ELM327 adapter.</div>
+
+<nav class="dock">
+  <button id="nav-cockpit" class="active" onclick="showView('cockpit')">Cockpit</button>
+  <button id="nav-lab" onclick="showView('lab')">Lab</button>
+  <button id="nav-diagnostics" onclick="showView('diagnostics')">Diagnostics</button>
+  <button id="connectBtn" class="connect" onclick="toggleConnection()">Connect</button>
+</nav>
+
+<script>
+"use strict";
+
+const APP_VERSION = "v5.4.0";
+const SERVICE_UUIDS = [
+  "0000fff0-0000-1000-8000-00805f9b34fb",
+  "0000ffe0-0000-1000-8000-00805f9b34fb",
+  "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+];
+
+const NRC = {
+  "10":"General reject",
+  "11":"Service not supported",
+  "12":"Sub-function not supported",
+  "13":"Incorrect length or format",
+  "14":"Response too long",
+  "21":"Busy, repeat request",
+  "22":"Conditions not correct",
+  "24":"Request sequence error",
+  "31":"Request out of range",
+  "33":"Security access denied",
+  "35":"Invalid key",
+  "36":"Exceeded attempts",
+  "37":"Required delay not expired",
+  "78":"Response pending",
+  "7E":"Sub-function unsupported in session",
+  "7F":"Service unsupported in session"
+};
+
+let device = null;
+let writeChar = null;
+let readChar = null;
+let rxBuffer = "";
+let responseResolver = null;
+
+let polling = false;
+let sweepRunning = false;
+let transportBusy = false;
+
+let previousFrame = null;
+let baseline = null;
+let lastFrameTime = 0;
+let latest = null;
+
+let recording = false;
+let csvRows = [];
+let pendingMarker = "";
+let correlationSamples = [];
+let reportLines = [];
+
+const idleRpmWindow = [];
+const pedalEdges = [];
+const throttleEdges = [];
+
+const byteStats = Array.from({length:26}, () => ({
+  min:255,
+  max:0,
+  last:null,
+  changes:0
+}));
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const clamp = (n,min,max) => Math.min(max,Math.max(min,n));
+
+function log(message) {
+  $("log").textContent = message;
+}
+
+function showView(id) {
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".dock button").forEach(el => el.classList.remove("active"));
+  $(id).classList.add("active");
+  $("nav-" + id).classList.add("active");
+}
+
+function hex2(value) {
+  return Number(value || 0).toString(16).toUpperCase().padStart(2,"0");
+}
+
+function sanitizeHex(value) {
+  return String(value || "").replace(/[^0-9A-F]/gi,"").toUpperCase();
+}
+
+function buildByteGrid() {
+  $("byteGrid").innerHTML = "";
+  for (let i = 0; i < 26; i++) {
+    const card = document.createElement("div");
+    card.className = "byte-card";
+    card.innerHTML = `
+      <div class="byte-top">
+        <span>BYTE ${i}</span>
+        <span id="b${i}delta">Δ --</span>
+      </div>
+      <div class="byte-main">
+        <span id="b${i}dec" class="byte-dec">--</span>
+        <span id="b${i}hex" class="byte-hex">0x--</span>
+      </div>
+      <div id="b${i}stats" class="byte-stats">MIN -- · MAX -- · CHG 0</div>
+    `;
+    $("byteGrid").appendChild(card);
+  }
+}
+
+function updateByteInspector(bytes) {
+  bytes.slice(0,26).forEach((value,index) => {
+    const stat = byteStats[index];
+
+    if (stat.last !== null && stat.last !== value) stat.changes++;
+    stat.min = Math.min(stat.min,value);
+    stat.max = Math.max(stat.max,value);
+
+    const comparison = baseline ? baseline[index] : stat.last;
+    const delta = comparison === null || comparison === undefined
+      ? null
+      : value - comparison;
+
+    stat.last = value;
+
+    $("b" + index + "dec").textContent = value;
+    $("b" + index + "hex").textContent = "0x" + hex2(value);
+    $("b" + index + "delta").textContent =
+      delta === null ? "Δ --" : "Δ " + (delta >= 0 ? "+" : "") + delta;
+    $("b" + index + "stats").textContent =
+      `MIN ${stat.min} · MAX ${stat.max} · CHG ${stat.changes}`;
+  });
+}
+
+function resetByteStats() {
+  byteStats.forEach(stat => {
+    stat.min = 255;
+    stat.max = 0;
+    stat.last = null;
+    stat.changes = 0;
+  });
+  baseline = null;
+  correlationSamples = [];
+  buildByteGrid();
+  $("recordState").textContent = "Statistics and baseline reset.";
+}
+
+function captureBaseline() {
+  if (!latest) {
+    alert("No live frame is available.");
+    return;
+  }
+
+  baseline = latest.bytes.slice();
+  $("recordState").textContent =
+    "Baseline captured at " + new Date().toLocaleTimeString() + ".";
+  addMarker("baseline captured");
+}
+
+async function toggleConnection() {
+  if (device?.gatt?.connected) {
+    disconnect();
+  } else {
+    await connect();
+  }
+}
+
+async function connect() {
+  try {
+    if (!navigator.bluetooth) {
+      throw new Error("Web Bluetooth is unavailable in this browser.");
+    }
+
+    log("Opening Bluetooth device picker...");
+
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:SERVICE_UUIDS
+    });
+
+    device.addEventListener("gattserverdisconnected", onDisconnected);
+
+    const server = await device.gatt.connect();
+    let service = null;
+
+    for (const uuid of SERVICE_UUIDS) {
+      try {
+        service = await server.getPrimaryService(uuid);
+        if (service) break;
+      } catch (_) {}
+    }
+
+    if (!service) throw new Error("No supported BLE UART service was found.");
+
+    const chars = await service.getCharacteristics();
+
+    for (const char of chars) {
+      if (!writeChar &&
+          (char.properties.write || char.properties.writeWithoutResponse)) {
+        writeChar = char;
+      }
+
+      if (!readChar &&
+          (char.properties.notify || char.properties.indicate)) {
+        readChar = char;
+      }
+    }
+
+    if (!writeChar || !readChar) {
+      throw new Error("BLE UART transmit/receive characteristics were not resolved.");
+    }
+
+    await readChar.startNotifications();
+    readChar.addEventListener("characteristicvaluechanged", onNotification);
+
+    $("status").className = "badge on";
+    $("status").textContent = "CONNECTED";
+    $("connectBtn").textContent = "Disconnect";
+    $("connectBtn").classList.add("disconnect");
+
+    await initializeElm();
+    startPolling();
+  } catch (error) {
+    log("Connection error: " + error.message);
+    disconnect();
+  }
+}
+
+function disconnect() {
+  polling = false;
+  sweepRunning = false;
+
+  if (device?.gatt?.connected) device.gatt.disconnect();
+  onDisconnected();
+}
+
+function onDisconnected() {
+  polling = false;
+  sweepRunning = false;
+  transportBusy = false;
+
+  $("status").className = "badge off";
+  $("status").textContent = "DISCONNECTED";
+  $("connectBtn").textContent = "Connect";
+  $("connectBtn").classList.remove("disconnect");
+
+  log("Disconnected.");
+}
+
+function onNotification(event) {
+  rxBuffer += new TextDecoder().decode(event.target.value);
+
+  if (rxBuffer.includes(">") && responseResolver) {
+    const resolver = responseResolver;
+    responseResolver = null;
+
+    const response = rxBuffer.replace(/>/g,"").trim();
+    rxBuffer = "";
+    resolver(response);
+  }
+}
+
+async function writeBle(bytes) {
+  if (!writeChar) throw new Error("BLE write characteristic unavailable.");
+
+  if (writeChar.properties.writeWithoutResponse &&
+      writeChar.writeValueWithoutResponse) {
+    await writeChar.writeValueWithoutResponse(bytes);
+  } else if (writeChar.writeValueWithResponse) {
+    await writeChar.writeValueWithResponse(bytes);
+  } else {
+    await writeChar.writeValue(bytes);
+  }
+}
+
+async function rawCommand(command, timeout=1800) {
+  while (transportBusy) await sleep(10);
+  transportBusy = true;
+
+  try {
+    rxBuffer = "";
+
+    return await new Promise(async resolve => {
+      let completed = false;
+
+      const finish = value => {
+        if (completed) return;
+        completed = true;
+        responseResolver = null;
+        resolve(value);
+      };
+
+      const timer = setTimeout(() => finish("TIMEOUT"),timeout);
+
+      responseResolver = response => {
+        clearTimeout(timer);
+        finish(response);
+      };
+
+      try {
+        await writeBle(new TextEncoder().encode(command + "\r"));
+      } catch (error) {
+        clearTimeout(timer);
+        finish("WRITE_ERR: " + error.message);
+      }
+    });
+  } finally {
+    transportBusy = false;
+  }
+}
+
+async function initializeElm() {
+  await writeBle(new TextEncoder().encode("\r\r"));
+  await sleep(150);
+
+  const commands = [
+    ["ATD",1200],
+    ["ATZ",2500],
+    ["ATE0",1200],
+    ["ATL0",1200],
+    ["ATS0",1200],
+    ["ATH0",1200],
+    ["ATAT2",1200],
+    ["ATSTFF",1200],
+    ["ATSP6",1800],
+    ["ATSH7E0",1200]
+  ];
+
+  for (const [command,timeout] of commands) {
+    await rawCommand(command,timeout);
+    await sleep(60);
+  }
+
+  log("ELM327 initialized. Starting read-only 21 01 polling.");
+}
+
+async function startPolling() {
+  if (polling) return;
+  polling = true;
+
+  while (polling && device?.gatt?.connected) {
+    if (!sweepRunning) {
+      const started = performance.now();
+      const response = await rawCommand("2101",1300);
+      const elapsed = Math.round(performance.now() - started);
+
+      let voltage = 0;
+      const voltageResponse = await rawCommand("ATRV",700);
+      const voltageMatch = String(voltageResponse).match(/(\d+(?:\.\d+)?)/);
+      if (voltageMatch) voltage = Number(voltageMatch[1]);
+
+      $("rtt").textContent = elapsed;
+      parseTelemetry(response,voltage,elapsed);
+    }
+
+    await sleep(45);
+  }
+
+  polling = false;
+}
+
+function extractPayload(raw) {
+  if (!raw || /NO DATA|TIMEOUT|WRITE_ERR/i.test(raw)) return null;
+
+  const cleanedLines = String(raw)
+    .split(/[\r\n]+/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .filter(line => !/^SEARCHING/i.test(line))
+    .filter(line => !/^21 ?01$/i.test(line));
+
+  let joined = "";
+
+  for (let line of cleanedLines) {
+    line = line.replace(/\s+/g,"");
+
+    const isoTpMatch = line.match(/^[0-9A-F]:([0-9A-F]+)$/i);
+    if (isoTpMatch) {
+      joined += isoTpMatch[1];
+      continue;
+    }
+
+    line = line.replace(/^[0-9A-F]{3}/i,"");
+    joined += line.replace(/[^0-9A-F]/gi,"");
+  }
+
+  const marker = joined.toUpperCase().indexOf("6101");
+  if (marker < 0) return null;
+
+  const payloadHex = joined.slice(marker + 4);
+  const bytes = [];
+
+  for (let i = 0; i + 1 < payloadHex.length; i += 2) {
+    const byte = parseInt(payloadHex.slice(i,i + 2),16);
+    if (!Number.isNaN(byte)) bytes.push(byte);
+  }
+
+  return bytes.length >= 18 ? bytes : null;
+}
+
+function parseTelemetry(raw,adapterVoltage,rttMs) {
+  const bytes = extractPayload(raw);
+  if (!bytes) {
+    log("21 01 did not contain a usable 61 01 payload.");
+    return;
+  }
+
+  const now = performance.now();
+  const dt = lastFrameTime ? Math.max(.001,(now - lastFrameTime) / 1000) : 0;
+  lastFrameTime = now;
+
+  const rpm = (bytes[0] << 8) + bytes[1];
+  const rawMph = bytes[2] || 0;
+  const speedKmh = rawMph * 1.609344;
+  const coolantC = (bytes[14] ?? 31) - 31;
+  const iatC = (bytes[15] ?? 31) - 31;
+  const mapMbar = ((bytes[5] || 0) << 8) + (bytes[6] || 0);
+
+  const aps = clamp((((bytes[7] ?? 35) - 35) / 162) * 100,0,100);
+  const tps = clamp((((bytes[9] ?? 33) - 33) / 177) * 100,0,100);
+  const spark = ((bytes[16] ?? 80) - 80) / 2;
+
+  const mapRate = previousFrame && dt
+    ? (mapMbar - previousFrame.mapMbar) / dt
+    : 0;
+
+  const tpsRate = previousFrame && dt
+    ? (tps - previousFrame.tps) / dt
+    : 0;
+
+  const apsRate = previousFrame && dt
+    ? (aps - previousFrame.aps) / dt
+    : 0;
+
+  const rpmRate = previousFrame && dt
+    ? (rpm - previousFrame.rpm) / dt
+    : 0;
+
+  const trackingError = tps - aps;
+  const b19 = bytes[19] ?? 0;
+  const b20 = bytes[20] ?? 0;
+  const b21 = bytes[21] ?? 0;
+
+  const gearCode = b19 & 0x0F;
+  const gear = gearCode === 2 ? "H?" :
+               gearCode === 1 ? "L?" :
+               gearCode === 0 ? "N?" : "0x" + hex2(b19);
+
+  const dmode = b20 === 0x82 ? "CRAWL?" :
+                b20 === 0x81 ? "TRAIL?" :
+                b20 === 0x80 ? "SPORT?" : "0x" + hex2(b20);
+
+  const pbrake = Boolean(b21 & 0x04);
+  const fbrake = Boolean(b21 & 0x10);
+
+  if (Math.abs(apsRate) > 12) {
+    pedalEdges.push({time:now,direction:Math.sign(apsRate)});
+    while (pedalEdges.length > 10) pedalEdges.shift();
+  }
+
+  if (Math.abs(tpsRate) > 12) {
+    throttleEdges.push({time:now,direction:Math.sign(tpsRate)});
+    while (throttleEdges.length > 10) throttleEdges.shift();
+  }
+
+  let lagMs = null;
+  if (pedalEdges.length && throttleEdges.length) {
+    const pedal = pedalEdges[pedalEdges.length - 1];
+    const matching = [...throttleEdges].reverse().find(edge =>
+      edge.direction === pedal.direction &&
+      edge.time >= pedal.time &&
+      edge.time - pedal.time < 1000
+    );
+    if (matching) lagMs = matching.time - pedal.time;
+  }
+
+  if (rpm > 500 && aps < 4 && tps < 8 && speedKmh < 2) {
+    idleRpmWindow.push(rpm);
+    while (idleRpmWindow.length > 50) idleRpmWindow.shift();
+  } else if (idleRpmWindow.length > 10) {
+    idleRpmWindow.shift();
+  }
+
+  const idleSigma = standardDeviation(idleRpmWindow);
+  const charging =
+    adapterVoltage >= 13.2 ? "CHARGING" :
+    adapterVoltage >= 12.2 ? "BATTERY" :
+    adapterVoltage > 0 ? "LOW" : "UNKNOWN";
+
+  latest = {
+    time:new Date().toISOString(),
+    bytes,
+    raw,
+    rpm,
+    speedKmh,
+    coolantC,
+    iatC,
+    mapMbar,
+    aps,
+    tps,
+    spark,
+    mapRate,
+    tpsRate,
+    apsRate,
+    rpmRate,
+    trackingError,
+    lagMs,
+    adapterVoltage,
+    gear,
+    dmode,
+    pbrake,
+    fbrake,
+    rttMs
+  };
+
+  $("rpm").textContent = Math.round(rpm);
+  $("speed").textContent = speedKmh.toFixed(1);
+  $("coolant").textContent = coolantC;
+  $("iat").textContent = iatC;
+  $("map").textContent = mapMbar;
+  $("aps").textContent = aps.toFixed(1);
+  $("tps").textContent = tps.toFixed(1);
+  $("spark").textContent = spark.toFixed(1);
+  $("voltage").textContent = adapterVoltage ? adapterVoltage.toFixed(1) : "--";
+  $("gear").textContent = gear;
+  $("dmode").textContent = dmode;
+  $("pbrake").textContent = pbrake ? "ON?" : "OFF?";
+  $("fbrake").textContent = fbrake ? "ON?" : "OFF?";
+
+  $("rpmBar").style.width = clamp(rpm / 9000 * 100,0,100) + "%";
+  $("rpmBar").style.background =
+    rpm >= 7800 ? "var(--red)" :
+    rpm >= 5500 ? "var(--amber)" : "var(--cyan)";
+
+  $("mapRate").textContent = mapRate.toFixed(0);
+  $("tpsRate").textContent = tpsRate.toFixed(1);
+  $("apsRate").textContent = apsRate.toFixed(1);
+  $("rpmRate").textContent = rpmRate.toFixed(0);
+  $("trackingError").textContent =
+    (trackingError >= 0 ? "+" : "") + trackingError.toFixed(1);
+  $("lagMs").textContent = lagMs === null ? "--" : Math.round(lagMs);
+  $("thermalDelta").textContent = coolantC - iatC;
+  $("idleStability").textContent =
+    idleRpmWindow.length >= 8 ? idleSigma.toFixed(1) : "--";
+  $("charging").textContent = charging;
+
+  updateByteInspector(bytes);
+  storeCorrelationSample(latest);
+
+  if (recording) appendCsvFrame(latest);
+
+  previousFrame = {
+    rpm,
+    mapMbar,
+    aps,
+    tps
+  };
+
+  log(
+    `Live: ${Math.round(rpm)} RPM · ${speedKmh.toFixed(1)} km/h · ` +
+    `${coolantC} °C · ${rttMs} ms`
+  );
+}
+
+function standardDeviation(values) {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum,value) => sum + value,0) / values.length;
+  const variance = values.reduce(
+    (sum,value) => sum + Math.pow(value - mean,2),0
+  ) / values.length;
+  return Math.sqrt(variance);
+}
+
+function addMarker(text) {
+  const marker = text || $("markerText").value.trim();
+  if (!marker) return;
+
+  pendingMarker = marker;
+  $("recordState").textContent =
+    `Marker queued: "${marker}". It will be attached to the next frame.`;
+}
+
+function toggleRecording() {
+  if (!recording) {
+    if (!latest) {
+      alert("Connect and wait for live telemetry first.");
+      return;
+    }
+
+    recording = true;
+    correlationSamples = [];
+    csvRows = [[
+      "Timestamp",
+      "Marker",
+      "RPM",
+      "Speed_kmh",
+      "Coolant_C",
+      "IAT_C",
+      "MAP_mbar",
+      "MAP_Rate_mbar_s",
+      "APS_pct",
+      "APS_Rate_pct_s",
+      "TPS_pct",
+      "TPS_Rate_pct_s",
+      "APS_TPS_Error_pct",
+      "TPS_Lag_ms",
+      "Spark_Est_deg",
+      "Adapter_V",
+      "Gear_Hypothesis",
+      "DMode_Hypothesis",
+      "PBrake_Bit",
+      "FBrake_Bit",
+      ...Array.from({length:26},(_,i) => "B" + i),
+      "Raw_Response"
+    ].join(",")];
+
+    $("recordBtn").textContent = "Stop Lab CSV";
+    $("recordState").textContent = "Recording live experiment frames.";
+  } else {
+    recording = false;
+    $("recordBtn").textContent = "Start Lab CSV";
+    $("recordState").textContent =
+      `Recording stopped. ${Math.max(0,csvRows.length - 1)} frames retained.`;
+  }
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g,'""')}"`;
+}
+
+function appendCsvFrame(frame) {
+  const marker = pendingMarker;
+  pendingMarker = "";
+
+  csvRows.push([
+    csvCell(frame.time),
+    csvCell(marker),
+    frame.rpm,
+    frame.speedKmh.toFixed(3),
+    frame.coolantC,
+    frame.iatC,
+    frame.mapMbar,
+    frame.mapRate.toFixed(3),
+    frame.aps.toFixed(3),
+    frame.apsRate.toFixed(3),
+    frame.tps.toFixed(3),
+    frame.tpsRate.toFixed(3),
+    frame.trackingError.toFixed(3),
+    frame.lagMs === null ? "" : frame.lagMs.toFixed(1),
+    frame.spark.toFixed(2),
+    frame.adapterVoltage || "",
+    csvCell(frame.gear),
+    csvCell(frame.dmode),
+    frame.pbrake ? 1 : 0,
+    frame.fbrake ? 1 : 0,
+    ...Array.from({length:26},(_,i) => frame.bytes[i] ?? ""),
+    csvCell(frame.raw)
+  ].join(","));
+
+  $("recordState").textContent =
+    `${csvRows.length - 1} frames · ${correlationSamples.length} analysis samples`;
+}
+
+function exportLabCsv() {
+  if (csvRows.length <= 1) {
+    alert("No lab frames have been recorded.");
+    return;
+  }
+
+  downloadText(
+    csvRows.join("\n"),
+    "RMAX_Lab_" + timestamp() + ".csv",
+    "text/csv"
+  );
+}
+
+function storeCorrelationSample(frame) {
+  correlationSamples.push({
+    bytes:frame.bytes.slice(0,26),
+    rpm:frame.rpm,
+    speed:frame.speedKmh,
+    coolant:frame.coolantC,
+    iat:frame.iatC,
+    map:frame.mapMbar,
+    aps:frame.aps,
+    tps:frame.tps,
+    pbrake:frame.pbrake ? 1 : 0,
+    fbrake:frame.fbrake ? 1 : 0
+  });
+
+  if (correlationSamples.length > 2500) correlationSamples.shift();
+}
+
+function pearson(xs,ys) {
+  const n = Math.min(xs.length,ys.length);
+  if (n < 8) return 0;
+
+  const meanX = xs.reduce((a,b) => a + b,0) / n;
+  const meanY = ys.reduce((a,b) => a + b,0) / n;
+
+  let numerator = 0;
+  let denomX = 0;
+  let denomY = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - meanX;
+    const dy = ys[i] - meanY;
+    numerator += dx * dy;
+    denomX += dx * dx;
+    denomY += dy * dy;
+  }
+
+  const denominator = Math.sqrt(denomX * denomY);
+  return denominator ? numerator / denominator : 0;
+}
+
+function analyzeCorrelations() {
+  if (correlationSamples.length < 20) {
+    $("correlationOutput").textContent =
+      "At least 20 samples are required. Perform a controlled test first.";
+    return;
+  }
+
+  const targets = ["rpm","speed","coolant","iat","map","aps","tps","pbrake","fbrake"];
+  const discoveries = [];
+
+  for (let byteIndex = 0; byteIndex < 26; byteIndex++) {
+    const xs = correlationSamples.map(sample => sample.bytes[byteIndex] ?? 0);
+
+    for (const target of targets) {
+      const ys = correlationSamples.map(sample => sample[target]);
+      const r = pearson(xs,ys);
+
+      if (Math.abs(r) >= .65) {
+        discoveries.push({
+          byteIndex,
+          target,
+          r,
+          range:Math.max(...xs) - Math.min(...xs)
+        });
+      }
+    }
+  }
+
+  discoveries.sort((a,b) => Math.abs(b.r) - Math.abs(a.r));
+
+  const lines = [
+    `Samples: ${correlationSamples.length}`,
+    "Correlation does not establish byte meaning or causation.",
+    ""
+  ];
+
+  if (!discoveries.length) {
+    lines.push("No |r| >= 0.65 relationships were observed.");
+  } else {
+    discoveries.slice(0,40).forEach(item => {
+      lines.push(
+        `B${item.byteIndex.toString().padStart(2,"0")} ↔ ` +
+        `${item.target.padEnd(8," ")} r=${item.r.toFixed(3)} ` +
+        `range=${item.range}`
+      );
+    });
+  }
+
+  $("correlationOutput").textContent = lines.join("\n");
+}
+
+function decodeResponse(raw) {
+  const clean = sanitizeHex(raw);
+
+  const negative = clean.match(/7F([0-9A-F]{2})([0-9A-F]{2})/);
+  if (negative) {
+    return `NRC 0x${negative[2]}: ${NRC[negative[2]] || "Unknown"} ` +
+           `(service 0x${negative[1]})`;
+  }
+
+  const did = clean.match(/62([0-9A-F]{4})([0-9A-F]*)/);
+  if (did) {
+    let ascii = "";
+    for (let i = 0; i + 1 < did[2].length; i += 2) {
+      const value = parseInt(did[2].slice(i,i + 2),16);
+      if (value >= 32 && value <= 126) ascii += String.fromCharCode(value);
+    }
+
+    return `Positive DID 0x${did[1]} · ${did[2]}` +
+           (ascii ? ` · ASCII "${ascii}"` : "");
+  }
+
+  const local = clean.match(/61([0-9A-F]{2})([0-9A-F]*)/);
+  if (local) {
+    return `Positive local identifier 0x${local[1]} · ${local[2]}`;
+  }
+
+  const session = clean.match(/50([0-9A-F]{2})/);
+  if (session) return `Session 0x${session[1]} accepted`;
+
+  const dtc = clean.match(/59([0-9A-F]*)/);
+  if (dtc) return `Positive DTC response · ${dtc[1]}`;
+
+  return String(raw).trim() || "No response";
+}
+
+function appendReport(title,command,raw) {
+  const block = [
+    "",
+    "==================================================",
+    title,
+    "Timestamp: " + new Date().toISOString(),
+    "Request: " + command,
+    "Decoded: " + decodeResponse(raw),
+    "Raw: " + raw
+  ].join("\n");
+
+  reportLines.push(block);
+  $("report").textContent =
+    "RMAX READ-ONLY DIAGNOSTIC REPORT\nVersion: " + APP_VERSION +
+    reportLines.join("\n");
+}
+
+async function withPollingPaused(callback) {
+  const wasPolling = polling;
+  polling = false;
+  await sleep(120);
+
+  try {
+    return await callback();
+  } finally {
+    if (wasPolling && device?.gatt?.connected && !sweepRunning) {
+      startPolling();
+    }
+  }
+}
+
+async function setSession(session) {
+  if (session === "02") throw new Error("Programming session is blocked.");
+
+  const response = await rawCommand("10" + session,1600);
+  appendReport("Diagnostic session request","10" + session,response);
+  return response;
+}
+
+async function scanEcuIdentity() {
+  if (!device?.gatt?.connected) return alert("Connect first.");
+
+  await withPollingPaused(async () => {
+    const dids = [
+      ["F180","Boot software identification"],
+      ["F186","Active diagnostic session"],
+      ["F187","Vehicle manufacturer spare part number"],
+      ["F188","ECU software number"],
+      ["F189","ECU software version"],
+      ["F18A","System supplier identifier"],
+      ["F18C","ECU serial number"],
+      ["F190","VIN, if implemented"],
+      ["F191","ECU hardware number"]
+    ];
+
+    for (const [did,label] of dids) {
+      const command = "22" + did;
+      log("Reading " + label + "...");
+      const response = await rawCommand(command,1600);
+      appendReport(label,command,response);
+      await sleep(160);
+    }
+  });
+
+  log("ECU identification scan complete.");
+}
+
+async function scanDtcs() {
+  if (!device?.gatt?.connected) return alert("Connect first.");
+
+  await withPollingPaused(async () => {
+    const requests = [
+      ["2160","Local active DTC register hypothesis"],
+      ["2161","Local historic DTC register hypothesis"],
+      ["1902FF","UDS DTCs by status mask"]
+    ];
+
+    for (const [command,label] of requests) {
+      const response = await rawCommand(command,1800);
+      appendReport(label,command,response);
+      await sleep(180);
+    }
+  });
+
+  log("Read-only DTC scan complete.");
+}
+
+async function sendTesterPresent() {
+  if (!device?.gatt?.connected) return alert("Connect first.");
+
+  const response = await withPollingPaused(
+    () => rawCommand("3E00",1200)
+  );
+
+  appendReport("TesterPresent","3E00",response);
+}
+
+function isAllowedReadCommand(command) {
+  if (!/^[0-9A-F]+$/.test(command) || command.length < 4 ||
+      command.length % 2 !== 0) return false;
+
+  const sid = command.slice(0,2);
+
+  if (sid === "10") {
+    const session = command.slice(2,4);
+    return ["01","03","60"].includes(session);
+  }
+
+  return ["21","22","19","1A","3E"].includes(sid);
+}
+
+async function sendRestrictedQuery() {
+  if (!device?.gatt?.connected) return alert("Connect first.");
+
+  const command = sanitizeHex($("customQuery").value);
+
+  if (!isAllowedReadCommand(command)) {
+    alert("Blocked. Enter a supported read-only diagnostic request.");
+    return;
+  }
+
+  await withPollingPaused(async () => {
+    const response = await rawCommand(command,2000);
+    appendReport("Custom read-only query",command,response);
+  });
+}
+
+async function startDidSweep() {
+  if (!device?.gatt?.connected) return alert("Connect first.");
+  if (sweepRunning) return;
+
+  const startHex = sanitizeHex($("didStart").value).padStart(4,"0");
+  const endHex = sanitizeHex($("didEnd").value).padStart(4,"0");
+  const start = parseInt(startHex,16);
+  const end = parseInt(endHex,16);
+  const delay = clamp(parseInt($("didDelay").value,10) || 150,75,5000);
+  const session = $("didSession").value;
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) ||
+      start > end || end - start > 511) {
+    alert("Use a valid DID range of no more than 512 identifiers.");
+    return;
+  }
+
+  sweepRunning = true;
+  polling = false;
+  $("sweepBtn").textContent = "Sweep Running";
+
+  try {
+    await setSession(session);
+
+    let positives = 0;
+
+    for (let did = start; did <= end && sweepRunning; did++) {
+      const didHex = did.toString(16).toUpperCase().padStart(4,"0");
+      const command = "22" + didHex;
+
+      $("sweepState").textContent =
+        `Reading DID 0x${didHex} · ${did - start + 1}/${end - start + 1}`;
+
+      const response = await rawCommand(command,1600);
+      const clean = sanitizeHex(response);
+
+      if (clean.includes("62" + didHex)) {
+        positives++;
+        appendReport("DID discovery positive",command,response);
+      } else if (
+        !/7F22(?:11|12|31)/.test(clean) &&
+        !/NO DATA|TIMEOUT/i.test(response)
+      ) {
+        appendReport("DID discovery nonstandard response",command,response);
+      }
+
+      await sleep(delay);
+    }
+
+    $("sweepState").textContent =
+      `Sweep stopped/completed. Positive DIDs: ${positives}.`;
+  } catch (error) {
+    $("sweepState").textContent = "Sweep error: " + error.message;
+  } finally {
+    try {
+      await rawCommand("1001",1200);
+    } catch (_) {}
+
+    sweepRunning = false;
+    $("sweepBtn").textContent = "Start DID Sweep";
+
+    if (device?.gatt?.connected) startPolling();
+  }
+}
+
+function stopDidSweep() {
+  sweepRunning = false;
+  $("sweepState").textContent = "Stop requested. Finishing current request...";
+}
+
+function exportReport() {
+  const text = $("report").textContent;
+  downloadText(
+    text,
+    "RMAX_Diagnostic_Report_" + timestamp() + ".txt",
+    "text/plain"
+  );
+}
+
+function clearReport() {
+  reportLines = [];
+  $("report").textContent = "RMAX read-only diagnostic report ready.";
+}
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g,"-");
+}
+
+function downloadText(text,filename,type) {
+  const blob = new Blob([text],{type:type + ";charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+}
+
+window.addEventListener("error",event => {
+  log(`JavaScript error: ${event.message} at line ${event.lineno}`);
+});
+
+buildByteGrid();
+</script>
+</body>
+</html>
