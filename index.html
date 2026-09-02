@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -10,23 +10,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Yamaha RMAX Pro Cockpit (v1.0.0 Pro)</title>
+  <title>Yamaha RMAX Pro Cockpit (v2.0.0 Pro)</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
 
     :root {
       --bg: #030611;
       --card-bg: rgba(13, 20, 38, 0.82);
-      --card-border: rgba(56, 189, 248, 0.18);
-      --card-glow: rgba(56, 189, 248, 0.08);
+      --card-border: rgba(56, 189, 248, 0.22);
+      --card-glow: rgba(56, 189, 248, 0.12);
       --text: #f8fafc;
       --text-muted: #64748b;
-      --cyan: #38bdf8;
+      --primary: #38bdf8;
+      --accent: #c084fc;
       --green: #4ade80;
       --red: #ef4444;
       --amber: #f59e0b;
-      --purple: #c084fc;
       --redline: #ff0055;
+      --bloom-blur: 8px;
+      --contrast: 100%;
+      --intensity: 100%;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -35,45 +38,137 @@
       font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg);
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
+        radial-gradient(circle at 50% 0%, var(--card-glow) 0%, transparent 60%),
         linear-gradient(180deg, #070c18 0%, #020409 100%);
       color: var(--text);
       padding: 0.65rem 0.65rem 5.5rem 0.65rem;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       user-select: none;
       overflow-x: hidden;
+      filter: contrast(var(--contrast)) brightness(var(--intensity));
+      transition: filter 0.2s ease;
     }
 
     /* Top HUD Header */
     header { display: flex; justify-content: space-between; align-items: center; padding: 0.2rem 0.2rem 0.6rem 0.2rem; }
     .brand-container { display: flex; align-items: center; gap: 0.5rem; }
     .brand-title { display: flex; align-items: center; gap: 0.4rem; font-size: 1.18rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; }
-    .brand-glow { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-    .version-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: var(--cyan); }
+    .brand-glow { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 var(--bloom-blur) var(--primary); }
+    .version-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border); color: var(--primary); }
 
     .hud-widgets { display: flex; align-items: center; gap: 0.4rem; }
     .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; padding: 0.35rem 0.65rem; border-radius: 9999px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-muted); }
-    .status-badge.connected { background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green); box-shadow: 0 0 12px rgba(74, 222, 128, 0.25); }
+    .status-badge.connected { background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green); box-shadow: 0 0 var(--bloom-blur) rgba(74, 222, 128, 0.3); }
     .status-badge.recording { background: rgba(239, 68, 68, 0.25); border-color: var(--red); color: var(--red); animation: pulseRecord 0.6s infinite alternate; font-weight: 800; }
     @keyframes pulseRecord { from { opacity: 0.6; } to { opacity: 1; } }
 
-    .btn-hud-icon { background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
+    .btn-hud-icon { background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.95rem; text-decoration: none; }
     .btn-hud-icon:active { transform: scale(0.92); }
+
+    /* ==========================================================
+       HERO CONNECT REACTOR INTRO (LANDING VIEW)
+       ========================================================== */
+    #hero-connect-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 75vh;
+      text-align: center;
+      padding: 1rem;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .reactor-container {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .reactor-pulse-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 25px var(--primary);
+      opacity: 0.3;
+      animation: reactorPulse 2.4s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    .reactor-pulse-ring:nth-child(2) { animation-delay: 0.8s; }
+    .reactor-pulse-ring:nth-child(3) { animation-delay: 1.6s; }
+
+    @keyframes reactorPulse {
+      0% { transform: scale(0.65); opacity: 0.9; }
+      80% { transform: scale(1.35); opacity: 0; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    .reactor-btn {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, rgba(56, 189, 248, 0.35) 0%, rgba(13, 20, 38, 0.95) 75%);
+      border: 2px solid var(--primary);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 35px var(--card-glow), inset 0 0 20px rgba(56, 189, 248, 0.2);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+      z-index: 10;
+    }
+    .reactor-btn:active { transform: scale(0.93); }
+    .reactor-btn .icon { font-size: 2.5rem; margin-bottom: 0.2rem; filter: drop-shadow(0 0 8px var(--primary)); }
+    .reactor-btn .text { font-size: 1.15rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; }
+    .reactor-btn .subtext { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--primary); font-weight: 700; margin-top: 2px; }
+
+    .landing-subtitle {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      max-width: 320px;
+    }
+
+    /* ==========================================================
+       MAIN COCKPIT HUD (POST CONNECT)
+       ========================================================== */
+    #cockpit-view {
+      display: none;
+      flex-direction: column;
+      gap: 0.45rem;
+      animation: cockpitUnfurl 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes cockpitUnfurl {
+      from { opacity: 0; transform: scale(0.97) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
     /* Top 3-Hero Radial Cluster */
     .hero-triple-cluster { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 0.45rem; align-items: stretch; margin-bottom: 0.4rem; }
     .hero-gauge-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 0.5rem 0.3rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,0.35); backdrop-filter: blur(14px); cursor: pointer; transition: transform 0.15s ease, border-color 0.2s ease; overflow: hidden; }
     .hero-gauge-box:active { transform: scale(0.97); }
-    .hero-gauge-box.active-30s { border-color: var(--cyan); box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
-    .hero-gauge-box.active-5m { border-color: var(--purple); box-shadow: 0 0 15px rgba(192, 132, 252, 0.25); }
+    .hero-gauge-box.active-window { border-color: var(--primary); box-shadow: 0 0 var(--bloom-blur) var(--card-glow); }
     
     .gauge-wrapper { position: relative; width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; }
     .gauge-wrapper.large { height: 165px; }
     .gauge-svg { width: 100%; height: 100%; transform: rotate(-30deg); }
     .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 13; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
-    .gauge-val-track { fill: none; stroke: var(--cyan); stroke-width: 13; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan)); }
+    .gauge-val-track { fill: none; stroke: var(--primary); stroke-width: 13; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 var(--bloom-blur) var(--primary)); }
     
     .gauge-center-readout { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
     .gauge-center-val { font-size: 2.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
@@ -86,34 +181,32 @@
     .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; margin-bottom: 0.45rem; }
     .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.12rem; backdrop-filter: blur(8px); }
     .status-pill-label { font-size: 0.54rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
-    .status-pill-val { font-size: 0.98rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
-    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
-    .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
-    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
-    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
-    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
-    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); }
-    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
+    .status-pill-val { font-size: 0.98rem; font-weight: 800; color: var(--primary); transition: all 0.2s ease; text-align: center; }
+    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 var(--bloom-blur) var(--green); }
+    .status-pill-val.gear-h { color: var(--primary); text-shadow: 0 0 var(--bloom-blur) var(--primary); }
+    .status-pill-val.gear-l { color: var(--accent); text-shadow: 0 0 var(--bloom-blur) var(--accent); }
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 var(--bloom-blur) var(--amber); }
+    .status-pill-val.dmode-trail { color: var(--primary); text-shadow: 0 0 var(--bloom-blur) var(--primary); }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 var(--bloom-blur) var(--red); }
+    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 var(--bloom-blur) var(--red); font-weight: 900; }
     .status-pill-val.off { color: rgba(255, 255, 255, 0.2); }
 
     /* Interactive Clickable Metric Cards Grid */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
     .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; min-height: 98px; transition: transform 0.15s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
     .touch-card:active { transform: scale(0.98); }
-    .touch-card.active-30s { border-color: var(--cyan); box-shadow: 0 0 14px rgba(56, 189, 248, 0.2); }
-    .touch-card.active-5m { border-color: var(--purple); box-shadow: 0 0 14px rgba(192, 132, 252, 0.2); }
+    .touch-card.active-window { border-color: var(--primary); box-shadow: 0 0 var(--bloom-blur) var(--card-glow); }
     
     .card-top { display: flex; justify-content: space-between; align-items: center; }
     .card-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-    .card-mode-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--cyan); font-weight: 700; text-transform: uppercase; }
-    .card-mode-badge.badge-30s { color: var(--cyan); background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .card-mode-badge.badge-5m { color: var(--purple); background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .card-mode-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--primary); font-weight: 700; text-transform: uppercase; }
+    .card-mode-badge.badge-window { color: #020611; background: var(--primary); box-shadow: 0 0 6px var(--primary); }
 
     .card-main { margin: 0.15rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
     .card-val { font-size: 1.7rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
     .card-unit { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
     .meter-bar-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
-    .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
+    .meter-bar-fill { height: 100%; width: 0%; background: var(--primary); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 var(--bloom-blur) var(--primary); }
 
     /* Embedded Sparkline Chart Container */
     .card-graph-view { display: none; flex-direction: column; width: 100%; height: 100%; justify-content: space-between; }
@@ -121,67 +214,164 @@
     .graph-stat-val { color: #fff; }
     .card-canvas { width: 100%; height: 48px; display: block; border-radius: 6px; }
 
-    /* Compact Embedded Logger Dock */
+    /* Embedded Logger Dock */
     .logger-dock-bar { background: rgba(2, 6, 23, 0.92); border: 1px solid var(--card-border); border-radius: 16px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
     .logger-stats-col { display: flex; flex-direction: column; }
     .logger-stats-time { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
     .logger-stats-frames { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 0.15rem; }
 
-    .btn-touch { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem; text-align: center; }
-    .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
+    .btn-touch { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--primary); color: #fff; padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem; text-align: center; }
+    .btn-touch:active { transform: scale(0.96); background: var(--primary); color: #000; }
     .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
-    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 var(--bloom-blur) rgba(239, 68, 68, 0.5); }
 
-    /* Fullscreen Expanded Modal */
-    #fullscreen-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 4, 10, 0.95); z-index: 1000; padding: 1rem; flex-direction: column; justify-content: space-between; backdrop-filter: blur(20px); animation: fadeIn 0.2s ease-out; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.06em; }
-    .btn-close-modal { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 38px; height: 38px; border-radius: 10px; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .modal-main-readout { display: flex; align-items: baseline; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; }
-    .modal-val { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-    .modal-unit { font-size: 1.3rem; font-weight: 700; color: var(--text-muted); }
-    .modal-stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; font-family: 'JetBrains Mono', monospace; }
-    .modal-stat-box { background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.5rem; text-align: center; }
-    .modal-stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
-    .modal-stat-num { font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 0.15rem; }
-    .modal-canvas { width: 100%; height: 220px; border-radius: 12px; background: rgba(2, 6, 23, 0.85); border: 1px solid var(--card-border); margin: 0.75rem 0; }
-    .modal-range-toggles { display: flex; gap: 0.5rem; }
+    /* ==========================================================
+       RESPONSIVE AUTO-SIZING FULLSCREEN ZOOM MODAL
+       ========================================================== */
+    #fullscreen-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
+      background: rgba(2, 4, 10, 0.97);
+      z-index: 1000;
+      padding: env(safe-area-inset-top, 0.8rem) 1rem env(safe-area-inset-bottom, 0.8rem) 1rem;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.4rem;
+      backdrop-filter: blur(25px);
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .modal-title-wrap { display: flex; flex-direction: column; }
+    .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.06em; }
+    .modal-hint { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .btn-close-modal { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 40px; height: 40px; border-radius: 10px; font-size: 1.2rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .btn-close-modal:active { transform: scale(0.92); background: var(--red); }
+
+    .modal-main-readout { display: flex; align-items: baseline; gap: 0.5rem; justify-content: center; margin: 0.2rem 0; flex-shrink: 0; }
+    .modal-val { font-size: 3.6rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+    .modal-unit { font-size: 1.2rem; font-weight: 700; color: var(--text-muted); }
+
+    .modal-stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.45rem; font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+    .modal-stat-box { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.4rem 0.2rem; text-align: center; }
+    .modal-stat-label { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+    .modal-stat-num { font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 0.1rem; }
+
+    /* Canvas Auto-Fills All Available Height Seamlessly */
+    .modal-canvas-container {
+      flex: 1 1 0;
+      min-height: 0;
+      width: 100%;
+      position: relative;
+      display: flex;
+      border-radius: 14px;
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid var(--card-border);
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.6);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .modal-canvas { width: 100%; height: 100%; display: block; }
+
+    .modal-range-toggles { display: flex; gap: 0.5rem; flex-shrink: 0; padding-top: 0.2rem; }
+
+    /* Settings Modal Drawer */
+    #settings-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 4, 10, 0.94); z-index: 1100; padding: 1.2rem 1rem 5.5rem 1rem; overflow-y: auto; backdrop-filter: blur(25px); }
+    .settings-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.9rem; margin-bottom: 0.85rem; }
+    .settings-title { font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 0.08em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; }
+    .settings-row:last-child { margin-bottom: 0; }
+    .settings-label { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+    
+    .select-touch, .input-touch {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+    }
+    .input-touch { width: 75px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+
+    .slider-touch {
+      -webkit-appearance: none;
+      width: 140px;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.15);
+      outline: none;
+    }
+    .slider-touch::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      cursor: pointer;
+    }
 
     /* Bottom Touch Dock */
     .touch-dock { position: fixed; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; background: rgba(10, 15, 29, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 0.4rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65); z-index: 100; }
-    .dock-action-btn { padding: 0.65rem 1rem; border-radius: 12px; font-size: 0.8rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; background: var(--cyan); color: #05070e; box-shadow: 0 0 15px rgba(56, 189, 248, 0.35); }
+    .dock-action-btn { padding: 0.65rem 1rem; border-radius: 12px; font-size: 0.8rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; background: var(--primary); color: #05070e; box-shadow: 0 0 var(--bloom-blur) var(--primary); }
     .dock-action-btn:active { transform: scale(0.94); }
-    .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35); }
+    .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 var(--bloom-blur) rgba(239, 68, 68, 0.4); }
 
     #log { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); min-height: 38px; max-height: 48px; overflow-y: auto; background: #020617; padding: 0.35rem 0.55rem; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 0.5rem; }
   </style>
 </head>
 <body>
 
-  <!-- Top HUD Header -->
+  <!-- TOP HUD HEADER -->
   <header>
     <div class="brand-container">
       <div class="brand-title">
         <span class="brand-glow"></span>
         RMAX PRO
       </div>
-      <span class="version-tag">v1.0.0 PRO</span>
+      <span class="version-tag">v2.0.0 PRO</span>
     </div>
     <div class="hud-widgets">
       <span id="status" class="status-badge">DISCONNECTED</span>
-      <button class="btn-hud-icon" onclick="toggleUnitSystem()" title="Toggle Units">⚙️</button>
+      <button class="btn-hud-icon" onclick="openSettingsModal()" title="Cockpit Settings">⚙️</button>
       <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
     </div>
   </header>
 
-  <!-- MAIN COCKPIT VIEW -->
-  <div id="cockpit-view" style="display: flex; flex-direction: column; gap: 0.4rem;">
+  <!-- 1. HERO CONNECT INTRO (Centered Big Pulsing Reactor Button) -->
+  <div id="hero-connect-view">
+    <div class="reactor-container">
+      <div class="reactor-pulse-ring"></div>
+      <div class="reactor-pulse-ring"></div>
+      <div class="reactor-pulse-ring"></div>
+      <div class="reactor-btn" onclick="handleConnectClick()">
+        <span class="icon">⚡</span>
+        <span class="text">CONNECT</span>
+        <span class="subtext">YAMAHA RMAX</span>
+      </div>
+    </div>
+    <div class="landing-subtitle">
+      Pair BLE OBD-II Receiver to unleash real-time high-frequency telemetry.
+    </div>
+  </div>
+
+  <!-- 2. MAIN COCKPIT DASHBOARD (Hidden Until Connected) -->
+  <div id="cockpit-view">
     
-    <!-- 1. TOP HERO TRIPLE CLUSTER (Speed, RPM, Coolant) -->
+    <!-- TOP HERO TRIPLE CLUSTER (Speed, RPM, Coolant) -->
     <div class="hero-triple-cluster">
       
       <!-- Left: Ground Speed -->
-      <div class="hero-gauge-box" id="card-speed" onclick="handleCardClick('speed', this)">
+      <div class="hero-gauge-box" id="card-speed" onclick="handleCardTouch('speed', this, event)">
         <div class="card-mode-badge" id="badge-speed" style="position:absolute; top:6px; left:8px;">LIVE</div>
         <div class="gauge-wrapper" id="live-gauge-speed">
           <svg class="gauge-svg" viewBox="0 0 200 200">
@@ -193,7 +383,6 @@
             <span class="gauge-center-unit" id="label-dash-speed-unit">KM/H</span>
           </div>
         </div>
-        <!-- Graph View for Speed -->
         <div class="card-graph-view" id="graph-view-speed">
           <div class="graph-stats-row">
             <span>MIN: <span class="graph-stat-val" id="min-speed">0</span></span>
@@ -205,7 +394,7 @@
       </div>
 
       <!-- Center Large: Engine RPM Tachometer -->
-      <div class="hero-gauge-box" id="card-rpm" onclick="handleCardClick('rpm', this)">
+      <div class="hero-gauge-box" id="card-rpm" onclick="handleCardTouch('rpm', this, event)">
         <div class="card-mode-badge" id="badge-rpm" style="position:absolute; top:6px; left:8px;">LIVE</div>
         <div class="gauge-wrapper large" id="live-gauge-rpm">
           <svg class="gauge-svg" viewBox="0 0 200 200">
@@ -218,7 +407,6 @@
           </div>
           <div id="redline-alert" class="redline-indicator">REDLINE</div>
         </div>
-        <!-- Graph View for RPM -->
         <div class="card-graph-view" id="graph-view-rpm">
           <div class="graph-stats-row">
             <span>MIN: <span class="graph-stat-val" id="min-rpm">0</span></span>
@@ -230,7 +418,7 @@
       </div>
 
       <!-- Right: Coolant Temp (ECT) -->
-      <div class="hero-gauge-box" id="card-coolant" onclick="handleCardClick('coolant', this)">
+      <div class="hero-gauge-box" id="card-coolant" onclick="handleCardTouch('coolant', this, event)">
         <div class="card-mode-badge" id="badge-coolant" style="position:absolute; top:6px; right:8px;">LIVE</div>
         <div class="gauge-wrapper" id="live-gauge-coolant">
           <svg class="gauge-svg" viewBox="0 0 200 200">
@@ -242,7 +430,6 @@
             <span class="gauge-center-unit" id="label-dash-coolant-unit">°C</span>
           </div>
         </div>
-        <!-- Graph View for Coolant -->
         <div class="card-graph-view" id="graph-view-coolant">
           <div class="graph-stats-row">
             <span>MIN: <span class="graph-stat-val" id="min-coolant">0</span></span>
@@ -255,7 +442,7 @@
 
     </div>
 
-    <!-- 2. VERIFIED STATUS STRIP -->
+    <!-- GROUND STATUS STRIP -->
     <div class="drive-status-strip">
       <div class="status-pill-box">
         <span class="status-pill-label">Gear</span>
@@ -275,11 +462,11 @@
       </div>
     </div>
 
-    <!-- 3. INTERACTIVE CLICKABLE METRIC CARDS GRID -->
+    <!-- INTERACTIVE CLICKABLE METRIC CARDS GRID -->
     <div class="cockpit-grid">
       
       <!-- Engine Load % -->
-      <div class="touch-card" id="card-load" onclick="handleCardClick('load', this)">
+      <div class="touch-card" id="card-load" onclick="handleCardTouch('load', this, event)">
         <div class="card-top">
           <span class="card-label">Engine Load</span>
           <span class="card-mode-badge" id="badge-load">LIVE</span>
@@ -302,7 +489,7 @@
       </div>
 
       <!-- Intake Air Temp (IAT) -->
-      <div class="touch-card" id="card-iat" onclick="handleCardClick('iat', this)">
+      <div class="touch-card" id="card-iat" onclick="handleCardTouch('iat', this, event)">
         <div class="card-top">
           <span class="card-label">Intake Air (IAT)</span>
           <span class="card-mode-badge" id="badge-iat">LIVE</span>
@@ -325,7 +512,7 @@
       </div>
 
       <!-- Gas Pedal (APS %) -->
-      <div class="touch-card" id="card-pedal" onclick="handleCardClick('pedal', this)">
+      <div class="touch-card" id="card-pedal" onclick="handleCardTouch('pedal', this, event)">
         <div class="card-top">
           <span class="card-label">Pedal (APS)</span>
           <span class="card-mode-badge" id="badge-pedal">LIVE</span>
@@ -348,7 +535,7 @@
       </div>
 
       <!-- Throttle Blade (TPS %) -->
-      <div class="touch-card" id="card-throttle" onclick="handleCardClick('throttle', this)">
+      <div class="touch-card" id="card-throttle" onclick="handleCardTouch('throttle', this, event)">
         <div class="card-top">
           <span class="card-label">Blade (TPS)</span>
           <span class="card-mode-badge" id="badge-throttle">LIVE</span>
@@ -371,7 +558,7 @@
       </div>
 
       <!-- Fuel Injector Pulse Rate & Duty % -->
-      <div class="touch-card" id="card-fuel" onclick="handleCardClick('fuel', this)">
+      <div class="touch-card" id="card-fuel" onclick="handleCardTouch('fuel', this, event)">
         <div class="card-top">
           <span class="card-label">Inj Rate / Duty</span>
           <span class="card-mode-badge" id="badge-fuel">LIVE</span>
@@ -394,7 +581,7 @@
       </div>
 
       <!-- Spark Timing -->
-      <div class="touch-card" id="card-timing" onclick="handleCardClick('timing', this)">
+      <div class="touch-card" id="card-timing" onclick="handleCardTouch('timing', this, event)">
         <div class="card-top">
           <span class="card-label">Spark Timing</span>
           <span class="card-mode-badge" id="badge-timing">LIVE</span>
@@ -417,7 +604,7 @@
       </div>
 
       <!-- Intake MAP (mbar) -->
-      <div class="touch-card" id="card-map" onclick="handleCardClick('map', this)">
+      <div class="touch-card" id="card-map" onclick="handleCardTouch('map', this, event)">
         <div class="card-top">
           <span class="card-label">Intake MAP</span>
           <span class="card-mode-badge" id="badge-map">LIVE</span>
@@ -440,7 +627,7 @@
       </div>
 
       <!-- Warmup Fuel Decay (ASE %) -->
-      <div class="touch-card" id="card-ase" onclick="handleCardClick('ase', this)">
+      <div class="touch-card" id="card-ase" onclick="handleCardTouch('ase', this, event)">
         <div class="card-top">
           <span class="card-label">Warmup Fuel (ASE)</span>
           <span class="card-mode-badge" id="badge-ase">LIVE</span>
@@ -463,7 +650,7 @@
       </div>
 
       <!-- ECU Rail Voltage & Voltage Drop -->
-      <div class="touch-card" id="card-voltage" onclick="handleCardClick('voltage', this)" style="grid-column: span 2;">
+      <div class="touch-card" id="card-voltage" onclick="handleCardTouch('voltage', this, event)" style="grid-column: span 2;">
         <div class="card-top">
           <span class="card-label">Battery & ECU Rail Voltage</span>
           <span class="card-mode-badge" id="badge-voltage">LIVE</span>
@@ -487,32 +674,33 @@
 
     </div>
 
-    <!-- 4. FLIGHT RECORDER LOGGING BAR -->
+    <!-- FLIGHT RECORDER LOGGING BAR -->
     <div class="logger-dock-bar">
       <div class="logger-stats-col">
         <span class="logger-stats-time" id="cockpit-csv-time">00:00.0</span>
-        <span class="logger-stats-frames" id="cockpit-csv-frames">0 Telemetry Frames</span>
+        <span class="logger-stats-frames" id="cockpit-csv-frames">0 Frames Logged</span>
       </div>
       <div style="display:flex; gap:0.4rem;">
         <button class="btn-touch record-btn" id="btn-cockpit-record" onclick="toggleCockpitCsvLogger()">
           🔴 Record Flight
         </button>
-        <button class="btn-touch" id="btn-cockpit-share" onclick="shareCockpitCsv()" style="background:rgba(56, 189, 248, 0.25); color:var(--cyan); opacity:0.5; pointer-events:none;">
+        <button class="btn-touch" id="btn-cockpit-share" onclick="shareCockpitCsv()" style="background:rgba(255,255,255,0.06); color:var(--primary); opacity:0.5; pointer-events:none;">
           📤 Share CSV
         </button>
       </div>
     </div>
 
-    <!-- Real-time Bottom Log Strip -->
-    <div id="log">System initialized. Touch Connect to pair Bluetooth.</div>
-
+    <div id="log">System ready. Pair Bluetooth receiver to start.</div>
   </div>
 
-  <!-- 5. FULLSCREEN EXPANDED MODAL (Triple-Click Zoom) -->
-  <div id="fullscreen-modal" onclick="handleModalClick(event)">
+  <!-- 3. FULLSCREEN EXPANDED MODAL (Double-Tap Zoom) -->
+  <div id="fullscreen-modal" onclick="handleModalCanvasTouch(event)">
     <div class="modal-header">
-      <div class="modal-title" id="modal-metric-title">METRIC ZOOM</div>
-      <button class="btn-close-modal" onclick="closeFullScreenModal()">✕</button>
+      <div class="modal-title-wrap">
+        <div class="modal-title" id="modal-metric-title">METRIC ZOOM</div>
+        <div class="modal-hint">Double-tap graph to cycle time window</div>
+      </div>
+      <button class="btn-close-modal" onclick="closeFullScreenModal(event)" title="Close Zoom">✕</button>
     </div>
 
     <div class="modal-main-readout">
@@ -522,40 +710,158 @@
 
     <div class="modal-stats-grid">
       <div class="modal-stat-box">
-        <div class="modal-stat-label">SESSION MIN</div>
+        <div class="modal-stat-label">WINDOW MIN</div>
         <div class="modal-stat-num" id="modal-stat-min">0</div>
       </div>
       <div class="modal-stat-box">
-        <div class="modal-stat-label">AVERAGE</div>
+        <div class="modal-stat-label">WINDOW AVG</div>
         <div class="modal-stat-num" id="modal-stat-avg">0</div>
       </div>
       <div class="modal-stat-box">
-        <div class="modal-stat-label">SESSION MAX</div>
+        <div class="modal-stat-label">WINDOW MAX</div>
         <div class="modal-stat-num" id="modal-stat-max">0</div>
       </div>
     </div>
 
-    <canvas id="modal-canvas" class="modal-canvas"></canvas>
+    <!-- Flexible Canvas Container (Expands Auto on Mobile/Tablet) -->
+    <div class="modal-canvas-container" id="modal-canvas-container">
+      <canvas id="modal-canvas" class="modal-canvas"></canvas>
+    </div>
 
-    <div class="modal-range-toggles">
-      <button class="btn-touch" style="flex:1;" id="modal-btn-30s" onclick="setModalRange(30)">30 Seconds</button>
-      <button class="btn-touch" style="flex:1;" id="modal-btn-60s" onclick="setModalRange(60)">1 Minute</button>
-      <button class="btn-touch" style="flex:1;" id="modal-btn-300s" onclick="setModalRange(300)">5 Minutes</button>
+    <div class="modal-range-toggles" id="modal-range-toggles">
+      <!-- Generated dynamically from settings -->
     </div>
   </div>
 
-  <!-- 6. BOTTOM TOUCH DOCK -->
-  <div class="touch-dock">
-    <button class="dock-action-btn" id="btn-connect" onclick="handleConnectClick()" style="flex:1;">
-      <span>⚡ Connect to RMAX</span>
+  <!-- 4. SETTINGS & CONFIGURATION MODAL -->
+  <div id="settings-modal">
+    <div class="modal-header" style="margin-bottom:1rem;">
+      <div class="modal-title">⚙️ COCKPIT SETTINGS</div>
+      <button class="btn-close-modal" onclick="closeSettingsModal()">✕</button>
+    </div>
+
+    <!-- Section: Telemetry Units -->
+    <div class="settings-section">
+      <div class="settings-title">📏 Unit Conversions</div>
+      <div class="settings-row">
+        <span class="settings-label">Speed Unit</span>
+        <select class="select-touch" id="setting-unit-speed" onchange="updateSettingsFromUI()">
+          <option value="kmh">Metric (km/h)</option>
+          <option value="mph">Imperial (mph)</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Temperature Unit</span>
+        <select class="select-touch" id="setting-unit-temp" onchange="updateSettingsFromUI()">
+          <option value="c">Celsius (°C)</option>
+          <option value="f">Fahrenheit (°F)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Section: Graph Windows -->
+    <div class="settings-section">
+      <div class="settings-title">⏱️ Graph History Windows</div>
+      <div class="settings-row">
+        <span class="settings-label">Window 1 (Secs)</span>
+        <input type="number" class="input-touch" id="setting-win-1" value="30" min="5" max="3600" onchange="updateSettingsFromUI()" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Window 2 (Secs)</span>
+        <input type="number" class="input-touch" id="setting-win-2" value="60" min="10" max="3600" onchange="updateSettingsFromUI()" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Window 3 (Secs)</span>
+        <input type="number" class="input-touch" id="setting-win-3" value="300" min="30" max="21600" onchange="updateSettingsFromUI()" />
+      </div>
+    </div>
+
+    <!-- Section: Display Themes & Visual FX -->
+    <div class="settings-section">
+      <div class="settings-title">🎨 Theme & Bloom FX</div>
+      <div class="settings-row">
+        <span class="settings-label">Colorway Theme</span>
+        <select class="select-touch" id="setting-theme" onchange="updateSettingsFromUI()">
+          <option value="cyan">Cyber Cyan (Default)</option>
+          <option value="crimson">Crimson Beast</option>
+          <option value="emerald">Emerald Trail</option>
+          <option value="amber">Amber Crawler</option>
+          <option value="purple">Synthwave Purple</option>
+          <option value="stealth">Stealth Monolith</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Glow Bloom</span>
+        <select class="select-touch" id="setting-bloom-toggle" onchange="updateSettingsFromUI()">
+          <option value="on">Enabled</option>
+          <option value="off">Disabled</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Bloom Radius</span>
+        <input type="range" class="slider-touch" id="setting-bloom-radius" min="0" max="25" value="8" oninput="updateSettingsFromUI()" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Intensity / Brightness</span>
+        <input type="range" class="slider-touch" id="setting-intensity" min="60" max="140" value="100" oninput="updateSettingsFromUI()" />
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Display Contrast</span>
+        <input type="range" class="slider-touch" id="setting-contrast" min="75" max="135" value="100" oninput="updateSettingsFromUI()" />
+      </div>
+    </div>
+
+    <!-- Section: Long-Term Flight Logging & Auto-Save -->
+    <div class="settings-section">
+      <div class="settings-title">💾 6+ Hour Long Ride Auto-Save</div>
+      <div class="settings-row">
+        <span class="settings-label">Auto-Save Backup</span>
+        <select class="select-touch" id="setting-autosave-interval" onchange="updateSettingsFromUI()">
+          <option value="0">Off (Manual Only)</option>
+          <option value="300">Every 5 Minutes</option>
+          <option value="900">Every 15 Minutes</option>
+          <option value="1800">Every 30 Minutes</option>
+          <option value="disconnect">On Disconnect</option>
+        </select>
+      </div>
+      <div class="settings-row" style="margin-top:0.5rem;">
+        <button class="btn-touch" style="flex:1;" onclick="exportPastSessionLog()">📦 Export Saved Rides</button>
+        <button class="btn-touch" style="flex:1; border-color:var(--red); color:var(--red);" onclick="clearPastSessions()">🗑️ Clear Saved</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. BOTTOM TOUCH DOCK -->
+  <div class="touch-dock" id="bottom-dock" style="display:none;">
+    <button class="dock-action-btn disconnect" id="btn-dock-disconnect" onclick="disconnect()" style="flex:1;">
+      <span>⚡ Disconnect RMAX</span>
     </button>
   </div>
 
   <script>
     /* ==========================================================
-       APP CONFIGURATION & TELEMETRY ENGINE
+       CONFIG & THEME PALETTES
        ========================================================== */
-    const APP_VERSION = "v1.0.0 PRO";
+    const THEMES = {
+      cyan:     { primary: "#38bdf8", accent: "#c084fc", cardGlow: "rgba(56, 189, 248, 0.14)", border: "rgba(56, 189, 248, 0.22)" },
+      crimson:  { primary: "#ef4444", accent: "#f59e0b", cardGlow: "rgba(239, 68, 68, 0.14)", border: "rgba(239, 68, 68, 0.25)" },
+      emerald:  { primary: "#10b981", accent: "#38bdf8", cardGlow: "rgba(16, 185, 129, 0.14)", border: "rgba(16, 185, 129, 0.25)" },
+      amber:    { primary: "#f59e0b", accent: "#ef4444", cardGlow: "rgba(245, 158, 11, 0.14)", border: "rgba(245, 158, 11, 0.25)" },
+      purple:   { primary: "#c084fc", accent: "#38bdf8", cardGlow: "rgba(192, 132, 252, 0.14)", border: "rgba(192, 132, 252, 0.25)" },
+      stealth:  { primary: "#94a3b8", accent: "#cbd5e1", cardGlow: "rgba(255, 255, 255, 0.05)", border: "rgba(255, 255, 255, 0.14)" }
+    };
+
+    const userConfig = {
+      speedUnit: 'kmh',
+      tempUnit: 'c',
+      windows: [30, 60, 300], // in seconds
+      theme: 'cyan',
+      bloom: 'on',
+      bloomRadius: 8,
+      intensity: 100,
+      contrast: 100,
+      autoSave: '900'
+    };
 
     const SERVICE_UUIDS = [
       '0000fff0-0000-1000-8000-00805f9b34fb',
@@ -569,70 +875,466 @@
     let rxBuffer = '';
     let isPolling = false;
 
-    // Unit settings
-    let speedUnit = 'kmh'; // default metric
-    let tempUnit = 'c';   // default metric
-
-    // Logging & CSV Flight Recorder
     let isCockpitCsvLogging = false;
     let cockpitCsvFrames = [];
     let cockpitCsvStartTime = 0;
     let cockpitCsvInterval = null;
+    let autoSaveTimer = null;
 
-    // Metric Data Definition & Rolling 5-Minute Buffers
     const METRICS = {
-      speed:    { name: "Ground Speed", unit: "km/h", max: 115, color: "#38bdf8", data: [], mode: "live" },
-      rpm:      { name: "Engine RPM", unit: "RPM", max: 9000, color: "#38bdf8", data: [], mode: "live" },
-      coolant:  { name: "Coolant Temp", unit: "°C", max: 115, color: "#4ade80", data: [], mode: "live" },
-      load:     { name: "Engine Load", unit: "%", max: 100, color: "#c084fc", data: [], mode: "live" },
-      iat:      { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#38bdf8", data: [], mode: "live" },
-      pedal:    { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-      throttle: { name: "Throttle Blade", unit: "%", max: 100, color: "#38bdf8", data: [], mode: "live" },
-      fuel:     { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#c084fc", data: [], mode: "live" },
-      timing:   { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#38bdf8", data: [], mode: "live" },
-      map:      { name: "Intake MAP", unit: "mbar", max: 300, color: "#38bdf8", data: [], mode: "live" },
-      ase:      { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-      voltage:  { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#4ade80", data: [], mode: "live" }
+      speed:    { name: "Ground Speed", unit: "km/h", max: 115, color: "#38bdf8", data: [], modeIdx: 0 },
+      rpm:      { name: "Engine RPM", unit: "RPM", max: 9000, color: "#38bdf8", data: [], modeIdx: 0 },
+      coolant:  { name: "Coolant Temp", unit: "°C", max: 115, color: "#4ade80", data: [], modeIdx: 0 },
+      load:     { name: "Engine Load", unit: "%", max: 100, color: "#c084fc", data: [], modeIdx: 0 },
+      iat:      { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#38bdf8", data: [], modeIdx: 0 },
+      pedal:    { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], modeIdx: 0 },
+      throttle: { name: "Throttle Blade", unit: "%", max: 100, color: "#38bdf8", data: [], modeIdx: 0 },
+      fuel:     { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#c084fc", data: [], modeIdx: 0 },
+      timing:   { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#38bdf8", data: [], modeIdx: 0 },
+      map:      { name: "Intake MAP", unit: "mbar", max: 300, color: "#38bdf8", data: [], modeIdx: 0 },
+      ase:      { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], modeIdx: 0 },
+      voltage:  { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#4ade80", data: [], modeIdx: 0 }
     };
 
-    // Fullscreen Modal State
     let activeModalMetric = null;
     let modalDurationSec = 30;
 
-    // Interaction Triple-Click Detector
-    const clickTrackers = {};
+    const touchTrackers = {};
+    let modalLastTapTime = 0;
 
     function log(msg) {
       const el = document.getElementById('log');
       if (el) el.innerText = msg;
     }
 
-    /* Unit Switcher */
-    window.toggleUnitSystem = function() {
-      speedUnit = (speedUnit === 'kmh') ? 'mph' : 'kmh';
-      tempUnit = (tempUnit === 'c') ? 'f' : 'c';
+    /* ==========================================================
+       LOCALSTORAGE & PERSISTENCE
+       ========================================================== */
+    function loadSavedSettings() {
+      try {
+        const saved = localStorage.getItem('rmax_cockpit_settings');
+        if (saved) {
+          Object.assign(userConfig, JSON.parse(saved));
+        }
+      } catch (e) {}
 
-      document.getElementById('label-dash-speed-unit').innerText = speedUnit.toUpperCase();
-      document.getElementById('label-dash-coolant-unit').innerText = `°${tempUnit.toUpperCase()}`;
-      document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
-      
-      METRICS.speed.unit = speedUnit.toUpperCase();
-      METRICS.coolant.unit = `°${tempUnit.toUpperCase()}`;
-      METRICS.iat.unit = `°${tempUnit.toUpperCase()}`;
+      applySettingsToUI();
+    }
 
-      log(`Units switched to ${speedUnit.toUpperCase()} & °${tempUnit.toUpperCase()}`);
+    function saveSettings() {
+      try {
+        localStorage.setItem('rmax_cockpit_settings', JSON.stringify(userConfig));
+      } catch (e) {}
+    }
+
+    function applySettingsToUI() {
+      const th = THEMES[userConfig.theme] || THEMES.cyan;
+      document.documentElement.style.setProperty('--primary', th.primary);
+      document.documentElement.style.setProperty('--accent', th.accent);
+      document.documentElement.style.setProperty('--card-glow', th.cardGlow);
+      document.documentElement.style.setProperty('--card-border', th.border);
+      document.documentElement.style.setProperty('--bloom-blur', userConfig.bloom === 'on' ? `${userConfig.bloomRadius}px` : '0px');
+      document.documentElement.style.setProperty('--contrast', `${userConfig.contrast}%`);
+      document.documentElement.style.setProperty('--intensity', `${userConfig.intensity}%`);
+
+      for (const k of Object.keys(METRICS)) {
+        if (['load', 'fuel'].includes(k)) METRICS[k].color = th.accent;
+        else if (k !== 'coolant' && k !== 'pedal' && k !== 'ase') METRICS[k].color = th.primary;
+      }
+
+      document.getElementById('label-dash-speed-unit').innerText = userConfig.speedUnit.toUpperCase();
+      document.getElementById('label-dash-coolant-unit').innerText = `°${userConfig.tempUnit.toUpperCase()}`;
+      document.getElementById('label-dash-iat-unit').innerText = `°${userConfig.tempUnit.toUpperCase()}`;
+      METRICS.speed.unit = userConfig.speedUnit.toUpperCase();
+      METRICS.coolant.unit = `°${userConfig.tempUnit.toUpperCase()}`;
+      METRICS.iat.unit = `°${userConfig.tempUnit.toUpperCase()}`;
+
+      document.getElementById('setting-unit-speed').value = userConfig.speedUnit;
+      document.getElementById('setting-unit-temp').value = userConfig.tempUnit;
+      document.getElementById('setting-win-1').value = userConfig.windows[0];
+      document.getElementById('setting-win-2').value = userConfig.windows[1];
+      document.getElementById('setting-win-3').value = userConfig.windows[2];
+      document.getElementById('setting-theme').value = userConfig.theme;
+      document.getElementById('setting-bloom-toggle').value = userConfig.bloom;
+      document.getElementById('setting-bloom-radius').value = userConfig.bloomRadius;
+      document.getElementById('setting-intensity').value = userConfig.intensity;
+      document.getElementById('setting-contrast').value = userConfig.contrast;
+      document.getElementById('setting-autosave-interval').value = userConfig.autoSave;
+
+      buildModalRangeButtons();
+      renderActiveGraphs();
+    }
+
+    window.updateSettingsFromUI = function() {
+      userConfig.speedUnit = document.getElementById('setting-unit-speed').value;
+      userConfig.tempUnit = document.getElementById('setting-unit-temp').value;
+      userConfig.windows = [
+        Math.max(5, parseInt(document.getElementById('setting-win-1').value) || 30),
+        Math.max(10, parseInt(document.getElementById('setting-win-2').value) || 60),
+        Math.max(30, parseInt(document.getElementById('setting-win-3').value) || 300)
+      ];
+      userConfig.theme = document.getElementById('setting-theme').value;
+      userConfig.bloom = document.getElementById('setting-bloom-toggle').value;
+      userConfig.bloomRadius = parseInt(document.getElementById('setting-bloom-radius').value) || 0;
+      userConfig.intensity = parseInt(document.getElementById('setting-intensity').value) || 100;
+      userConfig.contrast = parseInt(document.getElementById('setting-contrast').value) || 100;
+      userConfig.autoSave = document.getElementById('setting-autosave-interval').value;
+
+      saveSettings();
+      applySettingsToUI();
+      restartAutoSaveTimer();
+    };
+
+    window.openSettingsModal = function() {
+      document.getElementById('settings-modal').style.display = 'block';
+    };
+
+    window.closeSettingsModal = function() {
+      document.getElementById('settings-modal').style.display = 'none';
     };
 
     window.toggleFullscreen = function() {
-      const docEl = document.documentElement;
       if (!document.fullscreenElement) {
-        docEl.requestFullscreen?.().catch(() => {});
+        document.documentElement.requestFullscreen?.().catch(() => {});
       } else {
         document.exitFullscreen?.().catch(() => {});
       }
     };
 
-    /* Bluetooth Engine */
+    function formatTimeLabel(sec) {
+      if (sec < 60) return `${sec}s`;
+      if (sec < 3600) return `${Math.round(sec / 60)}m`;
+      return `${(sec / 3600).toFixed(1)}h`;
+    }
+
+    /* ==========================================================
+       DOUBLE TAP & SINGLE TAP CARD ENGINE
+       ========================================================== */
+    window.handleCardTouch = function(key, element, event) {
+      if (event) event.stopPropagation();
+      const now = Date.now();
+      if (!touchTrackers[key]) touchTrackers[key] = { count: 0, last: 0, timer: null };
+
+      if (now - touchTrackers[key].last < 320) {
+        // DOUBLE TAP DETECTED -> Open Modal
+        clearTimeout(touchTrackers[key].timer);
+        touchTrackers[key].count = 0;
+        touchTrackers[key].last = 0;
+        openFullScreenModal(key);
+        return;
+      }
+
+      // First Tap
+      touchTrackers[key].count = 1;
+      touchTrackers[key].last = now;
+
+      touchTrackers[key].timer = setTimeout(() => {
+        if (touchTrackers[key].count === 1) {
+          cycleCardWindow(key);
+          touchTrackers[key].count = 0;
+        }
+      }, 330);
+    };
+
+    function cycleCardWindow(key) {
+      const metric = METRICS[key];
+      if (!metric) return;
+      metric.modeIdx = (metric.modeIdx + 1) % 4;
+      updateCardUI(key);
+    }
+
+    function updateCardUI(key) {
+      const metric = METRICS[key];
+      const isHero = ['speed', 'rpm', 'coolant'].includes(key);
+
+      const liveView = isHero ? document.getElementById(`live-gauge-${key}`) : document.getElementById(`live-view-${key}`);
+      const graphView = document.getElementById(`graph-view-${key}`);
+      const badge = document.getElementById(`badge-${key}`);
+      const cardBox = document.getElementById(`card-${key}`);
+
+      cardBox.classList.remove('active-window');
+      badge.classList.remove('badge-window');
+
+      if (metric.modeIdx === 0) {
+        if (liveView) liveView.style.display = 'flex';
+        if (graphView) graphView.style.display = 'none';
+        badge.innerText = 'LIVE';
+      } else {
+        if (liveView) liveView.style.display = 'none';
+        if (graphView) graphView.style.display = 'flex';
+
+        const winSec = userConfig.windows[metric.modeIdx - 1];
+        badge.innerText = formatTimeLabel(winSec);
+        badge.classList.add('badge-window');
+        cardBox.classList.add('active-window');
+
+        renderGraph(key, winSec);
+      }
+    }
+
+    function renderActiveGraphs() {
+      for (const [key, metric] of Object.entries(METRICS)) {
+        if (metric.modeIdx !== 0) {
+          const winSec = userConfig.windows[metric.modeIdx - 1];
+          renderGraph(key, winSec);
+        }
+      }
+    }
+
+    function renderGraph(key, durationSec) {
+      const canvas = document.getElementById(`canvas-${key}`);
+      if (!canvas) return;
+
+      const stats = getMetricStats(key, durationSec);
+      const minEl = document.getElementById(`min-${key}`);
+      const avgEl = document.getElementById(`avg-${key}`);
+      const maxEl = document.getElementById(`max-${key}`);
+
+      if (minEl) minEl.innerText = stats.min;
+      if (avgEl) avgEl.innerText = stats.avg;
+      if (maxEl) maxEl.innerText = stats.max;
+
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const now = Date.now();
+      const cutoff = now - (durationSec * 1000);
+      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+      if (points.length < 2) {
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        ctx.font = "10px JetBrains Mono";
+        ctx.fillText("Buffering...", 8, h / 2 + 4);
+        return;
+      }
+
+      const minVal = stats.min;
+      const maxVal = Math.max(stats.max, minVal + 1);
+      const range = maxVal - minVal;
+
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
+      ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+      ctx.stroke();
+
+      ctx.beginPath();
+      points.forEach((p, idx) => {
+        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+        const y = h - ((p.value - minVal) / range) * (h - 10) - 5;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, `${METRICS[key].color}44`);
+      grad.addColorStop(1, `${METRICS[key].color}00`);
+
+      ctx.save();
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = METRICS[key].color;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = userConfig.bloom === 'on' ? METRICS[key].color : 'transparent';
+      ctx.shadowBlur = userConfig.bloomRadius;
+      ctx.stroke();
+    }
+
+    /* ==========================================================
+       RESPONSIVE FULLSCREEN ZOOM MODAL ENGINE
+       ========================================================== */
+    function buildModalRangeButtons() {
+      const container = document.getElementById('modal-range-toggles');
+      if (!container) return;
+      container.innerHTML = '';
+
+      userConfig.windows.forEach((sec) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-touch';
+        btn.style.flex = '1';
+        btn.innerText = formatTimeLabel(sec);
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          setModalRange(sec);
+        };
+        if (sec === modalDurationSec) {
+          btn.style.background = 'var(--primary)';
+          btn.style.color = '#020611';
+          btn.style.boxShadow = '0 0 var(--bloom-blur) var(--primary)';
+        }
+        container.appendChild(btn);
+      });
+    }
+
+    window.openFullScreenModal = function(key) {
+      activeModalMetric = key;
+      const metric = METRICS[key];
+      const modal = document.getElementById('fullscreen-modal');
+
+      document.getElementById('modal-metric-title').innerText = metric.name;
+      document.getElementById('modal-main-unit').innerText = metric.unit;
+      
+      // Default to first user window unless currently set
+      modalDurationSec = userConfig.windows[0];
+      buildModalRangeButtons();
+
+      modal.style.display = 'flex';
+      
+      // Trigger canvas sizing calculation
+      requestAnimationFrame(() => {
+        updateFullScreenModalData();
+      });
+    };
+
+    window.closeFullScreenModal = function(event) {
+      if (event) event.stopPropagation();
+      activeModalMetric = null;
+      document.getElementById('fullscreen-modal').style.display = 'none';
+    };
+
+    window.setModalRange = function(sec) {
+      modalDurationSec = sec;
+      buildModalRangeButtons();
+      updateFullScreenModalData();
+    };
+
+    // Cycle modal window sequentially on double-click
+    function cycleModalDuration() {
+      const currentIdx = userConfig.windows.indexOf(modalDurationSec);
+      const nextIdx = (currentIdx + 1) % userConfig.windows.length;
+      setModalRange(userConfig.windows[nextIdx]);
+    }
+
+    // Double tap/click detection inside modal to cycle time frames
+    window.handleModalCanvasTouch = function(event) {
+      // Ignore if user clicked the close button or bottom buttons directly
+      if (event.target.closest('.btn-close-modal') || event.target.closest('#modal-range-toggles')) {
+        return;
+      }
+      
+      const now = Date.now();
+      if (now - modalLastTapTime < 340) {
+        modalLastTapTime = 0;
+        cycleModalDuration();
+      } else {
+        modalLastTapTime = now;
+      }
+    };
+
+    function updateFullScreenModalData() {
+      if (!activeModalMetric) return;
+      const key = activeModalMetric;
+      const stats = getMetricStats(key, modalDurationSec);
+
+      document.getElementById('modal-main-val').innerText = stats.current;
+      document.getElementById('modal-main-val').style.color = METRICS[key].color;
+      document.getElementById('modal-stat-min').innerText = stats.min;
+      document.getElementById('modal-stat-avg').innerText = stats.avg;
+      document.getElementById('modal-stat-max').innerText = stats.max;
+
+      renderModalCanvas(key, modalDurationSec);
+    }
+
+    function renderModalCanvas(key, durationSec) {
+      const container = document.getElementById('modal-canvas-container');
+      const canvas = document.getElementById('modal-canvas');
+      if (!canvas || !container) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const rect = container.getBoundingClientRect();
+
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const now = Date.now();
+      const cutoff = now - (durationSec * 1000);
+      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+      const stats = getMetricStats(key, durationSec);
+      const minVal = stats.min;
+      const maxVal = Math.max(stats.max, minVal + 1);
+      const range = maxVal - minVal;
+
+      // Dynamic Gridlines
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      const gridSteps = h > 300 ? 6 : 4;
+      for (let i = 1; i < gridSteps; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, (h / gridSteps) * i);
+        ctx.lineTo(w, (h / gridSteps) * i);
+        ctx.stroke();
+      }
+
+      if (points.length < 2) {
+        ctx.fillStyle = "rgba(255,255,255,0.25)";
+        ctx.font = "14px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.fillText("Buffering Live Telemetry...", w / 2, h / 2);
+        return;
+      }
+
+      // Smooth Curve Drawing
+      ctx.beginPath();
+      points.forEach((p, idx) => {
+        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+        const y = h - ((p.value - minVal) / range) * (h - 40) - 20;
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, `${METRICS[key].color}55`);
+      grad.addColorStop(1, `${METRICS[key].color}00`);
+
+      ctx.save();
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = METRICS[key].color;
+      ctx.lineWidth = Math.min(4, Math.max(2.5, w / 250));
+      ctx.shadowColor = userConfig.bloom === 'on' ? METRICS[key].color : 'transparent';
+      ctx.shadowBlur = userConfig.bloomRadius * 1.5;
+      ctx.stroke();
+    }
+
+    // Auto-Resize canvas when rotating device or changing screen dimensions
+    window.addEventListener('resize', () => {
+      if (activeModalMetric) {
+        updateFullScreenModalData();
+      }
+      renderActiveGraphs();
+    });
+
+    /* ==========================================================
+       BLUETOOTH & TRANSITION ENGINE
+       ========================================================== */
     window.handleConnectClick = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
@@ -640,17 +1342,18 @@
 
     async function connect() {
       try {
-        if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable.");
-        log("Opening Bluetooth pairing prompt...");
+        if (!navigator.bluetooth) throw new Error("Web Bluetooth not supported on this browser.");
+        log("Pairing RMAX Bluetooth OBD-II...");
+
         bleDevice = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true,
           optionalServices: SERVICE_UUIDS
         });
 
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-        log("Connecting to GATT server...");
+        log("Establishing GATT pipeline...");
         const server = await bleDevice.gatt.connect();
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 250));
 
         let service = null;
         for (const uuid of SERVICE_UUIDS) {
@@ -659,7 +1362,7 @@
             if (service) break;
           } catch (e) {}
         }
-        if (!service) throw new Error("No UART BLE service found.");
+        if (!service) throw new Error("No UART BLE Service found.");
 
         const chars = await service.getCharacteristics();
         writeChar = null; readChar = null;
@@ -668,18 +1371,22 @@
           if (char.properties.notify || char.properties.indicate) readChar = char;
         }
 
-        if (!writeChar || !readChar) throw new Error("TX/RX characteristics not resolved.");
+        if (!writeChar || !readChar) throw new Error("TX/RX Characteristics missing.");
 
         await readChar.startNotifications();
         readChar.addEventListener('characteristicvaluechanged', handleNotification);
 
+        // TRANSITION FROM HERO TO DASHBOARD HUD
+        document.getElementById('hero-connect-view').style.display = 'none';
+        document.getElementById('cockpit-view').style.display = 'flex';
+        document.getElementById('bottom-dock').style.display = 'flex';
+
         const statusEl = document.getElementById('status');
-        const btnConnect = document.getElementById('btn-connect');
         if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
-        if (btnConnect) { btnConnect.innerHTML = "<span>Disconnect</span>"; btnConnect.classList.add("disconnect"); }
 
         await initYamahaELM327();
         startPolling();
+        restartAutoSaveTimer();
 
       } catch (err) {
         log("BLE Error: " + err.message);
@@ -688,6 +1395,9 @@
     }
 
     function disconnect() {
+      if (userConfig.autoSave === 'disconnect' && isCockpitCsvLogging) {
+        saveFlightToIndexedDB("Disconnect Snapshot");
+      }
       if (isCockpitCsvLogging) toggleCockpitCsvLogger();
       if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
       onDisconnected();
@@ -695,10 +1405,13 @@
 
     function onDisconnected() {
       isPolling = false;
+      clearInterval(autoSaveTimer);
+      document.getElementById('hero-connect-view').style.display = 'flex';
+      document.getElementById('cockpit-view').style.display = 'none';
+      document.getElementById('bottom-dock').style.display = 'none';
+
       const statusEl = document.getElementById('status');
-      const btnConnect = document.getElementById('btn-connect');
       if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
-      if (btnConnect) { btnConnect.innerHTML = "<span>⚡ Connect to RMAX</span>"; btnConnect.classList.remove("disconnect"); }
       log("Disconnected.");
     }
 
@@ -750,14 +1463,13 @@
       });
     }
 
-    /* Yamaha Mitsubishi ECU Init Sequence */
     async function initYamahaELM327() {
       await writeBLE(new TextEncoder().encode('\r\r\r'));
       await new Promise(r => setTimeout(r, 200));
 
       await sendCommand("ATD", 1200);
       await sendCommand("ATZ", 2500);
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 400));
 
       await sendCommand("ATE0", 1200);
       await sendCommand("ATL0", 1200);
@@ -771,7 +1483,6 @@
       log("Connected to Yamaha RMAX! Live telemetry active.");
     }
 
-    /* Continuous Live Polling Loop */
     async function startPolling() {
       if (isPolling) return;
       isPolling = true;
@@ -790,14 +1501,14 @@
 
         const rpmVal = document.getElementById('val-dash-rpm').innerText;
         const spdVal = document.getElementById('val-dash-speed').innerText;
-        log(`⚡ RMAX Live: ${spdVal} ${speedUnit.toUpperCase()} | RPM ${rpmVal} | ${rtt}ms`);
-        await new Promise(r => setTimeout(r, 30));
+        log(`⚡ Live: ${spdVal} ${userConfig.speedUnit.toUpperCase()} | RPM ${rpmVal} | ${rtt}ms`);
+        await new Promise(r => setTimeout(r, 25));
       }
       isPolling = false;
     }
 
     /* ==========================================================
-       YAMAHA RMAX CALIBRATED TELEMETRY DECODER
+       YAMAHA RMAX TELEMETRY DECODER
        ========================================================== */
     function parseYamahaPayload(raw, atrvVal = 0) {
       if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
@@ -836,21 +1547,21 @@
 
       // 2. Ground Speed
       const rawMph = bytes[2];
-      let speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
+      let speed = (userConfig.speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
       pushMetricData('speed', now, speed);
       document.getElementById('val-dash-speed').innerText = speed;
-      updateRadialGauge('speed', speed, speedUnit === 'kmh' ? 120 : 75);
+      updateRadialGauge('speed', speed, userConfig.speedUnit === 'kmh' ? 120 : 75);
 
       // 3. Coolant Temp
       const coolantC = bytes[14] - 31;
-      let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
+      let displayCoolant = (userConfig.tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
       pushMetricData('coolant', now, displayCoolant);
       document.getElementById('val-dash-coolant').innerText = displayCoolant;
       updateRadialGauge('coolant', coolantC, 115);
 
       // 4. Intake Air Temp (IAT)
       const iatC = bytes[15] - 31;
-      let displayIat = (tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
+      let displayIat = (userConfig.tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
       pushMetricData('iat', now, displayIat);
       document.getElementById('val-dash-iat').innerText = displayIat;
       updateMeterBar('iat', displayIat, 80);
@@ -863,7 +1574,7 @@
       document.getElementById('val-dash-load').innerText = engineLoadPct;
       updateMeterBar('load', engineLoadPct, 100);
 
-      // 6. Gas Pedal (APS %) & Throttle Blade (TPS %)
+      // 6. Pedal (APS) & Throttle (TPS)
       const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
       const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
       pushMetricData('pedal', now, pedalPct);
@@ -908,14 +1619,13 @@
       document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop`;
       updateMeterBar('voltage', (atrvVal || ecuRailV) - 10, 5);
 
-      // 12. Status Strip Updates (Gear, D-Mode, Brakes)
+      // 12. Ground-Truth Status Strip
       const b19 = bytes[19];
       const gearNibble = b19 & 0x0F;
       let gearText = 'N';
       let gearClass = 'gear-n';
       if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
       else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
-      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
       const gearEl = document.getElementById('val-dash-gear');
       if (gearEl) { gearEl.className = `status-pill-val ${gearClass}`; gearEl.innerText = gearText; }
 
@@ -935,15 +1645,11 @@
       const fbrakeEl = document.getElementById('val-dash-fbrake');
       if (fbrakeEl) { fbrakeEl.innerText = isFBrakeOn ? 'ON' : 'OFF'; fbrakeEl.className = `status-pill-val ${isFBrakeOn ? 'brake-on' : 'off'}`; }
 
-      // 13. Re-render active embedded sparkline graphs
+      // 13. Render Active Graphs & Modal
       renderActiveGraphs();
+      if (activeModalMetric) updateFullScreenModalData();
 
-      // 14. Re-render Fullscreen Zoom Modal if open
-      if (activeModalMetric) {
-        updateFullScreenModalData();
-      }
-
-      // 15. Session Flight Recorder Logging Hook
+      // 14. Long-Term CSV Flight Recording Frame
       if (isCockpitCsvLogging) {
         const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
         const row = [
@@ -954,13 +1660,12 @@
       }
     }
 
-    /* Central Metric History Buffer Hook */
     function pushMetricData(key, time, value) {
       if (!METRICS[key]) return;
       METRICS[key].data.push({ time, value });
-      // Trim data older than 5 minutes (300 seconds)
-      const cutoff = time - 300000;
-      if (METRICS[key].data.length > 300 && METRICS[key].data[0].time < cutoff) {
+      const maxWinSec = Math.max(...userConfig.windows, 300);
+      const cutoff = time - (maxWinSec * 1000);
+      if (METRICS[key].data.length > 500 && METRICS[key].data[0].time < cutoff) {
         METRICS[key].data = METRICS[key].data.filter(pt => pt.time >= cutoff);
       }
     }
@@ -980,7 +1685,6 @@
       return { min, max, avg, current };
     }
 
-    /* Radial & Gauge Fill Helpers */
     function updateRadialGauge(type, val, maxVal) {
       const arcLength = 293.2;
       const pct = Math.min(1, Math.max(0, val / maxVal));
@@ -993,15 +1697,12 @@
           bar.style.strokeDashoffset = offset;
           if (val >= 7800) {
             bar.style.stroke = 'var(--redline)';
-            bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
             redlineEl?.classList.add('active');
           } else if (val >= 5500) {
             bar.style.stroke = 'var(--amber)';
-            bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
             redlineEl?.classList.remove('active');
           } else {
-            bar.style.stroke = 'var(--cyan)';
-            bar.style.filter = 'drop-shadow(0 0 8px var(--cyan))';
+            bar.style.stroke = 'var(--primary)';
             redlineEl?.classList.remove('active');
           }
         }
@@ -1026,291 +1727,53 @@
     }
 
     /* ==========================================================
-       INTERACTIVE CLICK & TRIPLE-CLICK MODAL ENGINE
+       INDEXEDDB PERSISTENT FLIGHT STORAGE
        ========================================================== */
-    window.handleCardClick = function(key, element) {
-      const now = Date.now();
-      if (!clickTrackers[key]) clickTrackers[key] = { count: 0, last: 0 };
+    const DB_NAME = 'RMAX_Flight_Logs';
+    const STORE_NAME = 'rides';
 
-      if (now - clickTrackers[key].last < 380) {
-        clickTrackers[key].count++;
-      } else {
-        clickTrackers[key].count = 1;
-      }
-      clickTrackers[key].last = now;
-
-      // Triple Click Detection
-      if (clickTrackers[key].count >= 3) {
-        clickTrackers[key].count = 0;
-        openFullScreenModal(key);
-        return;
-      }
-
-      // Single Click Mode Cycle (Live -> 30s -> 5m -> Live)
-      setTimeout(() => {
-        if (clickTrackers[key].count === 1) {
-          cycleCardMode(key);
-          clickTrackers[key].count = 0;
-        }
-      }, 300);
-    };
-
-    function cycleCardMode(key) {
-      const card = METRICS[key];
-      if (!card) return;
-
-      if (card.mode === 'live') card.mode = '30s';
-      else if (card.mode === '30s') card.mode = '5m';
-      else card.mode = 'live';
-
-      updateCardUI(key);
-    }
-
-    function updateCardUI(key) {
-      const card = METRICS[key];
-      const isHero = ['speed', 'rpm', 'coolant'].includes(key);
-
-      const liveView = isHero ? document.getElementById(`live-gauge-${key}`) : document.getElementById(`live-view-${key}`);
-      const graphView = document.getElementById(`graph-view-${key}`);
-      const badge = document.getElementById(`badge-${key}`);
-      const cardBox = document.getElementById(`card-${key}`);
-
-      cardBox.classList.remove('active-30s', 'active-5m');
-      badge.classList.remove('badge-30s', 'badge-5m');
-
-      if (card.mode === 'live') {
-        if (liveView) liveView.style.display = 'flex';
-        if (graphView) graphView.style.display = 'none';
-        badge.innerText = 'LIVE';
-      } else {
-        if (liveView) liveView.style.display = 'none';
-        if (graphView) graphView.style.display = 'flex';
-
-        if (card.mode === '30s') {
-          badge.innerText = '30s';
-          badge.classList.add('badge-30s');
-          cardBox.classList.add('active-30s');
-        } else {
-          badge.innerText = '5m';
-          badge.classList.add('badge-5m');
-          cardBox.classList.add('active-5m');
-        }
-        renderGraph(key, card.mode === '30s' ? 30 : 300);
-      }
-    }
-
-    function renderActiveGraphs() {
-      for (const [key, metric] of Object.entries(METRICS)) {
-        if (metric.mode !== 'live') {
-          renderGraph(key, metric.mode === '30s' ? 30 : 300);
-        }
-      }
-    }
-
-    /* HTML5 Canvas Sparkline Graph Renderer */
-    function renderGraph(key, durationSec) {
-      const canvas = document.getElementById(`canvas-${key}`);
-      if (!canvas) return;
-
-      const stats = getMetricStats(key, durationSec);
-      document.getElementById(`min-${key}`).innerText = stats.min;
-      document.getElementById(`avg-${key}`).innerText = stats.avg;
-      document.getElementById(`max-${key}`).innerText = stats.max;
-
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      const w = rect.width;
-      const h = rect.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const now = Date.now();
-      const cutoff = now - (durationSec * 1000);
-      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
-
-      if (points.length < 2) {
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
-        ctx.font = "10px JetBrains Mono";
-        ctx.fillText("Buffering telemetry...", 10, h / 2);
-        return;
-      }
-
-      const minVal = stats.min;
-      const maxVal = Math.max(stats.max, minVal + 1);
-      const range = maxVal - minVal;
-
-      // Draw subtle background gridlines
-      ctx.strokeStyle = "rgba(255,255,255,0.06)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
-      ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
-      ctx.stroke();
-
-      // Path creation
-      ctx.beginPath();
-      points.forEach((p, idx) => {
-        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
-        const y = h - ((p.value - minVal) / range) * (h - 10) - 5;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
       });
-
-      // Area fill gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, `${METRICS[key].color}44`);
-      grad.addColorStop(1, `${METRICS[key].color}00`);
-
-      ctx.save();
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.restore();
-
-      // Glow Stroke
-      ctx.strokeStyle = METRICS[key].color;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = METRICS[key].color;
-      ctx.shadowBlur = 6;
-      ctx.stroke();
     }
 
-    /* ==========================================================
-       FULLSCREEN ZOOM MODAL
-       ========================================================== */
-    window.openFullScreenModal = function(key) {
-      activeModalMetric = key;
-      const metric = METRICS[key];
-      const modal = document.getElementById('fullscreen-modal');
-
-      document.getElementById('modal-metric-title').innerText = metric.name;
-      document.getElementById('modal-main-unit').innerText = metric.unit;
-      setModalRange(modalDurationSec);
-
-      modal.style.display = 'flex';
-      updateFullScreenModalData();
-    };
-
-    window.closeFullScreenModal = function() {
-      activeModalMetric = null;
-      document.getElementById('fullscreen-modal').style.display = 'none';
-    };
-
-    window.setModalRange = function(sec) {
-      modalDurationSec = sec;
-      [30, 60, 300].forEach(s => {
-        const btn = document.getElementById(`modal-btn-${s}s`);
-        if (btn) {
-          btn.style.background = s === sec ? 'var(--cyan)' : 'rgba(255,255,255,0.08)';
-          btn.style.color = s === sec ? '#05070e' : '#fff';
-        }
-      });
-      updateFullScreenModalData();
-    };
-
-    function updateFullScreenModalData() {
-      if (!activeModalMetric) return;
-      const key = activeModalMetric;
-      const stats = getMetricStats(key, modalDurationSec);
-
-      document.getElementById('modal-main-val').innerText = stats.current;
-      document.getElementById('modal-main-val').style.color = METRICS[key].color;
-      document.getElementById('modal-stat-min').innerText = stats.min;
-      document.getElementById('modal-stat-avg').innerText = stats.avg;
-      document.getElementById('modal-stat-max').innerText = stats.max;
-
-      renderModalCanvas(key, modalDurationSec);
-    }
-
-    function renderModalCanvas(key, durationSec) {
-      const canvas = document.getElementById('modal-canvas');
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      const w = rect.width;
-      const h = rect.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const now = Date.now();
-      const cutoff = now - (durationSec * 1000);
-      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
-
-      if (points.length < 2) return;
-
-      const stats = getMetricStats(key, durationSec);
-      const minVal = stats.min;
-      const maxVal = Math.max(stats.max, minVal + 1);
-      const range = maxVal - minVal;
-
-      // Draw grid
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 1;
-      for (let i = 1; i <= 4; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, (h / 5) * i);
-        ctx.lineTo(w, (h / 5) * i);
-        ctx.stroke();
+    async function saveFlightToIndexedDB(tag = "Manual") {
+      if (cockpitCsvFrames.length <= 1) return;
+      try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const logId = `ride_${Date.now()}`;
+        const record = {
+          id: logId,
+          date: new Date().toISOString(),
+          tag: tag,
+          frameCount: cockpitCsvFrames.length - 1,
+          csv: cockpitCsvFrames.join('\n')
+        };
+        store.put(record);
+        log(`💾 Auto-saved flight backup (${record.frameCount} frames).`);
+      } catch (e) {
+        console.error("IndexedDB error:", e);
       }
-
-      ctx.beginPath();
-      points.forEach((p, idx) => {
-        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
-        const y = h - ((p.value - minVal) / range) * (h - 30) - 15;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, `${METRICS[key].color}55`);
-      grad.addColorStop(1, `${METRICS[key].color}00`);
-
-      ctx.save();
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = METRICS[key].color;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = METRICS[key].color;
-      ctx.shadowBlur = 10;
-      ctx.stroke();
     }
 
-    window.handleModalClick = function(e) {
-      if (e.target.id === 'fullscreen-modal') {
-        const now = Date.now();
-        if (!clickTrackers['modal']) clickTrackers['modal'] = { count: 0, last: 0 };
-        if (now - clickTrackers['modal'].last < 380) {
-          clickTrackers['modal'].count++;
-        } else {
-          clickTrackers['modal'].count = 1;
-        }
-        clickTrackers['modal'].last = now;
-
-        if (clickTrackers['modal'].count >= 3) {
-          closeFullScreenModal();
-        }
+    function restartAutoSaveTimer() {
+      clearInterval(autoSaveTimer);
+      const intervalSec = parseInt(userConfig.autoSave);
+      if (!isNaN(intervalSec) && intervalSec > 0) {
+        autoSaveTimer = setInterval(() => {
+          if (isCockpitCsvLogging) {
+            saveFlightToIndexedDB(`Auto-Interval (${formatTimeLabel(intervalSec)})`);
+          }
+        }, intervalSec * 1000);
       }
-    };
+    }
 
-    /* ==========================================================
-       FLIGHT RECORDER CSV LOGGING & SHARING
-       ========================================================== */
     window.toggleCockpitCsvLogger = function() {
       const btn = document.getElementById('btn-cockpit-record');
       const shareBtn = document.getElementById('btn-cockpit-share');
@@ -1323,7 +1786,7 @@
         isCockpitCsvLogging = true;
         cockpitCsvStartTime = Date.now();
         cockpitCsvFrames = [
-          `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_${tempUnit.toUpperCase()},IAT_${tempUnit.toUpperCase()},MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`
+          `Time_Sec,RPM,Speed_${userConfig.speedUnit.toUpperCase()},Coolant_${userConfig.tempUnit.toUpperCase()},IAT_${userConfig.tempUnit.toUpperCase()},MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`
         ];
 
         btn.innerText = "⏹️ Stop";
@@ -1333,10 +1796,11 @@
 
         cockpitCsvInterval = setInterval(() => {
           const s = Math.floor((Date.now() - cockpitCsvStartTime) / 1000);
-          const mins = Math.floor(s / 60).toString().padStart(2, '0');
+          const hours = Math.floor(s / 3600);
+          const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
           const secs = (s % 60).toString().padStart(2, '0');
-          timeEl.innerText = `${mins}:${secs}.0`;
-          frameEl.innerText = `${cockpitCsvFrames.length - 1} Telemetry Frames`;
+          timeEl.innerText = hours > 0 ? `${hours}:${mins}:${secs}` : `${mins}:${secs}.0`;
+          frameEl.innerText = `${cockpitCsvFrames.length - 1} Frames Logged`;
         }, 1000);
 
       } else {
@@ -1346,6 +1810,7 @@
         btn.classList.remove('recording');
 
         if (cockpitCsvFrames.length > 1) {
+          saveFlightToIndexedDB("Session End");
           shareBtn.style.opacity = '1';
           shareBtn.style.pointerEvents = 'auto';
         }
@@ -1353,7 +1818,7 @@
     };
 
     window.shareCockpitCsv = function() {
-      if (cockpitCsvFrames.length <= 1) return alert("No telemetry frames recorded!");
+      if (cockpitCsvFrames.length <= 1) return alert("No telemetry recorded to share.");
       const filename = `RMAX_Flight_Log_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
       const blob = new Blob([cockpitCsvFrames.join('\n')], { type: 'text/csv;charset=utf-8;' });
       const file = new File([blob], filename, { type: 'text/csv' });
@@ -1371,6 +1836,47 @@
         URL.revokeObjectURL(url);
       }
     };
+
+    window.exportPastSessionLog = async function() {
+      try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).getAll();
+        req.onsuccess = () => {
+          const logs = req.result;
+          if (!logs || !logs.length) return alert("No saved sessions found in IndexedDB.");
+          
+          const latest = logs[logs.length - 1];
+          const blob = new Blob([latest.csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${latest.id}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+      } catch (e) {
+        alert("Export error: " + e.message);
+      }
+    };
+
+    window.clearPastSessions = async function() {
+      if (!confirm("Clear all locally stored backup flight rides?")) return;
+      try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).clear();
+        alert("IndexedDB ride logs cleared.");
+      } catch (e) {
+        alert("Clear error: " + e.message);
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedSettings();
+    });
   </script>
 </body>
 </html>
