@@ -10,26 +10,32 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
-  <title>Claude Yamaha RMAX Pro Cockpit (v1.0.0 Pro)</title>
+  <title>Yamaha RMAX Pro Cockpit</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
 
     :root {
-      --bg: #030611;
-      --card-bg: rgba(13, 20, 38, 0.82);
-      --card-border: rgba(56, 189, 248, 0.18);
-      --card-glow: rgba(56, 189, 248, 0.08);
+      --bg: #02050e;
+      --card-bg: rgba(7, 14, 32, 0.84);
+      --card-border: rgba(0, 102, 255, 0.32);
+      --card-glow: rgba(0, 102, 255, 0.14);
       --text: #f8fafc;
-      --text-muted: #64748b;
-      --cyan: #38bdf8;
-      --green: #4ade80;
+      --text-muted: #7084a4;
+      
+      /* Yamaha Official Racing Colors */
+      --yamaha-blue: #0066ff;
+      --yamaha-blue-glow: rgba(0, 102, 255, 0.65);
+      --yamaha-cyan: #00d2ff;
+      --cyan: #0066ff;
+      
+      --green: #22c55e;
       --red: #ef4444;
       --amber: #f59e0b;
-      --purple: #c084fc;
-      --redline: #ff0055;
-      --bg-tint: rgba(56, 189, 248, 0.12);
-      --fx-saturate: 1;
-      --fx-contrast: 1;
+      --purple: #a855f7;
+      --redline: #ff004c;
+      --bg-tint: rgba(0, 102, 255, 0.18);
+      --fx-saturate: 1.05;
+      --fx-contrast: 1.02;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -38,15 +44,15 @@
       font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg);
       background-image: 
-        radial-gradient(circle at 50% 0%, var(--bg-tint) 0%, transparent 60%),
-        linear-gradient(180deg, #070c18 0%, #020409 100%);
+        radial-gradient(circle at 50% 0%, var(--bg-tint) 0%, transparent 65%),
+        linear-gradient(180deg, #050a1c 0%, #010309 100%);
       color: var(--text);
       min-height: 100vh;
       user-select: none;
       overflow-x: hidden;
     }
 
-    /* Global visual FX wrapper: drives color intensity / contrast / bloom */
+    /* Global visual FX wrapper */
     #viewport-fx {
       display: flex;
       flex-direction: column;
@@ -54,1989 +60,2326 @@
       padding: 0.65rem 0.65rem 5.5rem 0.65rem;
       filter: saturate(var(--fx-saturate)) contrast(var(--fx-contrast));
       transition: filter 0.25s ease;
+      position: relative;
+    }
+
+    /* ==========================================================
+       YAMAHA EMBLEM VECTOR GRAPHIC (Reusable SVG Component)
+       ========================================================== */
+    .yamaha-roundel {
+      display: inline-block;
+      position: relative;
+      filter: drop-shadow(0 0 16px var(--yamaha-blue-glow));
+      transition: filter 0.3s ease, transform 0.3s ease;
+    }
+
+    /* ==========================================================
+       CONNECT & SPLASH SCREEN (First Thing to Load)
+       ========================================================== */
+    #connect-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: radial-gradient(circle at 50% 38%, rgba(0, 75, 200, 0.28) 0%, rgba(3, 7, 22, 0.96) 65%, #01030a 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+      transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), filter 0.65s ease;
+    }
+    
+    #connect-screen.hide {
+      opacity: 0;
+      transform: scale(1.08);
+      filter: blur(12px);
+      pointer-events: none;
+    }
+
+    /* Outer Animated Radar/Energy Halo */
+    .emblem-pulse-stage {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.8rem;
+    }
+
+    .halo-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(0, 153, 255, 0.35);
+      animation: rotateRing 20s linear infinite;
+    }
+    .halo-ring.r1 { width: 236px; height: 236px; }
+    .halo-ring.r2 { 
+      width: 265px; 
+      height: 265px; 
+      border-style: dotted; 
+      border-color: rgba(0, 210, 255, 0.22); 
+      animation: rotateRingReverse 28s linear infinite; 
+    }
+    .halo-glow-orb {
+      position: absolute;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 102, 255, 0.45) 0%, rgba(0, 210, 255, 0) 70%);
+      animation: orbBreathe 2.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes rotateRing { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes rotateRingReverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes orbBreathe {
+      0% { transform: scale(0.92); opacity: 0.55; }
+      100% { transform: scale(1.22); opacity: 0.95; }
+    }
+
+    /* Center Yamaha Logo Button */
+    .yamaha-logo-btn {
+      position: relative;
+      width: 176px;
+      height: 176px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: logoFloat 3.2s ease-in-out infinite alternate;
+      z-index: 2;
+    }
+    .yamaha-logo-btn:active { transform: scale(0.94); }
+    .yamaha-logo-btn.connecting {
+      animation: logoPulseFast 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes logoFloat {
+      0% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 18px rgba(0, 102, 255, 0.75)); }
+      100% { transform: translateY(-4px) scale(1.03); filter: drop-shadow(0 0 32px rgba(0, 180, 255, 0.95)) drop-shadow(0 0 60px rgba(0, 102, 255, 0.4)); }
+    }
+    @keyframes logoPulseFast {
+      0% { transform: scale(0.97); filter: drop-shadow(0 0 25px #0066ff); }
+      100% { transform: scale(1.08); filter: drop-shadow(0 0 50px #00f0ff); }
+    }
+
+    /* Words Below Logo */
+    .connect-brand-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 2rem;
+    }
+    .connect-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 15%, #94b5ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+    }
+    .connect-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--yamaha-cyan);
+      text-transform: uppercase;
+    }
+    .connect-model-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      padding: 0.2rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(0, 102, 255, 0.16);
+      border: 1px solid rgba(0, 102, 255, 0.4);
+      color: #fff;
+      margin-top: 0.2rem;
+    }
+
+    /* Action Trigger: Tap To Connect */
+    .btn-tap-connect {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, #0050e6 0%, #002e99 100%);
+      border: 1px solid rgba(0, 210, 255, 0.75);
+      color: #fff;
+      padding: 0.95rem 2.2rem;
+      border-radius: 9999px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 0 26px rgba(0, 102, 255, 0.6), inset 0 0 14px rgba(0, 210, 255, 0.4);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-tap-connect::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -60%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(60deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+      transform: rotate(25deg);
+      animation: sweepLight 4s infinite linear;
+    }
+    @keyframes sweepLight { 0% { transform: translateX(-100%) rotate(25deg); } 100% { transform: translateX(100%) rotate(25deg); } }
+    .btn-tap-connect:active { transform: scale(0.96); box-shadow: 0 0 35px rgba(0, 210, 255, 0.9); }
+
+    .connect-hint-msg {
+      margin-top: 1.1rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      max-width: 280px;
+      line-height: 1.45;
+    }
+
+    .demo-mode-link {
+      margin-top: 1rem;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--yamaha-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .demo-mode-link:hover { background: rgba(0, 102, 255, 0.2); border-color: var(--yamaha-cyan); }
+
+    /* ==========================================================
+       DASHBOARD APP SHELL
+       ========================================================== */
+    .app-shell {
+      opacity: 0;
+      transform: translateY(18px) scale(0.985);
+      pointer-events: none;
+      height: 0;
+      overflow: hidden;
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .app-shell.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      height: auto;
+      overflow: visible;
     }
 
     /* Top HUD Header */
-    header { display: flex; justify-content: space-between; align-items: center; padding: 0.2rem 0.2rem 0.6rem 0.2rem; }
-    .brand-container { display: flex; align-items: center; gap: 0.5rem; }
-    .brand-title { display: flex; align-items: center; gap: 0.4rem; font-size: 1.18rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; }
-    .brand-glow { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-    .version-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.45rem; border-radius: 6px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: var(--cyan); }
+    header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 0.2rem 0.2rem 0.6rem 0.2rem; 
+      border-bottom: 1px solid rgba(0, 102, 255, 0.22);
+      margin-bottom: 0.6rem;
+    }
+    .brand-container { display: flex; align-items: center; gap: 0.6rem; }
+    .brand-title { 
+      display: flex; 
+      align-items: center; 
+      gap: 0.45rem; 
+      font-size: 1.25rem; 
+      font-weight: 800; 
+      letter-spacing: 0.1em; 
+      text-transform: uppercase; 
+      color: #fff; 
+    }
+    .version-tag { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 0.62rem; 
+      font-weight: 800; 
+      padding: 0.15rem 0.45rem; 
+      border-radius: 6px; 
+      background: rgba(0, 102, 255, 0.2); 
+      border: 1px solid rgba(0, 102, 255, 0.45); 
+      color: var(--yamaha-cyan); 
+    }
 
     .hud-widgets { display: flex; align-items: center; gap: 0.4rem; }
-    .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700; padding: 0.35rem 0.65rem; border-radius: 9999px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); color: var(--text-muted); }
-    .status-badge.connected { background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green); box-shadow: 0 0 12px rgba(74, 222, 128, 0.25); }
-    .status-badge.recording { background: rgba(239, 68, 68, 0.25); border-color: var(--red); color: var(--red); animation: pulseRecord 0.6s infinite alternate; font-weight: 800; }
+    .status-badge { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 0.68rem; 
+      font-weight: 800; 
+      padding: 0.35rem 0.65rem; 
+      border-radius: 9999px; 
+      background: rgba(15, 23, 42, 0.85); 
+      border: 1px solid rgba(255, 255, 255, 0.1); 
+      color: var(--text-muted); 
+    }
+    .status-badge.connected { 
+      background: rgba(34, 197, 94, 0.16); 
+      border-color: var(--green); 
+      color: var(--green); 
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.3); 
+    }
+    .status-badge.demo {
+      background: rgba(0, 102, 255, 0.2);
+      border-color: var(--yamaha-cyan);
+      color: var(--yamaha-cyan);
+    }
+    .status-badge.recording { 
+      background: rgba(239, 68, 68, 0.25); 
+      border-color: var(--red); 
+      color: var(--red); 
+      animation: pulseRecord 0.6s infinite alternate; 
+    }
     @keyframes pulseRecord { from { opacity: 0.6; } to { opacity: 1; } }
 
-    .btn-hud-icon { background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.85rem; text-decoration: none; }
-    .btn-hud-icon:active { transform: scale(0.92); }
+    .btn-hud-icon { 
+      background: rgba(15, 23, 42, 0.9); 
+      border: 1px solid var(--card-border); 
+      color: var(--text); 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 10px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      font-size: 0.9rem; 
+      transition: all 0.15s ease;
+    }
+    .btn-hud-icon:active { transform: scale(0.92); background: var(--yamaha-blue); color: #fff; }
 
-    /* Top 3-Hero Radial Cluster */
-    .hero-triple-cluster { display: grid; grid-template-columns: 1fr 1.35fr 1fr; gap: 0.45rem; align-items: stretch; margin-bottom: 0.4rem; }
-    .hero-gauge-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 0.5rem 0.3rem; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,0.35); backdrop-filter: blur(14px); cursor: pointer; transition: transform 0.15s ease, border-color 0.2s ease; overflow: hidden; }
+    /* ==========================================================
+       HERO TRIPLE RADIAL CLUSTER (Speed, Tachometer RPM, Coolant)
+       ========================================================== */
+    .hero-triple-cluster { 
+      display: grid; 
+      grid-template-columns: 1fr 1.35fr 1fr; 
+      gap: 0.45rem; 
+      align-items: stretch; 
+      margin-bottom: 0.45rem; 
+    }
+    .hero-gauge-box { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 18px; 
+      padding: 0.5rem 0.3rem; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      position: relative; 
+      box-shadow: 0 10px 32px rgba(0,0,0,0.45), inset 0 0 16px rgba(0, 102, 255, 0.08); 
+      backdrop-filter: blur(14px); 
+      cursor: pointer; 
+      transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease; 
+      overflow: hidden; 
+    }
     .hero-gauge-box:active { transform: scale(0.97); }
-    .hero-gauge-box.active-30s { border-color: var(--cyan); box-shadow: 0 0 15px rgba(56, 189, 248, 0.25); }
-    .hero-gauge-box.active-5m { border-color: var(--purple); box-shadow: 0 0 15px rgba(192, 132, 252, 0.25); }
+    .hero-gauge-box.active-tf { 
+      border-color: var(--yamaha-cyan); 
+      box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); 
+    }
     
-    .gauge-wrapper { position: relative; width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; }
-    .gauge-wrapper.large { height: 165px; }
+    .gauge-wrapper { position: relative; width: 100%; height: 142px; display: flex; align-items: center; justify-content: center; }
+    .gauge-wrapper.large { height: 168px; }
     .gauge-svg { width: 100%; height: 100%; transform: rotate(-30deg); }
-    .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 13; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
-    .gauge-val-track { fill: none; stroke: var(--cyan); stroke-width: 13; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; filter: drop-shadow(0 0 8px var(--cyan)); }
     
-    .gauge-center-readout { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-    .gauge-center-val { font-size: 2.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-    .gauge-center-val.large { font-size: 3.1rem; }
-    .gauge-center-unit { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; margin-top: 0.15rem; }
-    .redline-indicator { position: absolute; bottom: 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.15em; color: var(--redline); opacity: 0; }
-    .redline-indicator.active { opacity: 1; animation: pulseGlow 0.4s infinite alternate; }
+    .gauge-bg-track { 
+      fill: none; 
+      stroke: rgba(255, 255, 255, 0.06); 
+      stroke-width: 12; 
+      stroke-linecap: round; 
+      stroke-dasharray: 293.2; 
+      stroke-dashoffset: 0; 
+    }
+    .gauge-val-track { 
+      fill: none; 
+      stroke: var(--yamaha-blue); 
+      stroke-width: 12; 
+      stroke-linecap: round; 
+      stroke-dasharray: 293.2; 
+      stroke-dashoffset: 293.2; 
+      transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; 
+      filter: drop-shadow(0 0 10px var(--yamaha-blue)); 
+    }
+    
+    .gauge-center-readout { 
+      position: absolute; 
+      top: 52%; 
+      left: 50%; 
+      transform: translate(-50%, -50%); 
+      text-align: center; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      pointer-events: none; 
+    }
+    .gauge-center-val { 
+      font-size: 2.35rem; 
+      font-weight: 800; 
+      line-height: 1; 
+      font-variant-numeric: tabular-nums; 
+      letter-spacing: -0.02em; 
+      color: #fff;
+      text-shadow: 0 0 12px rgba(255,255,255,0.4);
+    }
+    .gauge-center-val.large { font-size: 3.2rem; }
+    .gauge-center-unit { 
+      font-size: 0.72rem; 
+      font-weight: 700; 
+      letter-spacing: 0.12em; 
+      color: var(--text-muted); 
+      text-transform: uppercase; 
+      margin-top: 0.15rem; 
+    }
+    .redline-indicator { 
+      position: absolute; 
+      bottom: 6px; 
+      font-size: 0.7rem; 
+      font-weight: 800; 
+      letter-spacing: 0.15em; 
+      color: var(--redline); 
+      opacity: 0; 
+      transition: opacity 0.2s ease;
+    }
+    .redline-indicator.active { 
+      opacity: 1; 
+      animation: redlineBlink 0.3s infinite alternate; 
+    }
+    @keyframes redlineBlink { from { opacity: 0.3; } to { opacity: 1; text-shadow: 0 0 12px var(--redline); } }
 
-    /* Ground-Truth Status Strip */
-    .drive-status-strip { display: grid; grid-template-columns: 1fr 1.2fr 1fr 1fr; gap: 0.35rem; width: 100%; margin-bottom: 0.45rem; }
-    .status-pill-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.45rem 0.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 0.12rem; backdrop-filter: blur(8px); }
-    .status-pill-label { font-size: 0.54rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; text-align: center; }
-    .status-pill-val { font-size: 0.98rem; font-weight: 800; color: var(--cyan); transition: all 0.2s ease; text-align: center; }
-    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 12px var(--green); }
-    .status-pill-val.gear-h { color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
-    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 12px var(--purple); }
-    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 10px var(--amber); }
-    .status-pill-val.dmode-trail { color: var(--cyan); text-shadow: 0 0 10px var(--cyan); }
-    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 12px var(--red); }
-    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 12px var(--red); font-weight: 900; }
-    .status-pill-val.off { color: rgba(255, 255, 255, 0.2); }
+    /* ==========================================================
+       DRIVE STATUS STRIP (Gear, D-Mode, Brakes)
+       ========================================================== */
+    .drive-status-strip { 
+      display: grid; 
+      grid-template-columns: 1fr 1.25fr 1fr 1fr; 
+      gap: 0.35rem; 
+      width: 100%; 
+      margin-bottom: 0.45rem; 
+    }
+    .status-pill-box { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 14px; 
+      padding: 0.45rem 0.2rem; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      gap: 0.15rem; 
+      backdrop-filter: blur(8px); 
+    }
+    .status-pill-label { font-size: 0.54rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+    .status-pill-val { font-size: 1.05rem; font-weight: 800; color: var(--yamaha-cyan); transition: all 0.2s ease; }
+    .status-pill-val.gear-n { color: var(--green); text-shadow: 0 0 14px var(--green); }
+    .status-pill-val.gear-h { color: var(--yamaha-cyan); text-shadow: 0 0 14px var(--yamaha-cyan); }
+    .status-pill-val.gear-l { color: var(--purple); text-shadow: 0 0 14px var(--purple); }
+    .status-pill-val.gear-r { color: var(--amber); text-shadow: 0 0 14px var(--amber); }
+    .status-pill-val.gear-p { color: var(--yamaha-blue); text-shadow: 0 0 14px var(--yamaha-blue); }
+    
+    .status-pill-val.dmode-crawl { color: var(--amber); text-shadow: 0 0 12px var(--amber); }
+    .status-pill-val.dmode-trail { color: var(--yamaha-cyan); text-shadow: 0 0 12px var(--yamaha-cyan); }
+    .status-pill-val.dmode-sport { color: var(--red); text-shadow: 0 0 14px var(--red); }
+    
+    .status-pill-val.brake-on { color: var(--red) !important; text-shadow: 0 0 14px var(--red); font-weight: 900; }
+    .status-pill-val.off { color: rgba(255, 255, 255, 0.22); }
 
-    /* Interactive Clickable Metric Cards Grid */
+    /* ==========================================================
+       TOUCH METRIC CARDS GRID
+       ========================================================== */
     .cockpit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .touch-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 0.65rem 0.75rem; display: flex; flex-direction: column; justify-content: space-between; backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: relative; overflow: hidden; cursor: pointer; min-height: 98px; transition: transform 0.15s ease, border-color 0.25s ease, box-shadow 0.25s ease; }
+    .touch-card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--card-border); 
+      border-radius: 16px; 
+      padding: 0.65rem 0.8rem; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: space-between; 
+      backdrop-filter: blur(10px); 
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35); 
+      position: relative; 
+      overflow: hidden; 
+      cursor: pointer; 
+      min-height: 98px; 
+      transition: transform 0.15s ease, border-color 0.25s ease, box-shadow 0.25s ease; 
+    }
     .touch-card:active { transform: scale(0.98); }
-    .touch-card.active-30s { border-color: var(--cyan); box-shadow: 0 0 14px rgba(56, 189, 248, 0.2); }
-    .touch-card.active-5m { border-color: var(--purple); box-shadow: 0 0 14px rgba(192, 132, 252, 0.2); }
+    .touch-card.active-tf { 
+      border-color: var(--yamaha-cyan); 
+      box-shadow: 0 0 16px rgba(0, 210, 255, 0.25); 
+    }
     
     .card-top { display: flex; justify-content: space-between; align-items: center; }
-    .card-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-    .card-mode-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; padding: 0.1rem 0.35rem; border-radius: 4px; background: rgba(255, 255, 255, 0.06); color: var(--cyan); font-weight: 700; text-transform: uppercase; }
-    .card-mode-badge.badge-30s { color: var(--cyan); background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .card-mode-badge.badge-5m { color: var(--purple); background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.3); }
+    .card-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+    .card-mode-badge { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 0.58rem; 
+      padding: 0.12rem 0.4rem; 
+      border-radius: 5px; 
+      background: rgba(255, 255, 255, 0.06); 
+      color: var(--yamaha-cyan); 
+      font-weight: 800; 
+      text-transform: uppercase; 
+    }
+    .card-mode-badge.badge-active { 
+      color: #02050e; 
+      background: var(--yamaha-cyan); 
+      box-shadow: 0 0 8px var(--yamaha-cyan); 
+    }
 
     .card-main { margin: 0.15rem 0; display: flex; align-items: baseline; gap: 0.3rem; }
-    .card-val { font-size: 1.7rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .card-val { font-size: 1.75rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
     .card-unit { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+    
     .meter-bar-track { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-top: 0.2rem; }
-    .meter-bar-fill { height: 100%; width: 0%; background: var(--cyan); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 6px var(--cyan); }
+    .meter-bar-fill { height: 100%; width: 0%; background: var(--yamaha-blue); border-radius: 9999px; transition: width 0.1s linear; box-shadow: 0 0 8px var(--yamaha-blue); }
 
-    /* Embedded Sparkline Chart Container */
+    /* Embedded Sparkline Chart */
     .card-graph-view { display: none; flex-direction: column; width: 100%; height: 100%; justify-content: space-between; }
     .graph-stats-row { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); font-weight: 700; margin-bottom: 0.2rem; }
     .graph-stat-val { color: #fff; }
     .card-canvas { width: 100%; height: 48px; display: block; border-radius: 6px; }
 
-    /* Compact Embedded Logger Dock */
-    .logger-dock-bar { background: rgba(2, 6, 23, 0.92); border: 1px solid var(--card-border); border-radius: 16px; padding: 0.65rem 0.85rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    /* Embedded Logger Dock */
+    .logger-dock-bar { 
+      background: rgba(4, 9, 24, 0.94); 
+      border: 1px solid var(--card-border); 
+      border-radius: 16px; 
+      padding: 0.65rem 0.85rem; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      gap: 0.5rem; 
+      margin-top: 0.5rem; 
+    }
     .logger-stats-col { display: flex; flex-direction: column; }
-    .logger-stats-time { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 800; color: #fff; line-height: 1; }
+    .logger-stats-time { font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 800; color: #fff; line-height: 1; }
     .logger-stats-frames { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 0.15rem; }
 
-    .btn-touch { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.6rem 0.9rem; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem; text-align: center; }
-    .btn-touch:active { transform: scale(0.96); background: var(--cyan); color: #000; }
+    .btn-touch { 
+      background: rgba(0, 102, 255, 0.18); 
+      border: 1px solid var(--yamaha-blue); 
+      color: #fff; 
+      padding: 0.6rem 0.95rem; 
+      border-radius: 9px; 
+      font-size: 0.78rem; 
+      font-weight: 800; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 0.35rem; 
+      transition: all 0.15s ease;
+    }
+    .btn-touch:active { transform: scale(0.96); background: var(--yamaha-blue); color: #fff; }
     .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
-    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); }
+    .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 14px rgba(239, 68, 68, 0.5); }
 
     /* Fullscreen Expanded Modal */
-    #fullscreen-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 4, 10, 0.95); z-index: 1000; padding: 1rem; flex-direction: column; justify-content: space-between; backdrop-filter: blur(20px); animation: fadeIn 0.2s ease-out; }
+    #fullscreen-modal { display: none; position: fixed; inset: 0; background: rgba(2, 4, 12, 0.96); z-index: 1000; padding: 1rem; flex-direction: column; justify-content: space-between; backdrop-filter: blur(22px); animation: fadeIn 0.2s ease-out; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 1.25rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.06em; }
+    .modal-title { font-size: 1.3rem; font-weight: 800; color: var(--yamaha-cyan); text-transform: uppercase; letter-spacing: 0.08em; }
     .btn-close-modal { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 38px; height: 38px; border-radius: 10px; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .modal-main-readout { display: flex; align-items: baseline; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; }
-    .modal-val { font-size: 4.5rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-    .modal-unit { font-size: 1.3rem; font-weight: 700; color: var(--text-muted); }
+    .modal-val { font-size: 4.8rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+    .modal-unit { font-size: 1.35rem; font-weight: 700; color: var(--text-muted); }
     .modal-stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; font-family: 'JetBrains Mono', monospace; }
-    .modal-stat-box { background: rgba(15, 23, 42, 0.8); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.5rem; text-align: center; }
+    .modal-stat-box { background: rgba(15, 23, 42, 0.85); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.55rem; text-align: center; }
     .modal-stat-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; }
-    .modal-stat-num { font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 0.15rem; }
-    .modal-canvas { width: 100%; height: 220px; border-radius: 12px; background: rgba(2, 6, 23, 0.85); border: 1px solid var(--card-border); margin: 0.75rem 0; }
+    .modal-stat-num { font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.15rem; }
+    .modal-canvas { width: 100%; height: 230px; border-radius: 12px; background: rgba(2, 6, 20, 0.9); border: 1px solid var(--card-border); margin: 0.75rem 0; }
     .modal-range-toggles { display: flex; gap: 0.5rem; }
 
     /* Bottom Touch Dock */
-    .touch-dock { position: fixed; bottom: 0.75rem; left: 0.75rem; right: 0.75rem; background: rgba(10, 15, 29, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 20px; padding: 0.4rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.35rem; backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65); z-index: 100; }
-    .dock-action-btn { padding: 0.65rem 1rem; border-radius: 12px; font-size: 0.8rem; font-weight: 800; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; background: var(--cyan); color: #05070e; box-shadow: 0 0 15px rgba(56, 189, 248, 0.35); }
-    .dock-action-btn:active { transform: scale(0.94); }
-    .dock-action-btn.disconnect { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.35); }
+    .touch-dock { 
+      position: fixed; 
+      bottom: 0.75rem; 
+      left: 0.75rem; 
+      right: 0.75rem; 
+      background: rgba(4, 9, 26, 0.95); 
+      border: 1px solid rgba(0, 102, 255, 0.35); 
+      border-radius: 20px; 
+      padding: 0.45rem 0.55rem; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      gap: 0.35rem; 
+      backdrop-filter: blur(20px); 
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.75); 
+      z-index: 100; 
+    }
+    .dock-action-btn { 
+      padding: 0.7rem 1.2rem; 
+      border-radius: 12px; 
+      font-size: 0.82rem; 
+      font-weight: 800; 
+      border: none; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      gap: 0.4rem; 
+      background: var(--yamaha-blue); 
+      color: #fff; 
+      box-shadow: 0 0 16px rgba(0, 102, 255, 0.4); 
+    }
+    .dock-action-btn:active { transform: scale(0.95); }
+    .dock-action-btn.disconnect { background: #dc2626; color: #fff; box-shadow: 0 0 16px rgba(220, 38, 38, 0.4); }
 
-    #log { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); min-height: 38px; max-height: 48px; overflow-y: auto; background: #020617; padding: 0.35rem 0.55rem; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 0.5rem; }
+    #log { 
+      font-family: 'JetBrains Mono', monospace; 
+      font-size: 0.72rem; 
+      color: var(--text-muted); 
+      min-height: 38px; 
+      max-height: 48px; 
+      overflow-y: auto; 
+      background: #020617; 
+      padding: 0.35rem 0.55rem; 
+      border-radius: 8px; 
+      border: 1px solid var(--card-border); 
+      margin-top: 0.5rem; 
+    }
 
-    /* ==========================================================
-       CONNECT SCREEN
-       ========================================================== */
-    #connect-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2rem; min-height: 88vh; text-align: center; transition: opacity 0.5s ease, transform 0.5s ease; }
-    #connect-screen.hide { opacity: 0; transform: scale(0.92); pointer-events: none; position: fixed; inset: 0; }
-    .connect-brand { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
-    .connect-brand-title { font-size: 1.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; }
-    .connect-brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted); text-transform: uppercase; }
-
-    .connect-pulse-wrap { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
-    .connect-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--cyan); opacity: 0; animation: connectPulse 2.4s ease-out infinite; }
-    .connect-ring.r2 { animation-delay: 0.8s; }
-    .connect-ring.r3 { animation-delay: 1.6s; }
-    @keyframes connectPulse { 0% { transform: scale(0.55); opacity: 0.55; } 100% { transform: scale(1.35); opacity: 0; } }
-
-    .btn-connect-hero { position: relative; width: 148px; height: 148px; border-radius: 50%; border: none; cursor: pointer; background: radial-gradient(circle at 35% 30%, rgba(56,189,248,0.9), rgba(15,23,42,0.95) 72%); box-shadow: 0 0 25px rgba(56, 189, 248, 0.55), 0 0 60px rgba(56, 189, 248, 0.25), inset 0 0 20px rgba(56,189,248,0.25); color: #fff; font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem; animation: connectBreathe 2.4s ease-in-out infinite; }
-    .btn-connect-hero .connect-icon { font-size: 2rem; }
-    .btn-connect-hero:active { transform: scale(0.95); }
-    .btn-connect-hero.connecting { animation: connectSpin 1s linear infinite, connectBreathe 2.4s ease-in-out infinite; }
-    @keyframes connectBreathe { 0%, 100% { box-shadow: 0 0 25px rgba(56, 189, 248, 0.55), 0 0 60px rgba(56, 189, 248, 0.25), inset 0 0 20px rgba(56,189,248,0.25); } 50% { box-shadow: 0 0 38px rgba(56, 189, 248, 0.85), 0 0 90px rgba(56, 189, 248, 0.4), inset 0 0 28px rgba(56,189,248,0.4); } }
-    @keyframes connectSpin { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(20deg); } }
-    .connect-hint { font-size: 0.78rem; color: var(--text-muted); max-width: 260px; line-height: 1.4; }
-
-    /* App shell reveal transition */
-    .app-shell { opacity: 0; transform: translateY(14px) scale(0.985); pointer-events: none; height: 0; overflow: hidden; transition: opacity 0.55s ease, transform 0.55s ease; }
-    .app-shell.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; height: auto; overflow: visible; }
-
-    /* ==========================================================
-       SETTINGS MODAL
-       ========================================================== */
-    #settings-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 4, 10, 0.96); z-index: 1100; padding: 1rem; flex-direction: column; backdrop-filter: blur(20px); animation: fadeIn 0.2s ease-out; overflow-y: auto; }
+    /* Settings Modal */
+    #settings-modal { display: none; position: fixed; inset: 0; background: rgba(2, 4, 12, 0.96); z-index: 1100; padding: 1rem; flex-direction: column; backdrop-filter: blur(20px); animation: fadeIn 0.2s ease-out; overflow-y: auto; }
     .settings-body { display: flex; flex-direction: column; gap: 0.9rem; padding-bottom: 1.5rem; }
     .settings-section { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 0.85rem 0.9rem; }
-    .settings-section-title { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.35rem; }
+    .settings-section-title { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--yamaha-cyan); margin-bottom: 0.6rem; }
     .settings-row { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.45rem 0; border-top: 1px solid rgba(255,255,255,0.05); }
     .settings-row:first-child { border-top: none; padding-top: 0; }
     .settings-row-label { font-size: 0.82rem; font-weight: 700; color: var(--text); }
     .settings-row-desc { font-size: 0.66rem; color: var(--text-muted); margin-top: 0.1rem; line-height: 1.35; }
 
     .segmented { display: flex; background: rgba(255,255,255,0.05); border-radius: 9999px; padding: 3px; gap: 2px; }
-    .segmented button { border: none; background: transparent; color: var(--text-muted); font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.72rem; padding: 0.4rem 0.75rem; border-radius: 9999px; cursor: pointer; letter-spacing: 0.03em; }
-    .segmented button.active { background: var(--cyan); color: #05070e; }
+    .segmented button { border: none; background: transparent; color: var(--text-muted); font-family: 'Rajdhani', sans-serif; font-weight: 800; font-size: 0.72rem; padding: 0.4rem 0.75rem; border-radius: 9999px; cursor: pointer; }
+    .segmented button.active { background: var(--yamaha-blue); color: #fff; box-shadow: 0 0 10px rgba(0, 102, 255, 0.6); }
 
     .tf-select { background: rgba(15, 23, 42, 0.9); border: 1px solid var(--card-border); color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.55rem; border-radius: 8px; }
-
     .toggle-switch { position: relative; width: 46px; height: 26px; border-radius: 9999px; background: rgba(255,255,255,0.12); border: none; cursor: pointer; flex-shrink: 0; }
     .toggle-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #94a3b8; transition: transform 0.2s ease, background 0.2s ease; }
-    .toggle-switch.on { background: rgba(56, 189, 248, 0.35); }
-    .toggle-switch.on::after { transform: translateX(20px); background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+    .toggle-switch.on { background: rgba(0, 102, 255, 0.45); }
+    .toggle-switch.on::after { transform: translateX(20px); background: var(--yamaha-cyan); box-shadow: 0 0 10px var(--yamaha-cyan); }
 
-    .settings-slider { width: 100%; accent-color: var(--cyan); height: 4px; }
+    .settings-slider { width: 100%; accent-color: var(--yamaha-blue); height: 4px; }
     .slider-value-row { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); margin-top: 0.25rem; }
 
     .theme-swatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
     .theme-swatch { border-radius: 12px; border: 2px solid transparent; padding: 0.5rem 0.3rem; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; cursor: pointer; background: rgba(255,255,255,0.03); }
-    .theme-swatch.active { border-color: var(--swatch-color); box-shadow: 0 0 12px var(--swatch-glow); }
+    .theme-swatch.active { border-color: var(--swatch-color); box-shadow: 0 0 14px var(--swatch-glow); }
     .theme-swatch-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--swatch-color); box-shadow: 0 0 10px var(--swatch-glow); }
-    .theme-swatch-name { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-align: center; text-transform: uppercase; letter-spacing: 0.03em; }
+    .theme-swatch-name { font-size: 0.6rem; font-weight: 700; color: var(--text-muted); text-align: center; text-transform: uppercase; }
     .theme-swatch.active .theme-swatch-name { color: #fff; }
 
-    .settings-btn-full { width: 100%; background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.55rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-    .settings-btn-full:active { transform: scale(0.98); }
+    .settings-btn-full { width: 100%; background: rgba(0, 102, 255, 0.18); border: 1px solid var(--yamaha-blue); color: #fff; padding: 0.55rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
     .settings-status-note { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.4; }
     .settings-status-note.ok { color: var(--green); }
     .settings-status-note.warn { color: var(--amber); }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
 <body>
+
 <div id="viewport-fx">
 
-  <!-- CONNECT SCREEN (shown before pairing) -->
+  <!-- ==========================================================
+       SVG ASSET DEF: AUTHENTIC YAMAHA MOTOR ROUNDEL
+       ========================================================== -->
+  <svg style="display:none;">
+    <defs>
+      <!-- Single Precision Tuning Fork -->
+      <g id="yamaha-single-fork">
+        <!-- Stem & Tines Outline -->
+        <path d="
+          M 200,24
+          L 226,63
+          L 214,74
+          C 217,94 218,112 214,138
+          C 212,150 214,166 220,180
+          L 220,352
+          L 209,352
+          L 209,232
+          C 209,224 204,218 200,218
+          C 196,218 191,224 191,232
+          L 191,352
+          L 180,352
+          L 180,180
+          C 186,166 188,150 186,138
+          C 182,112 183,94 186,74
+          L 174,63
+          Z
+        " fill="currentColor" />
+        <!-- Pill Hole in Stem -->
+        <rect x="195" y="86" width="10" height="52" rx="5" fill="#000000" />
+      </g>
+
+      <!-- Complete Roundel (Tuning Forks at 0, 120, 240 deg) -->
+      <g id="yamaha-motor-roundel-symbol">
+        <!-- Solid Base Disc -->
+        <circle cx="200" cy="200" r="192" fill="#000000" />
+        <!-- Outer Thin Rim -->
+        <circle cx="200" cy="200" r="188" fill="none" stroke="currentColor" stroke-width="4.5" />
+        <!-- Main White Ring -->
+        <circle cx="200" cy="200" r="162" fill="none" stroke="currentColor" stroke-width="18" />
+        <!-- 3 Interlocking Tuning Forks -->
+        <use href="#yamaha-single-fork" />
+        <use href="#yamaha-single-fork" transform="rotate(120 200 200)" />
+        <use href="#yamaha-single-fork" transform="rotate(240 200 200)" />
+        <!-- Center Hole -->
+        <circle cx="200" cy="200" r="14" fill="#000000" />
+      </g>
+    </defs>
+  </svg>
+
+  <!-- ==========================================================
+       CONNECT SCREEN (First thing to load with Yamaha Glow)
+       ========================================================== -->
   <div id="connect-screen">
-    <div class="connect-brand">
-      <div class="connect-brand-title">RMAX PRO</div>
-      <div class="connect-brand-sub">Yamaha Telemetry Cockpit</div>
-    </div>
-    <div class="connect-pulse-wrap">
-      <span class="connect-ring r1"></span>
-      <span class="connect-ring r2"></span>
-      <span class="connect-ring r3"></span>
-      <button class="btn-connect-hero" id="btn-connect-hero" onclick="handleConnectClick()">
-        <span class="connect-icon">⚡</span>
-        <span>Connect</span>
+    
+    <div class="emblem-pulse-stage">
+      <div class="halo-ring r1"></div>
+      <div class="halo-ring r2"></div>
+      <div class="halo-glow-orb"></div>
+      
+      <button class="yamaha-logo-btn" id="btn-connect-logo" onclick="handleConnectClick()" title="Connect to Yamaha RMAX">
+        <svg class="yamaha-roundel" viewBox="0 0 400 400" width="168" height="168" style="color:#ffffff;">
+          <use href="#yamaha-motor-roundel-symbol" />
+        </svg>
       </button>
     </div>
-    <div class="connect-hint" id="connect-hint">Tap Connect and pair with your RMAX's OBD-II Bluetooth adapter to start live telemetry.</div>
+
+    <!-- Words below the logo -->
+    <div class="connect-brand-group">
+      <div class="connect-title">YAMAHA</div>
+      <div class="connect-sub">RMAX 1000 PRO COCKPIT</div>
+      <span class="connect-model-badge">FACTORY TELEMETRY v1.0.0</span>
+    </div>
+
+    <!-- Tap to Connect Button -->
+    <button class="btn-tap-connect" id="btn-tap-connect" onclick="handleConnectClick()">
+      <span>⚡ TAP TO CONNECT</span>
+    </button>
+
+    <div class="connect-hint-msg" id="connect-hint">
+      Touch the emblem or button to pair with your RMAX OBD-II Bluetooth adapter.
+    </div>
+
+    <button class="demo-mode-link" onclick="launchDemoMode()">
+      ▶ Launch Interactive Demo Mode
+    </button>
+
   </div>
 
-  <!-- APP SHELL (header + dashboard, revealed after connecting) -->
+  <!-- ==========================================================
+       APP SHELL (Revealed with cinematic sweep after connection)
+       ========================================================== -->
   <div id="app-shell" class="app-shell">
 
-  <!-- Top HUD Header -->
-  <header>
-    <div class="brand-container">
-      <div class="brand-title">
-        <span class="brand-glow"></span>
-        RMAX PRO
+    <!-- Top HUD Header -->
+    <header>
+      <div class="brand-container">
+        <svg class="yamaha-roundel" viewBox="0 0 400 400" width="28" height="28" style="color:#ffffff;">
+          <use href="#yamaha-motor-roundel-symbol" />
+        </svg>
+        <div class="brand-title">RMAX PRO</div>
+        <span class="version-tag">YAMAHA BLUE</span>
       </div>
-      <span class="version-tag">v1.0.0 PRO</span>
-    </div>
-    <div class="hud-widgets">
-      <span id="status" class="status-badge">DISCONNECTED</span>
-      <button class="btn-hud-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>
-      <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
-    </div>
-  </header>
+      <div class="hud-widgets">
+        <span id="status" class="status-badge">DISCONNECTED</span>
+        <button class="btn-hud-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>
+        <button class="btn-hud-icon" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+      </div>
+    </header>
 
-  <!-- MAIN COCKPIT VIEW -->
-  <div id="cockpit-view" style="display: flex; flex-direction: column; gap: 0.4rem;">
-    
-    <!-- 1. TOP HERO TRIPLE CLUSTER (Speed, RPM, Coolant) -->
-    <div class="hero-triple-cluster">
+    <!-- Main Cockpit View -->
+    <div id="cockpit-view" style="display: flex; flex-direction: column; gap: 0.45rem;">
       
-      <!-- Left: Ground Speed -->
-      <div class="hero-gauge-box" id="card-speed" onclick="handleCardClick('speed', this)">
-        <div class="card-mode-badge" id="badge-speed" style="position:absolute; top:6px; left:8px;">LIVE</div>
-        <div class="gauge-wrapper" id="live-gauge-speed">
-          <svg class="gauge-svg" viewBox="0 0 200 200">
-            <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-            <circle id="gauge-speed-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-          </svg>
-          <div class="gauge-center-readout">
-            <span id="val-dash-speed" class="gauge-center-val">--</span>
-            <span class="gauge-center-unit" id="label-dash-speed-unit">KM/H</span>
+      <!-- 1. TOP HERO TRIPLE CLUSTER (Speed, RPM Tachometer, Coolant) -->
+      <div class="hero-triple-cluster">
+        
+        <!-- Left: Ground Speed -->
+        <div class="hero-gauge-box" id="card-speed" onclick="handleCardClick('speed', this)">
+          <div class="card-mode-badge" id="badge-speed" style="position:absolute; top:6px; left:8px;">LIVE</div>
+          <div class="gauge-wrapper" id="live-gauge-speed">
+            <svg class="gauge-svg" viewBox="0 0 200 200">
+              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+              <circle id="gauge-speed-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+            </svg>
+            <div class="gauge-center-readout">
+              <span id="val-dash-speed" class="gauge-center-val">0</span>
+              <span class="gauge-center-unit" id="label-dash-speed-unit">KM/H</span>
+            </div>
+          </div>
+          <!-- Graph View -->
+          <div class="card-graph-view" id="graph-view-speed">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-speed">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-speed">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-speed">0</span></span>
+            </div>
+            <canvas id="canvas-speed" class="card-canvas"></canvas>
           </div>
         </div>
-        <!-- Graph View for Speed -->
-        <div class="card-graph-view" id="graph-view-speed">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-speed">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-speed">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-speed">0</span></span>
+
+        <!-- Center: Engine RPM Tachometer (Yamaha Redline) -->
+        <div class="hero-gauge-box" id="card-rpm" onclick="handleCardClick('rpm', this)">
+          <div class="card-mode-badge" id="badge-rpm" style="position:absolute; top:6px; left:8px;">LIVE</div>
+          <div class="gauge-wrapper large" id="live-gauge-rpm">
+            <svg class="gauge-svg" viewBox="0 0 200 200">
+              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+              <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+            </svg>
+            <div class="gauge-center-readout">
+              <span id="val-dash-rpm" class="gauge-center-val large">0</span>
+              <span class="gauge-center-unit">RPM</span>
+            </div>
+            <div id="redline-alert" class="redline-indicator">REDLINE</div>
           </div>
-          <canvas id="canvas-speed" class="card-canvas"></canvas>
+          <!-- Graph View -->
+          <div class="card-graph-view" id="graph-view-rpm">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-rpm">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-rpm">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-rpm">0</span></span>
+            </div>
+            <canvas id="canvas-rpm" class="card-canvas" style="height:72px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: Coolant Temp (ECT) -->
+        <div class="hero-gauge-box" id="card-coolant" onclick="handleCardClick('coolant', this)">
+          <div class="card-mode-badge" id="badge-coolant" style="position:absolute; top:6px; right:8px;">LIVE</div>
+          <div class="gauge-wrapper" id="live-gauge-coolant">
+            <svg class="gauge-svg" viewBox="0 0 200 200">
+              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+              <circle id="gauge-coolant-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+            </svg>
+            <div class="gauge-center-readout">
+              <span id="val-dash-coolant" class="gauge-center-val">--</span>
+              <span class="gauge-center-unit" id="label-dash-coolant-unit">°C</span>
+            </div>
+          </div>
+          <!-- Graph View -->
+          <div class="card-graph-view" id="graph-view-coolant">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-coolant">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-coolant">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-coolant">0</span></span>
+            </div>
+            <canvas id="canvas-coolant" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. STATUS STRIP (Gear, D-Mode, P-Brake, Foot Brake) -->
+      <div class="drive-status-strip">
+        <div class="status-pill-box">
+          <span class="status-pill-label">Gear</span>
+          <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
+        </div>
+        <div class="status-pill-box">
+          <span class="status-pill-label">D-Mode</span>
+          <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
+        </div>
+        <div class="status-pill-box">
+          <span class="status-pill-label">P-Brake</span>
+          <span id="val-dash-pbrake" class="status-pill-val off">OFF</span>
+        </div>
+        <div class="status-pill-box">
+          <span class="status-pill-label">Foot Brake</span>
+          <span id="val-dash-fbrake" class="status-pill-val off">OFF</span>
         </div>
       </div>
 
-      <!-- Center Large: Engine RPM Tachometer -->
-      <div class="hero-gauge-box" id="card-rpm" onclick="handleCardClick('rpm', this)">
-        <div class="card-mode-badge" id="badge-rpm" style="position:absolute; top:6px; left:8px;">LIVE</div>
-        <div class="gauge-wrapper large" id="live-gauge-rpm">
-          <svg class="gauge-svg" viewBox="0 0 200 200">
-            <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-            <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-          </svg>
-          <div class="gauge-center-readout">
-            <span id="val-dash-rpm" class="gauge-center-val large">--</span>
-            <span class="gauge-center-unit">RPM</span>
+      <!-- 3. INTERACTIVE CLICKABLE METRIC CARDS GRID -->
+      <div class="cockpit-grid">
+        
+        <!-- Engine Load % -->
+        <div class="touch-card" id="card-load" onclick="handleCardClick('load', this)">
+          <div class="card-top">
+            <span class="card-label">Engine Load</span>
+            <span class="card-mode-badge" id="badge-load">LIVE</span>
           </div>
-          <div id="redline-alert" class="redline-indicator">REDLINE</div>
+          <div class="card-live-view" id="live-view-load">
+            <div class="card-main">
+              <span id="val-dash-load" class="card-val">0</span>
+              <span class="card-unit">%</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-load" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-load">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-load">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-load">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-load">0</span></span>
+            </div>
+            <canvas id="canvas-load" class="card-canvas"></canvas>
+          </div>
         </div>
-        <!-- Graph View for RPM -->
-        <div class="card-graph-view" id="graph-view-rpm">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-rpm">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-rpm">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-rpm">0</span></span>
+
+        <!-- Intake Air Temp (IAT) -->
+        <div class="touch-card" id="card-iat" onclick="handleCardClick('iat', this)">
+          <div class="card-top">
+            <span class="card-label">Intake Air (IAT)</span>
+            <span class="card-mode-badge" id="badge-iat">LIVE</span>
           </div>
-          <canvas id="canvas-rpm" class="card-canvas" style="height:70px;"></canvas>
+          <div class="card-live-view" id="live-view-iat">
+            <div class="card-main">
+              <span id="val-dash-iat" class="card-val">--</span>
+              <span class="card-unit" id="label-dash-iat-unit">°C</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-iat" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-iat">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-iat">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-iat">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-iat">0</span></span>
+            </div>
+            <canvas id="canvas-iat" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Gas Pedal (APS %) -->
+        <div class="touch-card" id="card-pedal" onclick="handleCardClick('pedal', this)">
+          <div class="card-top">
+            <span class="card-label">Pedal (APS)</span>
+            <span class="card-mode-badge" id="badge-pedal">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-pedal">
+            <div class="card-main">
+              <span id="val-dash-pedal" class="card-val">0</span>
+              <span class="card-unit">%</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-pedal" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-pedal">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-pedal">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-pedal">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-pedal">0</span></span>
+            </div>
+            <canvas id="canvas-pedal" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Throttle Blade (TPS %) -->
+        <div class="touch-card" id="card-throttle" onclick="handleCardClick('throttle', this)">
+          <div class="card-top">
+            <span class="card-label">Blade (TPS)</span>
+            <span class="card-mode-badge" id="badge-throttle">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-throttle">
+            <div class="card-main">
+              <span id="val-dash-throttle" class="card-val">0</span>
+              <span class="card-unit">%</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-throttle" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-throttle">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-throttle">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-throttle">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-throttle">0</span></span>
+            </div>
+            <canvas id="canvas-throttle" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Fuel Injector Pulse Rate & Duty % -->
+        <div class="touch-card" id="card-fuel" onclick="handleCardClick('fuel', this)">
+          <div class="card-top">
+            <span class="card-label">Inj Rate / Duty</span>
+            <span class="card-mode-badge" id="badge-fuel">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-fuel">
+            <div class="card-main">
+              <span id="val-dash-fuel" class="card-val">--</span>
+              <span class="card-unit" id="val-dash-duty">0%</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-fuel" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-fuel">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-fuel">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-fuel">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-fuel">0</span></span>
+            </div>
+            <canvas id="canvas-fuel" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Spark Timing -->
+        <div class="touch-card" id="card-timing" onclick="handleCardClick('timing', this)">
+          <div class="card-top">
+            <span class="card-label">Spark Timing</span>
+            <span class="card-mode-badge" id="badge-timing">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-timing">
+            <div class="card-main">
+              <span id="val-dash-timing" class="card-val">--</span>
+              <span class="card-unit">°BTDC</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-timing" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-timing">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-timing">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-timing">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-timing">0</span></span>
+            </div>
+            <canvas id="canvas-timing" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Intake MAP (mbar) -->
+        <div class="touch-card" id="card-map" onclick="handleCardClick('map', this)">
+          <div class="card-top">
+            <span class="card-label">Intake MAP</span>
+            <span class="card-mode-badge" id="badge-map">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-map">
+            <div class="card-main">
+              <span id="val-dash-map" class="card-val">--</span>
+              <span class="card-unit">mbar</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-map" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-map">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-map">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-map">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-map">0</span></span>
+            </div>
+            <canvas id="canvas-map" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Warmup Fuel Decay (ASE %) -->
+        <div class="touch-card" id="card-ase" onclick="handleCardClick('ase', this)">
+          <div class="card-top">
+            <span class="card-label">Warmup Fuel (ASE)</span>
+            <span class="card-mode-badge" id="badge-ase">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-ase">
+            <div class="card-main">
+              <span id="val-dash-ase" class="card-val">0</span>
+              <span class="card-unit">%</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-ase" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-ase">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-ase">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-ase">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-ase">0</span></span>
+            </div>
+            <canvas id="canvas-ase" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Battery & ECU Voltage Drop -->
+        <div class="touch-card" id="card-voltage" onclick="handleCardClick('voltage', this)" style="grid-column: span 2;">
+          <div class="card-top">
+            <span class="card-label">Battery & ECU Rail Voltage</span>
+            <span class="card-mode-badge" id="badge-voltage">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-voltage">
+            <div class="card-main">
+              <span id="val-dash-voltage" class="card-val">--</span>
+              <span class="card-unit" id="label-dash-vdrop">0.0V Drop</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-voltage" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-voltage">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-voltage">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-voltage">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-voltage">0</span></span>
+            </div>
+            <canvas id="canvas-voltage" class="card-canvas"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 4. FLIGHT RECORDER LOGGING BAR -->
+      <div class="logger-dock-bar">
+        <div class="logger-stats-col">
+          <span class="logger-stats-time" id="cockpit-csv-time">00:00.0</span>
+          <span class="logger-stats-frames" id="cockpit-csv-frames">0 Telemetry Frames</span>
+        </div>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn-touch record-btn" id="btn-cockpit-record" onclick="toggleCockpitCsvLogger()">
+            🔴 Record Flight
+          </button>
+          <button class="btn-touch" id="btn-cockpit-share" onclick="shareCockpitCsv()" style="background:rgba(0, 102, 255, 0.25); color:var(--yamaha-cyan); opacity:0.5; pointer-events:none;">
+            📤 Share CSV
+          </button>
         </div>
       </div>
 
-      <!-- Right: Coolant Temp (ECT) -->
-      <div class="hero-gauge-box" id="card-coolant" onclick="handleCardClick('coolant', this)">
-        <div class="card-mode-badge" id="badge-coolant" style="position:absolute; top:6px; right:8px;">LIVE</div>
-        <div class="gauge-wrapper" id="live-gauge-coolant">
-          <svg class="gauge-svg" viewBox="0 0 200 200">
-            <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-            <circle id="gauge-coolant-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-          </svg>
-          <div class="gauge-center-readout">
-            <span id="val-dash-coolant" class="gauge-center-val">--</span>
-            <span class="gauge-center-unit" id="label-dash-coolant-unit">°C</span>
-          </div>
-        </div>
-        <!-- Graph View for Coolant -->
-        <div class="card-graph-view" id="graph-view-coolant">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-coolant">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-coolant">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-coolant">0</span></span>
-          </div>
-          <canvas id="canvas-coolant" class="card-canvas"></canvas>
-        </div>
-      </div>
+      <!-- Real-time Bottom Log Strip -->
+      <div id="log">Yamaha RMAX Pro Engine Online. Ready to pair.</div>
 
     </div>
-
-    <!-- 2. VERIFIED STATUS STRIP -->
-    <div class="drive-status-strip">
-      <div class="status-pill-box">
-        <span class="status-pill-label">Gear</span>
-        <span id="val-dash-gear" class="status-pill-val gear-n">N</span>
-      </div>
-      <div class="status-pill-box">
-        <span class="status-pill-label">D-Mode</span>
-        <span id="val-dash-dmode" class="status-pill-val dmode-trail">TRAIL</span>
-      </div>
-      <div class="status-pill-box">
-        <span class="status-pill-label">P-Brake</span>
-        <span id="val-dash-pbrake" class="status-pill-val off">OFF</span>
-      </div>
-      <div class="status-pill-box">
-        <span class="status-pill-label">Foot Brake</span>
-        <span id="val-dash-fbrake" class="status-pill-val off">OFF</span>
-      </div>
-    </div>
-
-    <!-- 3. INTERACTIVE CLICKABLE METRIC CARDS GRID -->
-    <div class="cockpit-grid">
-      
-      <!-- Engine Load % -->
-      <div class="touch-card" id="card-load" onclick="handleCardClick('load', this)">
-        <div class="card-top">
-          <span class="card-label">Engine Load</span>
-          <span class="card-mode-badge" id="badge-load">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-load">
-          <div class="card-main">
-            <span id="val-dash-load" class="card-val">0</span>
-            <span class="card-unit">%</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-load" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-load">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-load">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-load">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-load">0</span></span>
-          </div>
-          <canvas id="canvas-load" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Intake Air Temp (IAT) -->
-      <div class="touch-card" id="card-iat" onclick="handleCardClick('iat', this)">
-        <div class="card-top">
-          <span class="card-label">Intake Air (IAT)</span>
-          <span class="card-mode-badge" id="badge-iat">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-iat">
-          <div class="card-main">
-            <span id="val-dash-iat" class="card-val">--</span>
-            <span class="card-unit" id="label-dash-iat-unit">°C</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-iat" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-iat">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-iat">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-iat">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-iat">0</span></span>
-          </div>
-          <canvas id="canvas-iat" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Gas Pedal (APS %) -->
-      <div class="touch-card" id="card-pedal" onclick="handleCardClick('pedal', this)">
-        <div class="card-top">
-          <span class="card-label">Pedal (APS)</span>
-          <span class="card-mode-badge" id="badge-pedal">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-pedal">
-          <div class="card-main">
-            <span id="val-dash-pedal" class="card-val">0</span>
-            <span class="card-unit">%</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-pedal" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-pedal">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-pedal">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-pedal">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-pedal">0</span></span>
-          </div>
-          <canvas id="canvas-pedal" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Throttle Blade (TPS %) -->
-      <div class="touch-card" id="card-throttle" onclick="handleCardClick('throttle', this)">
-        <div class="card-top">
-          <span class="card-label">Blade (TPS)</span>
-          <span class="card-mode-badge" id="badge-throttle">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-throttle">
-          <div class="card-main">
-            <span id="val-dash-throttle" class="card-val">0</span>
-            <span class="card-unit">%</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-throttle" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-throttle">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-throttle">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-throttle">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-throttle">0</span></span>
-          </div>
-          <canvas id="canvas-throttle" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Fuel Injector Pulse Rate & Duty % -->
-      <div class="touch-card" id="card-fuel" onclick="handleCardClick('fuel', this)">
-        <div class="card-top">
-          <span class="card-label">Inj Rate / Duty</span>
-          <span class="card-mode-badge" id="badge-fuel">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-fuel">
-          <div class="card-main">
-            <span id="val-dash-fuel" class="card-val">--</span>
-            <span class="card-unit" id="val-dash-duty">0%</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-fuel" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-fuel">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-fuel">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-fuel">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-fuel">0</span></span>
-          </div>
-          <canvas id="canvas-fuel" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Spark Timing -->
-      <div class="touch-card" id="card-timing" onclick="handleCardClick('timing', this)">
-        <div class="card-top">
-          <span class="card-label">Spark Timing</span>
-          <span class="card-mode-badge" id="badge-timing">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-timing">
-          <div class="card-main">
-            <span id="val-dash-timing" class="card-val">--</span>
-            <span class="card-unit">°BTDC</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-timing" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-timing">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-timing">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-timing">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-timing">0</span></span>
-          </div>
-          <canvas id="canvas-timing" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Intake MAP (mbar) -->
-      <div class="touch-card" id="card-map" onclick="handleCardClick('map', this)">
-        <div class="card-top">
-          <span class="card-label">Intake MAP</span>
-          <span class="card-mode-badge" id="badge-map">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-map">
-          <div class="card-main">
-            <span id="val-dash-map" class="card-val">--</span>
-            <span class="card-unit">mbar</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-map" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-map">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-map">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-map">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-map">0</span></span>
-          </div>
-          <canvas id="canvas-map" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Warmup Fuel Decay (ASE %) -->
-      <div class="touch-card" id="card-ase" onclick="handleCardClick('ase', this)">
-        <div class="card-top">
-          <span class="card-label">Warmup Fuel (ASE)</span>
-          <span class="card-mode-badge" id="badge-ase">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-ase">
-          <div class="card-main">
-            <span id="val-dash-ase" class="card-val">0</span>
-            <span class="card-unit">%</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-ase" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-ase">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-ase">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-ase">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-ase">0</span></span>
-          </div>
-          <canvas id="canvas-ase" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-      <!-- ECU Rail Voltage & Voltage Drop -->
-      <div class="touch-card" id="card-voltage" onclick="handleCardClick('voltage', this)" style="grid-column: span 2;">
-        <div class="card-top">
-          <span class="card-label">Battery & ECU Rail Voltage</span>
-          <span class="card-mode-badge" id="badge-voltage">LIVE</span>
-        </div>
-        <div class="card-live-view" id="live-view-voltage">
-          <div class="card-main">
-            <span id="val-dash-voltage" class="card-val">--</span>
-            <span class="card-unit" id="label-dash-vdrop">0.0V Drop</span>
-          </div>
-          <div class="meter-bar-track"><div id="bar-voltage" class="meter-bar-fill"></div></div>
-        </div>
-        <div class="card-graph-view" id="graph-view-voltage">
-          <div class="graph-stats-row">
-            <span>MIN: <span class="graph-stat-val" id="min-voltage">0</span></span>
-            <span>AVG: <span class="graph-stat-val" id="avg-voltage">0</span></span>
-            <span>MAX: <span class="graph-stat-val" id="max-voltage">0</span></span>
-          </div>
-          <canvas id="canvas-voltage" class="card-canvas"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 4. FLIGHT RECORDER LOGGING BAR -->
-    <div class="logger-dock-bar">
-      <div class="logger-stats-col">
-        <span class="logger-stats-time" id="cockpit-csv-time">00:00.0</span>
-        <span class="logger-stats-frames" id="cockpit-csv-frames">0 Telemetry Frames</span>
-      </div>
-      <div style="display:flex; gap:0.4rem;">
-        <button class="btn-touch record-btn" id="btn-cockpit-record" onclick="toggleCockpitCsvLogger()">
-          🔴 Record Flight
-        </button>
-        <button class="btn-touch" id="btn-cockpit-share" onclick="shareCockpitCsv()" style="background:rgba(56, 189, 248, 0.25); color:var(--cyan); opacity:0.5; pointer-events:none;">
-          📤 Share CSV
-        </button>
-      </div>
-    </div>
-
-    <!-- Real-time Bottom Log Strip -->
-    <div id="log">System initialized. Touch Connect to pair Bluetooth.</div>
-
-  </div>
 
   </div><!-- /app-shell -->
 
-</div><!-- /viewport-fx -->
-
-  <!-- 5. FULLSCREEN EXPANDED MODAL (Triple-Click Zoom) -->
-  <div id="fullscreen-modal" onclick="handleModalClick(event)">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-metric-title">METRIC ZOOM</div>
-      <button class="btn-close-modal" onclick="closeFullScreenModal()">✕</button>
-    </div>
-
-    <div class="modal-main-readout">
-      <span class="modal-val" id="modal-main-val">--</span>
-      <span class="modal-unit" id="modal-main-unit"></span>
-    </div>
-
-    <div class="modal-stats-grid">
-      <div class="modal-stat-box">
-        <div class="modal-stat-label">SESSION MIN</div>
-        <div class="modal-stat-num" id="modal-stat-min">0</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="modal-stat-label">AVERAGE</div>
-        <div class="modal-stat-num" id="modal-stat-avg">0</div>
-      </div>
-      <div class="modal-stat-box">
-        <div class="modal-stat-label">SESSION MAX</div>
-        <div class="modal-stat-num" id="modal-stat-max">0</div>
-      </div>
-    </div>
-
-    <canvas id="modal-canvas" class="modal-canvas"></canvas>
-
-    <div class="modal-range-toggles" id="modal-range-toggles"></div>
-  </div>
-
-  <!-- SETTINGS MODAL -->
-  <div id="settings-modal">
-    <div class="modal-header">
-      <div class="modal-title">Settings</div>
-      <button class="btn-close-modal" onclick="closeSettingsModal()">✕</button>
-    </div>
-    <div class="settings-body">
-
-      <!-- Units -->
-      <div class="settings-section">
-        <div class="settings-section-title">Units</div>
-        <div class="settings-row">
-          <div><div class="settings-row-label">Speed</div></div>
-          <div class="segmented" id="seg-speed-unit">
-            <button data-val="kmh" onclick="setSpeedUnit('kmh')">KM/H</button>
-            <button data-val="mph" onclick="setSpeedUnit('mph')">MPH</button>
-          </div>
-        </div>
-        <div class="settings-row">
-          <div><div class="settings-row-label">Temperature</div></div>
-          <div class="segmented" id="seg-temp-unit">
-            <button data-val="c" onclick="setTempUnit('c')">°C</button>
-            <button data-val="f" onclick="setTempUnit('f')">°F</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Graph Time Frames -->
-      <div class="settings-section">
-        <div class="settings-section-title">Graph Time Frames</div>
-        <div class="settings-row-desc" style="margin-bottom:0.5rem;">Choose the three durations used when cycling a metric card or opening its full-screen graph.</div>
-        <div class="settings-row">
-          <div class="settings-row-label">Time Frame 1</div>
-          <select class="tf-select" id="tf-select-0" onchange="setTimeframe(0, this.value)"></select>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-label">Time Frame 2</div>
-          <select class="tf-select" id="tf-select-1" onchange="setTimeframe(1, this.value)"></select>
-        </div>
-        <div class="settings-row">
-          <div class="settings-row-label">Time Frame 3</div>
-          <select class="tf-select" id="tf-select-2" onchange="setTimeframe(2, this.value)"></select>
-        </div>
-      </div>
-
-      <!-- Data Recording -->
-      <div class="settings-section">
-        <div class="settings-section-title">Long-Term Data Recording</div>
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">Auto-save CSV to a folder</div>
-            <div class="settings-row-desc">Streams telemetry straight to disk while recording, so multi-hour rides don't have to sit in memory. Recommended for rides over 30 minutes.</div>
-          </div>
-          <button class="toggle-switch" id="toggle-autosave" onclick="toggleAutoSave()"></button>
-        </div>
-        <button class="settings-btn-full" id="btn-choose-folder" onclick="chooseAutoSaveFolder()" style="margin-top:0.6rem;">📁 Choose Auto-Save Folder</button>
-        <div class="settings-status-note" id="autosave-status">Not supported on this browser — recordings will stay in memory and can be shared/downloaded when you stop.</div>
-      </div>
-
-      <!-- Appearance -->
-      <div class="settings-section">
-        <div class="settings-section-title">Appearance</div>
-        <div class="settings-row-label" style="margin-bottom:0.5rem;">Color Theme</div>
-        <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
-
-        <div class="settings-row" style="margin-top:0.7rem;">
-          <div class="settings-row-label">Color Intensity</div>
-        </div>
-        <input type="range" class="settings-slider" id="slider-intensity" min="50" max="160" step="5" oninput="setIntensity(this.value)">
-        <div class="slider-value-row"><span>Muted</span><span id="intensity-val">100%</span><span>Vivid</span></div>
-
-        <div class="settings-row" style="margin-top:0.7rem;">
-          <div class="settings-row-label">Contrast</div>
-        </div>
-        <input type="range" class="settings-slider" id="slider-contrast" min="80" max="130" step="5" oninput="setContrast(this.value)">
-        <div class="slider-value-row"><span>Flat</span><span id="contrast-val">100%</span><span>Punchy</span></div>
-
-        <div class="settings-row" style="margin-top:0.7rem;">
-          <div>
-            <div class="settings-row-label">Bloom Glow</div>
-            <div class="settings-row-desc">Adds an ambient glow around bright HUD elements.</div>
-          </div>
-          <button class="toggle-switch" id="toggle-bloom" onclick="toggleBloom()"></button>
-        </div>
-        <input type="range" class="settings-slider" id="slider-bloom" min="0" max="30" step="2" oninput="setBloomIntensity(this.value)">
-        <div class="slider-value-row"><span>Subtle</span><span id="bloom-val">14px</span><span>Heavy</span></div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- 6. BOTTOM TOUCH DOCK (Disconnect, shown once paired) -->
+  <!-- 5. BOTTOM TOUCH DOCK (Disconnect, visible after pairing) -->
   <div class="touch-dock" id="touch-dock" style="display:none;">
-    <button class="dock-action-btn disconnect" id="btn-connect" onclick="handleConnectClick()" style="flex:1;">
-      <span>⏻ Disconnect</span>
+    <button class="dock-action-btn disconnect" onclick="handleConnectClick()" style="flex:1;">
+      <span>⏻ Disconnect Telemetry</span>
     </button>
   </div>
 
-  <script>
-    /* ==========================================================
-       APP CONFIGURATION & TELEMETRY ENGINE
-       ========================================================== */
-    const APP_VERSION = "v1.0.0 PRO";
+</div><!-- /viewport-fx -->
 
-    const SERVICE_UUIDS = [
-      '0000fff0-0000-1000-8000-00805f9b34fb',
-      '0000ffe0-0000-1000-8000-00805f9b34fb',
-      '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-    ];
+<!-- 6. FULLSCREEN ZOOM MODAL -->
+<div id="fullscreen-modal" onclick="handleModalClick(event)">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-metric-title">METRIC ZOOM</div>
+    <button class="btn-close-modal" onclick="closeFullScreenModal()">✕</button>
+  </div>
 
-    let bleDevice = null;
-    let writeChar = null;
-    let readChar = null;
-    let rxBuffer = '';
-    let isPolling = false;
+  <div class="modal-main-readout">
+    <span class="modal-val" id="modal-main-val">--</span>
+    <span class="modal-unit" id="modal-main-unit"></span>
+  </div>
 
-    /* ==========================================================
-       SETTINGS: persistence, themes, timeframes
-       ========================================================== */
-    const SETTINGS_KEY = 'rmaxSettings_v1';
-    const TIMEFRAME_PRESETS = [
-      { sec: 10, label: '10s' }, { sec: 30, label: '30s' }, { sec: 60, label: '1min' },
-      { sec: 120, label: '2min' }, { sec: 300, label: '5min' }, { sec: 600, label: '10min' },
-      { sec: 900, label: '15min' }, { sec: 1800, label: '30min' }, { sec: 3600, label: '1hr' }
-    ];
-    const THEMES = {
-      cyan:    { name: 'Cyan Recon',      accent: '#38bdf8' },
-      crimson: { name: 'Crimson Redline', accent: '#ff3b5c' },
-      emerald: { name: 'Emerald Trail',   accent: '#34d399' },
-      violet:  { name: 'Violet Nightrider', accent: '#a78bfa' },
-      amberth: { name: 'Amber Dust',      accent: '#fbbf24' },
-      mono:    { name: 'Mono Steel',      accent: '#e2e8f0' }
-    };
-    // Metric keys that use the theme's primary accent color by default (not a fixed semantic color)
-    const ACCENT_METRIC_KEYS = ['speed', 'rpm', 'iat', 'throttle', 'timing', 'map'];
+  <div class="modal-stats-grid">
+    <div class="modal-stat-box">
+      <div class="modal-stat-label">SESSION MIN</div>
+      <div class="modal-stat-num" id="modal-stat-min">0</div>
+    </div>
+    <div class="modal-stat-box">
+      <div class="modal-stat-label">AVERAGE</div>
+      <div class="modal-stat-num" id="modal-stat-avg">0</div>
+    </div>
+    <div class="modal-stat-box">
+      <div class="modal-stat-label">SESSION MAX</div>
+      <div class="modal-stat-num" id="modal-stat-max">0</div>
+    </div>
+  </div>
 
-    const DEFAULT_SETTINGS = {
-      speedUnit: 'kmh',
-      tempUnit: 'c',
-      timeframes: [30, 60, 300],
-      theme: 'cyan',
-      intensity: 100,   // %
-      contrast: 100,    // %
-      bloomOn: true,
-      bloomIntensity: 14, // px
-      autoSaveEnabled: false
-    };
+  <canvas id="modal-canvas" class="modal-canvas"></canvas>
+  <div class="modal-range-toggles" id="modal-range-toggles"></div>
+</div>
 
-    function loadSettings() {
-      try {
-        const raw = localStorage.getItem(SETTINGS_KEY);
-        if (!raw) return { ...DEFAULT_SETTINGS };
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-      } catch (e) {
-        return { ...DEFAULT_SETTINGS };
-      }
-    }
+<!-- 7. SETTINGS MODAL -->
+<div id="settings-modal">
+  <div class="modal-header">
+    <div class="modal-title">COCKPIT SETTINGS</div>
+    <button class="btn-close-modal" onclick="closeSettingsModal()">✕</button>
+  </div>
+  <div class="settings-body">
 
-    function saveSettings() {
-      try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings)); } catch (e) {}
-    }
-
-    let appSettings = loadSettings();
-
-    // Unit settings (kept as top-level vars for the rest of the app to read directly)
-    let speedUnit = appSettings.speedUnit;
-    let tempUnit = appSettings.tempUnit;
-
-    // Logging & CSV Flight Recorder
-    let isCockpitCsvLogging = false;
-    let cockpitCsvFrames = [];
-    let cockpitCsvStartTime = 0;
-    let cockpitCsvInterval = null;
-
-    // Long-term auto-save-to-disk streaming
-    let autoSaveDirHandle = null;      // FileSystemDirectoryHandle, persisted in IndexedDB
-    let autoSaveFileHandle = null;     // FileSystemFileHandle for the current/most recent recording
-    let autoSaveWritable = null;       // active FileSystemWritableFileStream
-    let autoSavePendingRows = [];      // small buffer flushed periodically to disk
-    let autoSaveFlushInterval = null;
-    const AUTO_SAVE_SUPPORTED = typeof window.showDirectoryPicker === 'function';
-
-    // Metric Data Definition & Rolling 5-Minute Buffers
-    const METRICS = {
-      speed:    { name: "Ground Speed", unit: "km/h", max: 115, color: "#38bdf8", data: [], mode: "live" },
-      rpm:      { name: "Engine RPM", unit: "RPM", max: 9000, color: "#38bdf8", data: [], mode: "live" },
-      coolant:  { name: "Coolant Temp", unit: "°C", max: 115, color: "#4ade80", data: [], mode: "live" },
-      load:     { name: "Engine Load", unit: "%", max: 100, color: "#c084fc", data: [], mode: "live" },
-      iat:      { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#38bdf8", data: [], mode: "live" },
-      pedal:    { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-      throttle: { name: "Throttle Blade", unit: "%", max: 100, color: "#38bdf8", data: [], mode: "live" },
-      fuel:     { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#c084fc", data: [], mode: "live" },
-      timing:   { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#38bdf8", data: [], mode: "live" },
-      map:      { name: "Intake MAP", unit: "mbar", max: 300, color: "#38bdf8", data: [], mode: "live" },
-      ase:      { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-      voltage:  { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#4ade80", data: [], mode: "live" }
-    };
-
-    // Fullscreen Modal State
-    let activeModalMetric = null;
-    let modalDurationSec = 30;
-
-    // Interaction Triple-Click Detector
-    const clickTrackers = {};
-
-    function log(msg) {
-      const el = document.getElementById('log');
-      if (el) el.innerText = msg;
-    }
-
-    /* Unit Switchers (independent, set from the Settings panel) */
-    window.setSpeedUnit = function(unit) {
-      speedUnit = unit;
-      appSettings.speedUnit = unit;
-      saveSettings();
-      document.getElementById('label-dash-speed-unit').innerText = speedUnit.toUpperCase();
-      METRICS.speed.unit = speedUnit.toUpperCase();
-      updateSegmentedUI('seg-speed-unit', speedUnit);
-      log(`Speed unit set to ${speedUnit.toUpperCase()}`);
-    };
-
-    window.setTempUnit = function(unit) {
-      tempUnit = unit;
-      appSettings.tempUnit = unit;
-      saveSettings();
-      document.getElementById('label-dash-coolant-unit').innerText = `°${tempUnit.toUpperCase()}`;
-      document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
-      METRICS.coolant.unit = `°${tempUnit.toUpperCase()}`;
-      METRICS.iat.unit = `°${tempUnit.toUpperCase()}`;
-      updateSegmentedUI('seg-temp-unit', tempUnit);
-      log(`Temperature unit set to °${tempUnit.toUpperCase()}`);
-    };
-
-    function updateSegmentedUI(containerId, activeVal) {
-      const el = document.getElementById(containerId);
-      if (!el) return;
-      el.querySelectorAll('button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.val === activeVal);
-      });
-    }
-
-    /* ==========================================================
-       THEME / COLOR INTENSITY / CONTRAST / BLOOM ("FX")
-       ========================================================== */
-    function applyTheme(themeKey) {
-      const theme = THEMES[themeKey] ? themeKey : 'cyan';
-      appSettings.theme = theme;
-      const accent = THEMES[theme].accent;
-      document.documentElement.style.setProperty('--cyan', accent);
-      document.documentElement.style.setProperty('--bg-tint', hexToRgba(accent, 0.12));
-
-      ACCENT_METRIC_KEYS.forEach(key => { if (METRICS[key]) METRICS[key].color = accent; });
-
-      const grid = document.getElementById('theme-swatch-grid');
-      if (grid) {
-        grid.querySelectorAll('.theme-swatch').forEach(sw => {
-          sw.classList.toggle('active', sw.dataset.theme === theme);
-        });
-      }
-      saveSettings();
-      renderActiveGraphs();
-      if (activeModalMetric) updateFullScreenModalData();
-    }
-
-    function hexToRgba(hex, alpha) {
-      const h = hex.replace('#', '');
-      const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
-      const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-
-    function applyFx() {
-      const fx = document.getElementById('viewport-fx');
-      if (!fx) return;
-      const saturate = appSettings.intensity / 100;
-      const contrast = appSettings.contrast / 100;
-      const bloomTerm = appSettings.bloomOn && appSettings.bloomIntensity > 0
-        ? ` drop-shadow(0 0 ${appSettings.bloomIntensity}px var(--cyan))`
-        : '';
-      fx.style.filter = `saturate(${saturate}) contrast(${contrast})${bloomTerm}`;
-    }
-
-    window.setIntensity = function(val) {
-      appSettings.intensity = Number(val);
-      document.getElementById('intensity-val').innerText = `${val}%`;
-      applyFx();
-      saveSettings();
-    };
-
-    window.setContrast = function(val) {
-      appSettings.contrast = Number(val);
-      document.getElementById('contrast-val').innerText = `${val}%`;
-      applyFx();
-      saveSettings();
-    };
-
-    window.toggleBloom = function() {
-      appSettings.bloomOn = !appSettings.bloomOn;
-      document.getElementById('toggle-bloom').classList.toggle('on', appSettings.bloomOn);
-      applyFx();
-      saveSettings();
-    };
-
-    window.setBloomIntensity = function(val) {
-      appSettings.bloomIntensity = Number(val);
-      document.getElementById('bloom-val').innerText = `${val}px`;
-      applyFx();
-      saveSettings();
-    };
-
-    window.selectTheme = function(themeKey) {
-      applyTheme(themeKey);
-    };
-
-    /* ==========================================================
-       TIME FRAME CONFIGURATION
-       ========================================================== */
-    function timeframeLabel(sec) {
-      const preset = TIMEFRAME_PRESETS.find(p => p.sec === sec);
-      if (preset) return preset.label;
-      if (sec < 60) return `${sec}s`;
-      if (sec < 3600) return `${Math.round(sec / 60)}m`;
-      return `${(sec / 3600).toFixed(1)}h`;
-    }
-
-    window.setTimeframe = function(slot, secStr) {
-      const sec = Number(secStr);
-      appSettings.timeframes[slot] = sec;
-      saveSettings();
-      log(`Time frame ${slot + 1} set to ${timeframeLabel(sec)}`);
-      renderModalRangeButtons();
-      // Any cards currently sitting on this slot should refresh with the new duration
-      for (const key of Object.keys(METRICS)) {
-        if (METRICS[key].mode === `tf${slot}`) updateCardUI(key);
-      }
-      if (activeModalMetric) {
-        modalDurationSec = appSettings.timeframes[0];
-        setModalRange(modalDurationSec);
-      }
-    };
-
-    function populateTimeframeSelects() {
-      for (let i = 0; i < 3; i++) {
-        const sel = document.getElementById(`tf-select-${i}`);
-        if (!sel) continue;
-        sel.innerHTML = TIMEFRAME_PRESETS.map(p =>
-          `<option value="${p.sec}" ${appSettings.timeframes[i] === p.sec ? 'selected' : ''}>${p.label}</option>`
-        ).join('');
-      }
-    }
-
-    function populateThemeSwatches() {
-      const grid = document.getElementById('theme-swatch-grid');
-      if (!grid) return;
-      grid.innerHTML = Object.entries(THEMES).map(([key, t]) => `
-        <div class="theme-swatch ${appSettings.theme === key ? 'active' : ''}" data-theme="${key}"
-             style="--swatch-color:${t.accent}; --swatch-glow:${hexToRgba(t.accent, 0.5)};"
-             onclick="selectTheme('${key}')">
-          <span class="theme-swatch-dot"></span>
-          <span class="theme-swatch-name">${t.name}</span>
+    <!-- Units -->
+    <div class="settings-section">
+      <div class="settings-section-title">Units & Readouts</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Speed Unit</div></div>
+        <div class="segmented" id="seg-speed-unit">
+          <button data-val="kmh" onclick="setSpeedUnit('kmh')">KM/H</button>
+          <button data-val="mph" onclick="setSpeedUnit('mph')">MPH</button>
         </div>
-      `).join('');
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Temperature Unit</div></div>
+        <div class="segmented" id="seg-temp-unit">
+          <button data-val="c" onclick="setTempUnit('c')">°C</button>
+          <button data-val="f" onclick="setTempUnit('f')">°F</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graph Time Frames -->
+    <div class="settings-section">
+      <div class="settings-section-title">Graph Time Frames</div>
+      <div class="settings-row-desc" style="margin-bottom:0.5rem;">Select the three time spans cycled when tapping cards.</div>
+      <div class="settings-row">
+        <div class="settings-row-label">Time Frame 1</div>
+        <select class="tf-select" id="tf-select-0" onchange="setTimeframe(0, this.value)"></select>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Time Frame 2</div>
+        <select class="tf-select" id="tf-select-1" onchange="setTimeframe(1, this.value)"></select>
+      </div>
+      <div class="settings-row">
+        <div class="settings-row-label">Time Frame 3</div>
+        <select class="tf-select" id="tf-select-2" onchange="setTimeframe(2, this.value)"></select>
+      </div>
+    </div>
+
+    <!-- Data Recording -->
+    <div class="settings-section">
+      <div class="settings-section-title">Long-Term Data Recording</div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-label">Auto-save CSV to folder</div>
+          <div class="settings-row-desc">Streams telemetry straight to storage for multi-hour trail sessions.</div>
+        </div>
+        <button class="toggle-switch" id="toggle-autosave" onclick="toggleAutoSave()"></button>
+      </div>
+      <button class="settings-btn-full" id="btn-choose-folder" onclick="chooseAutoSaveFolder()" style="margin-top:0.6rem;">📁 Choose Auto-Save Folder</button>
+      <div class="settings-status-note" id="autosave-status">Not supported on this browser — session logs can be exported directly when stopped.</div>
+    </div>
+
+    <!-- Themes & Visual FX -->
+    <div class="settings-section">
+      <div class="settings-section-title">Cockpit Theme & Visuals</div>
+      <div class="settings-row-label" style="margin-bottom:0.5rem;">Color Palette</div>
+      <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
+
+      <div class="settings-row" style="margin-top:0.7rem;">
+        <div class="settings-row-label">Color Saturation</div>
+      </div>
+      <input type="range" class="settings-slider" id="slider-intensity" min="60" max="160" step="5" oninput="setIntensity(this.value)">
+      <div class="slider-value-row"><span>Tactical</span><span id="intensity-val">105%</span><span>Vivid</span></div>
+
+      <div class="settings-row" style="margin-top:0.7rem;">
+        <div class="settings-row-label">Cockpit Contrast</div>
+      </div>
+      <input type="range" class="settings-slider" id="slider-contrast" min="80" max="130" step="5" oninput="setContrast(this.value)">
+      <div class="slider-value-row"><span>Muted</span><span id="contrast-val">102%</span><span>High-Vis</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  /* ==========================================================
+     APP CORE & THEME SYSTEM
+     ========================================================== */
+  const APP_VERSION = "v1.0.0 PRO";
+  const SERVICE_UUIDS = [
+    '0000fff0-0000-1000-8000-00805f9b34fb',
+    '0000ffe0-0000-1000-8000-00805f9b34fb',
+    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+  ];
+
+  let bleDevice = null;
+  let writeChar = null;
+  let readChar = null;
+  let rxBuffer = '';
+  let isPolling = false;
+  let isDemoActive = false;
+  let demoInterval = null;
+
+  const SETTINGS_KEY = 'rmaxYamahaSettings_v1';
+  const TIMEFRAME_PRESETS = [
+    { sec: 10, label: '10s' }, { sec: 30, label: '30s' }, { sec: 60, label: '1min' },
+    { sec: 120, label: '2min' }, { sec: 300, label: '5min' }, { sec: 600, label: '10min' },
+    { sec: 900, label: '15min' }, { sec: 1800, label: '30min' }, { sec: 3600, label: '1hr' }
+  ];
+
+  /* Themes: Yamaha Racing Blue is flagship default */
+  const THEMES = {
+    yamaha:  { name: 'Yamaha Racing Blue', accent: '#0066ff', glow: 'rgba(0,102,255,0.7)' },
+    cyan:    { name: 'Ice Recon',          accent: '#00d2ff', glow: 'rgba(0,210,255,0.7)' },
+    crimson: { name: 'Redline Spec',       accent: '#ff1744', glow: 'rgba(255,23,68,0.7)' },
+    emerald: { name: 'Emerald Trail',      accent: '#10b981', glow: 'rgba(16,185,129,0.7)' },
+    amber:   { name: 'Desert Dune',        accent: '#f59e0b', glow: 'rgba(245,158,11,0.7)' },
+    stealth: { name: 'Titanium Stealth',   accent: '#e2e8f0', glow: 'rgba(226,232,240,0.5)' }
+  };
+
+  const ACCENT_METRICS = ['speed', 'rpm', 'iat', 'throttle', 'timing', 'map'];
+
+  const DEFAULT_SETTINGS = {
+    speedUnit: 'kmh',
+    tempUnit: 'c',
+    timeframes: [30, 60, 300],
+    theme: 'yamaha',
+    intensity: 105,
+    contrast: 102,
+    autoSaveEnabled: false
+  };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    } catch (e) {
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings)); } catch (e) {}
+  }
+
+  let appSettings = loadSettings();
+  let speedUnit = appSettings.speedUnit;
+  let tempUnit = appSettings.tempUnit;
+
+  // Flight Recorder State
+  let isCockpitCsvLogging = false;
+  let cockpitCsvFrames = [];
+  let cockpitCsvStartTime = 0;
+  let cockpitCsvInterval = null;
+
+  // Auto-save handles
+  let autoSaveDirHandle = null;
+  let autoSaveFileHandle = null;
+  let autoSaveWritable = null;
+  let autoSavePendingRows = [];
+  let autoSaveRowCount = 0;
+  const AUTO_SAVE_SUPPORTED = typeof window.showDirectoryPicker === 'function';
+
+  // Metrics Data Definition
+  const METRICS = {
+    speed:    { name: "Ground Speed", unit: "km/h", max: 115, color: "#0066ff", data: [], mode: "live" },
+    rpm:      { name: "Engine RPM", unit: "RPM", max: 9000, color: "#0066ff", data: [], mode: "live" },
+    coolant:  { name: "Coolant Temp", unit: "°C", max: 115, color: "#22c55e", data: [], mode: "live" },
+    load:     { name: "Engine Load", unit: "%", max: 100, color: "#a855f7", data: [], mode: "live" },
+    iat:      { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#0066ff", data: [], mode: "live" },
+    pedal:    { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    throttle: { name: "Throttle Blade", unit: "%", max: 100, color: "#0066ff", data: [], mode: "live" },
+    fuel:     { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#a855f7", data: [], mode: "live" },
+    timing:   { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#0066ff", data: [], mode: "live" },
+    map:      { name: "Intake MAP", unit: "mbar", max: 300, color: "#0066ff", data: [], mode: "live" },
+    ase:      { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    voltage:  { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#22c55e", data: [], mode: "live" }
+  };
+
+  let activeModalMetric = null;
+  let modalDurationSec = 30;
+  const clickTrackers = {};
+
+  function log(msg) {
+    const el = document.getElementById('log');
+    if (el) el.innerText = msg;
+  }
+
+  /* ==========================================================
+     CONNECT & TRANSITION FLOW
+     ========================================================== */
+  window.handleConnectClick = async function() {
+    if (bleDevice?.gatt?.connected) {
+      disconnect();
+      return;
+    }
+    if (isDemoActive) {
+      stopDemoMode();
+      return;
     }
 
-    /* ==========================================================
-       SETTINGS MODAL OPEN / CLOSE
-       ========================================================== */
-    window.openSettingsModal = function() {
-      populateTimeframeSelects();
-      populateThemeSwatches();
-      updateSegmentedUI('seg-speed-unit', speedUnit);
-      updateSegmentedUI('seg-temp-unit', tempUnit);
-      document.getElementById('slider-intensity').value = appSettings.intensity;
-      document.getElementById('intensity-val').innerText = `${appSettings.intensity}%`;
-      document.getElementById('slider-contrast').value = appSettings.contrast;
-      document.getElementById('contrast-val').innerText = `${appSettings.contrast}%`;
-      document.getElementById('toggle-bloom').classList.toggle('on', appSettings.bloomOn);
-      document.getElementById('slider-bloom').value = appSettings.bloomIntensity;
-      document.getElementById('bloom-val').innerText = `${appSettings.bloomIntensity}px`;
-      document.getElementById('toggle-autosave').classList.toggle('on', appSettings.autoSaveEnabled);
-      refreshAutoSaveStatusUI();
-      document.getElementById('settings-modal').style.display = 'flex';
-    };
+    const btn = document.getElementById('btn-tap-connect');
+    const logoBtn = document.getElementById('btn-connect-logo');
+    const hint = document.getElementById('connect-hint');
 
-    window.closeSettingsModal = function() {
-      document.getElementById('settings-modal').style.display = 'none';
-    };
+    if (btn) btn.innerHTML = '<span>⚡ SEARCHING BLE...</span>';
+    if (logoBtn) logoBtn.classList.add('connecting');
+    if (hint) hint.innerText = 'Select your OBD-II Bluetooth adapter in the pairing prompt...';
 
-    window.toggleFullscreen = function() {
-      const docEl = document.documentElement;
-      if (!document.fullscreenElement) {
-        docEl.requestFullscreen?.().catch(() => {});
-      } else {
-        document.exitFullscreen?.().catch(() => {});
+    await connect();
+  };
+
+  async function connect() {
+    try {
+      if (!navigator.bluetooth) throw new Error("Web Bluetooth not supported on this browser.");
+
+      bleDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: SERVICE_UUIDS
+      });
+
+      bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+      log("Connecting to OBD-II BLE GATT Server...");
+      const server = await bleDevice.gatt.connect();
+      await new Promise(r => setTimeout(r, 250));
+
+      let service = null;
+      for (const uuid of SERVICE_UUIDS) {
+        try {
+          service = await server.getPrimaryService(uuid);
+          if (service) break;
+        } catch (e) {}
       }
-    };
+      if (!service) throw new Error("UART telemetry service not found.");
 
-    /* Bluetooth Engine */
-    window.handleConnectClick = async function() {
-      if (bleDevice?.gatt?.connected) {
-        disconnect();
-        return;
+      const chars = await service.getCharacteristics();
+      writeChar = null; readChar = null;
+      for (const char of chars) {
+        if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
+        if (char.properties.notify || char.properties.indicate) readChar = char;
       }
-      const heroBtn = document.getElementById('btn-connect-hero');
-      const hint = document.getElementById('connect-hint');
-      if (heroBtn) heroBtn.classList.add('connecting');
-      if (hint) hint.innerText = 'Opening Bluetooth pairing…';
-      await connect();
-    };
+      if (!writeChar || !readChar) throw new Error("TX/RX communication pipe failed.");
 
-    async function connect() {
-      try {
-        if (!navigator.bluetooth) throw new Error("Web Bluetooth unavailable.");
-        log("Opening Bluetooth pairing prompt...");
-        bleDevice = await navigator.bluetooth.requestDevice({
-          acceptAllDevices: true,
-          optionalServices: SERVICE_UUIDS
-        });
+      await readChar.startNotifications();
+      readChar.addEventListener('characteristicvaluechanged', handleNotification);
 
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-        log("Connecting to GATT server...");
-        const server = await bleDevice.gatt.connect();
-        await new Promise(r => setTimeout(r, 300));
-
-        let service = null;
-        for (const uuid of SERVICE_UUIDS) {
-          try {
-            service = await server.getPrimaryService(uuid);
-            if (service) break;
-          } catch (e) {}
-        }
-        if (!service) throw new Error("No UART BLE service found.");
-
-        const chars = await service.getCharacteristics();
-        writeChar = null; readChar = null;
-        for (const char of chars) {
-          if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
-          if (char.properties.notify || char.properties.indicate) readChar = char;
-        }
-
-        if (!writeChar || !readChar) throw new Error("TX/RX characteristics not resolved.");
-
-        await readChar.startNotifications();
-        readChar.addEventListener('characteristicvaluechanged', handleNotification);
-
-        const statusEl = document.getElementById('status');
-        if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
-
-        await initYamahaELM327();
-        startPolling();
-        revealDashboard();
-
-      } catch (err) {
-        log("BLE Error: " + err.message);
-        const heroBtn = document.getElementById('btn-connect-hero');
-        if (heroBtn) heroBtn.classList.remove('connecting');
-        const hint = document.getElementById('connect-hint');
-        if (hint) hint.innerText = `Couldn't connect: ${err.message}. Tap Connect to try again.`;
-        disconnect();
-      }
-    }
-
-    function disconnect() {
-      if (isCockpitCsvLogging) toggleCockpitCsvLogger();
-      if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
-      onDisconnected();
-    }
-
-    function onDisconnected() {
-      isPolling = false;
       const statusEl = document.getElementById('status');
-      if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
-      log("Disconnected.");
-      showConnectScreen();
-    }
+      if (statusEl) { statusEl.innerText = "CONNECTED"; statusEl.className = "status-badge connected"; }
 
-    /* Connect-screen <-> Dashboard fancy transition */
-    function revealDashboard() {
-      const connectScreen = document.getElementById('connect-screen');
-      const appShell = document.getElementById('app-shell');
-      const dock = document.getElementById('touch-dock');
-      const heroBtn = document.getElementById('btn-connect-hero');
-      if (heroBtn) heroBtn.classList.remove('connecting');
-      if (connectScreen) connectScreen.classList.add('hide');
-      setTimeout(() => {
-        if (appShell) appShell.classList.add('show');
-        if (dock) dock.style.display = 'flex';
-      }, 220);
-    }
+      await initYamahaELM327();
+      fadeToDashboard();
+      startPolling();
 
-    function showConnectScreen() {
-      const connectScreen = document.getElementById('connect-screen');
-      const appShell = document.getElementById('app-shell');
-      const dock = document.getElementById('touch-dock');
-      if (appShell) appShell.classList.remove('show');
-      if (dock) dock.style.display = 'none';
-      if (connectScreen) connectScreen.classList.remove('hide');
+    } catch (err) {
+      log("Connection cancelled or failed: " + err.message);
+      resetConnectScreenState();
     }
+  }
 
-    let responseResolver = null;
-    function handleNotification(event) {
-      const chunk = new TextDecoder().decode(event.target.value);
-      rxBuffer += chunk;
-      if (rxBuffer.includes('>')) {
-        if (responseResolver) {
-          const res = rxBuffer.replace(/>/g, '').trim();
-          rxBuffer = '';
-          responseResolver(res);
-          responseResolver = null;
-        }
+  function resetConnectScreenState() {
+    const btn = document.getElementById('btn-tap-connect');
+    const logoBtn = document.getElementById('btn-connect-logo');
+    const hint = document.getElementById('connect-hint');
+    if (btn) btn.innerHTML = '<span>⚡ TAP TO CONNECT</span>';
+    if (logoBtn) logoBtn.classList.remove('connecting');
+    if (hint) hint.innerText = 'Tap to pair your RMAX OBD-II Bluetooth adapter.';
+  }
+
+  /* Fade out splash screen to Cockpit with needle calibration sweep */
+  function fadeToDashboard() {
+    const connectScreen = document.getElementById('connect-screen');
+    const appShell = document.getElementById('app-shell');
+    const dock = document.getElementById('touch-dock');
+
+    if (connectScreen) connectScreen.classList.add('hide');
+
+    setTimeout(() => {
+      if (appShell) appShell.classList.add('show');
+      if (dock) dock.style.display = 'flex';
+      runGaugeCalibrationSweep();
+    }, 320);
+  }
+
+  function showConnectScreen() {
+    const connectScreen = document.getElementById('connect-screen');
+    const appShell = document.getElementById('app-shell');
+    const dock = document.getElementById('touch-dock');
+    if (appShell) appShell.classList.remove('show');
+    if (dock) dock.style.display = 'none';
+    if (connectScreen) connectScreen.classList.remove('hide');
+    resetConnectScreenState();
+  }
+
+  function disconnect() {
+    if (isCockpitCsvLogging) toggleCockpitCsvLogger();
+    if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
+    onDisconnected();
+  }
+
+  function onDisconnected() {
+    isPolling = false;
+    const statusEl = document.getElementById('status');
+    if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+    log("OBD-II Bluetooth Disconnected.");
+    showConnectScreen();
+  }
+
+  /* Gauge Calibration Startup Sweep (Automotive style) */
+  function runGaugeCalibrationSweep() {
+    let sweep = 0;
+    const interval = setInterval(() => {
+      sweep += 0.05;
+      const factor = Math.sin(sweep);
+      if (sweep >= Math.PI) {
+        clearInterval(interval);
+        updateRadialGauge('rpm', 1250, 9000);
+        document.getElementById('val-dash-rpm').innerText = '1250';
+        updateRadialGauge('speed', 0, 115);
+        document.getElementById('val-dash-speed').innerText = '0';
+        updateRadialGauge('coolant', 82, 115);
+        document.getElementById('val-dash-coolant').innerText = (tempUnit === 'f') ? '180' : '82';
+        return;
       }
-    }
+      const testRpm = Math.round(factor * 8600);
+      const testSpeed = Math.round(factor * (speedUnit === 'kmh' ? 110 : 68));
+      updateRadialGauge('rpm', testRpm, 9000);
+      document.getElementById('val-dash-rpm').innerText = testRpm;
+      updateRadialGauge('speed', testSpeed, speedUnit === 'kmh' ? 115 : 75);
+      document.getElementById('val-dash-speed').innerText = testSpeed;
+    }, 25);
+  }
 
-    async function writeBLE(data) {
-      if (!writeChar) return;
-      if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
-        await writeChar.writeValueWithoutResponse(data);
-      } else if (writeChar.writeValueWithResponse) {
-        await writeChar.writeValueWithResponse(data);
-      } else {
-        await writeChar.writeValue(data);
-      }
-    }
+  /* ==========================================================
+     INTERACTIVE DEMO MODE (For Testing without vehicle)
+     ========================================================== */
+  window.launchDemoMode = function() {
+    isDemoActive = true;
+    const statusEl = document.getElementById('status');
+    if (statusEl) { statusEl.innerText = "DEMO SIM"; statusEl.className = "status-badge demo"; }
+    fadeToDashboard();
+    log("Yamaha RMAX Simulator online. Generating live physics telemetry...");
 
-    async function sendCommand(cmd, timeoutMs = 2500) {
-      return new Promise(async (resolve) => {
+    let t = 0;
+    demoInterval = setInterval(() => {
+      t += 0.12;
+      const simRpm = Math.round(3800 + Math.sin(t * 1.4) * 2600 + Math.sin(t * 3.8) * 800);
+      const simSpeed = Math.max(0, Math.round(38 + Math.sin(t * 0.9) * 35));
+      const simCoolant = 84 + Math.round(Math.sin(t * 0.2) * 4);
+      const simLoad = Math.min(100, Math.max(8, Math.round(45 + Math.sin(t * 1.5) * 38)));
+      const simPedal = Math.min(100, Math.max(0, Math.round(simLoad * 0.95)));
+      const simTps = Math.min(100, Math.max(5, Math.round(simPedal * 0.92)));
+      const simIat = 28 + Math.round(Math.sin(t * 0.1) * 3);
+      const simTiming = Math.round(18 + Math.sin(t * 2) * 14);
+      const simMap = Math.round(210 + (simLoad * 0.7));
+
+      const mockPayload = [
+        Math.floor(simRpm / 256), simRpm % 256,
+        simSpeed,
+        0, 0,
+        Math.floor(simMap / 256), simMap % 256,
+        Math.round((simPedal * 1.62) + 35),
+        Math.round(40 + (simLoad * 0.8)),
+        Math.round((simTps * 1.77) + 33),
+        0, 2, 0, 207,
+        simCoolant + 31,
+        simIat + 31,
+        (simTiming * 2) + 80,
+        0, 192,
+        0x02, // High Gear
+        0x81, // Trail D-Mode
+        0x00
+      ];
+
+      // Format as simulated hex stream
+      let hexStream = "6101";
+      for (const b of mockPayload) hexStream += b.toString(16).padStart(2, '0');
+      parseYamahaPayload(hexStream, 14.1);
+
+    }, 90);
+  };
+
+  function stopDemoMode() {
+    isDemoActive = false;
+    clearInterval(demoInterval);
+    showConnectScreen();
+  }
+
+  /* ==========================================================
+     OBD-II ELM327 COMMAND ENGINE
+     ========================================================== */
+  let responseResolver = null;
+  function handleNotification(event) {
+    const chunk = new TextDecoder().decode(event.target.value);
+    rxBuffer += chunk;
+    if (rxBuffer.includes('>')) {
+      if (responseResolver) {
+        const res = rxBuffer.replace(/>/g, '').trim();
         rxBuffer = '';
-        const timer = setTimeout(() => {
-          responseResolver = null;
-          resolve("TIMEOUT");
-        }, timeoutMs);
-
-        responseResolver = (response) => {
-          clearTimeout(timer);
-          resolve(response);
-        };
-
-        try {
-          await writeBLE(new TextEncoder().encode(cmd + '\r'));
-        } catch (e) {
-          clearTimeout(timer);
-          responseResolver = null;
-          resolve("WRITE_ERR");
-        }
-      });
-    }
-
-    /* Yamaha Mitsubishi ECU Init Sequence */
-    async function initYamahaELM327() {
-      await writeBLE(new TextEncoder().encode('\r\r\r'));
-      await new Promise(r => setTimeout(r, 200));
-
-      await sendCommand("ATD", 1200);
-      await sendCommand("ATZ", 2500);
-      await new Promise(r => setTimeout(r, 500));
-
-      await sendCommand("ATE0", 1200);
-      await sendCommand("ATL0", 1200);
-      await sendCommand("ATS0", 1200);
-      await sendCommand("ATH0", 1200);
-      await sendCommand("ATAT2", 1200);
-      await sendCommand("ATSTFF", 1200);
-      await sendCommand("ATSP6", 1800);
-      await sendCommand("ATSH7E0", 1200);
-
-      log("Connected to Yamaha RMAX! Live telemetry active.");
-    }
-
-    /* Continuous Live Polling Loop */
-    async function startPolling() {
-      if (isPolling) return;
-      isPolling = true;
-
-      while (isPolling && bleDevice?.gatt?.connected) {
-        const startT = performance.now();
-        const rawRes = await sendCommand("2101", 1200);
-        const rtt = Math.round(performance.now() - startT);
-
-        const voltRes = await sendCommand("ATRV", 700);
-        let atrvVal = 0;
-        const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
-        if (m && m[1]) atrvVal = parseFloat(m[1]);
-
-        parseYamahaPayload(rawRes, atrvVal);
-
-        const rpmVal = document.getElementById('val-dash-rpm').innerText;
-        const spdVal = document.getElementById('val-dash-speed').innerText;
-        log(`⚡ RMAX Live: ${spdVal} ${speedUnit.toUpperCase()} | RPM ${rpmVal} | ${rtt}ms`);
-        await new Promise(r => setTimeout(r, 30));
-      }
-      isPolling = false;
-    }
-
-    /* ==========================================================
-       YAMAHA RMAX CALIBRATED TELEMETRY DECODER
-       ========================================================== */
-    function parseYamahaPayload(raw, atrvVal = 0) {
-      if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
-
-      let hexStream = '';
-      const lines = raw.split(/[\r\n]+/);
-      for (const line of lines) {
-        const cleanLine = line.replace(/\s+/g, '');
-        const match = cleanLine.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
-        if (match && match[1]) {
-          hexStream += match[1];
-        } else if (!cleanLine.match(/^[0-9A-Fa-f]{3}$/)) {
-          hexStream += cleanLine;
-        }
-      }
-
-      if (!hexStream.includes("6101")) return;
-
-      const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
-      const bytes = [];
-      for (let i = 0; i < payloadHex.length; i += 2) {
-        bytes.push(parseInt(payloadHex.substr(i, 2), 16));
-      }
-
-      if (bytes.length < 18) return;
-
-      const now = Date.now();
-
-      // 1. Engine RPM
-      const rpm = (bytes[0] * 256) + bytes[1];
-      if (!isNaN(rpm) && rpm <= 10000) {
-        pushMetricData('rpm', now, rpm);
-        document.getElementById('val-dash-rpm').innerText = rpm;
-        updateRadialGauge('rpm', rpm, 9000);
-      }
-
-      // 2. Ground Speed
-      const rawMph = bytes[2];
-      let speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
-      pushMetricData('speed', now, speed);
-      document.getElementById('val-dash-speed').innerText = speed;
-      updateRadialGauge('speed', speed, speedUnit === 'kmh' ? 120 : 75);
-
-      // 3. Coolant Temp
-      const coolantC = bytes[14] - 31;
-      let displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
-      pushMetricData('coolant', now, displayCoolant);
-      document.getElementById('val-dash-coolant').innerText = displayCoolant;
-      updateRadialGauge('coolant', coolantC, 115);
-
-      // 4. Intake Air Temp (IAT)
-      const iatC = bytes[15] - 31;
-      let displayIat = (tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
-      pushMetricData('iat', now, displayIat);
-      document.getElementById('val-dash-iat').innerText = displayIat;
-      updateMeterBar('iat', displayIat, 80);
-
-      // 5. Engine Load %
-      const mapMbar = (bytes[5] * 256) + bytes[6];
-      const baroMbar = Math.round((bytes[18] && bytes[18] > 100 ? bytes[18] : 192) * 5.25);
-      const engineLoadPct = Math.min(100, Math.max(0, Math.round((mapMbar / baroMbar) * 100)));
-      pushMetricData('load', now, engineLoadPct);
-      document.getElementById('val-dash-load').innerText = engineLoadPct;
-      updateMeterBar('load', engineLoadPct, 100);
-
-      // 6. Gas Pedal (APS %) & Throttle Blade (TPS %)
-      const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
-      const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
-      pushMetricData('pedal', now, pedalPct);
-      pushMetricData('throttle', now, tpsPct);
-      document.getElementById('val-dash-pedal').innerText = pedalPct;
-      document.getElementById('val-dash-throttle').innerText = tpsPct;
-      updateMeterBar('pedal', pedalPct, 100);
-      updateMeterBar('throttle', tpsPct, 100);
-
-      // 7. Fuel Delivery & Injector Duty %
-      const fuelIndex = bytes[8];
-      const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
-      pushMetricData('fuel', now, fuelIndex);
-      document.getElementById('val-dash-fuel').innerText = fuelIndex;
-      document.getElementById('val-dash-duty').innerText = `${estDutyPct}%`;
-      updateMeterBar('fuel', fuelIndex, 170);
-
-      // 8. Spark Advance
-      const timingDeg = Math.round((bytes[16] - 80) / 2);
-      pushMetricData('timing', now, timingDeg);
-      document.getElementById('val-dash-timing').innerText = timingDeg > -30 && timingDeg < 85 ? timingDeg : '--';
-      updateMeterBar('timing', timingDeg + 20, 95);
-
-      // 9. Manifold Pressure (MAP)
-      pushMetricData('map', now, mapMbar);
-      document.getElementById('val-dash-map').innerText = mapMbar > 0 ? mapMbar : '--';
-      updateMeterBar('map', mapMbar, 300);
-
-      // 10. Warmup Fuel Decay (ASE %)
-      const rawB11 = bytes[11] !== undefined ? bytes[11] : 2;
-      const asePct = Math.min(100, Math.max(0, Math.round(((rawB11 - 2) / 46) * 100)));
-      pushMetricData('ase', now, asePct);
-      document.getElementById('val-dash-ase').innerText = asePct;
-      updateMeterBar('ase', asePct, 100);
-
-      // 11. Battery & ECU Voltage Drop
-      const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
-      const ecuRailV = rawB13 * 0.0706;
-      const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
-      pushMetricData('voltage', now, atrvVal || ecuRailV);
-      document.getElementById('val-dash-voltage').innerText = (atrvVal || ecuRailV).toFixed(1);
-      document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop`;
-      updateMeterBar('voltage', (atrvVal || ecuRailV) - 10, 5);
-
-      // 12. Status Strip Updates (Gear, D-Mode, Brakes)
-      const b19 = bytes[19];
-      const gearNibble = b19 & 0x0F;
-      let gearText = 'N';
-      let gearClass = 'gear-n';
-      if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
-      else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
-      else if (gearNibble === 0x00) { gearText = 'N'; gearClass = 'gear-n'; }
-      const gearEl = document.getElementById('val-dash-gear');
-      if (gearEl) { gearEl.className = `status-pill-val ${gearClass}`; gearEl.innerText = gearText; }
-
-      const b20 = bytes[20];
-      let dmodeText = 'TRAIL';
-      let dmodeClass = 'dmode-trail';
-      if (b20 === 0x82) { dmodeText = 'CRAWL'; dmodeClass = 'dmode-crawl'; }
-      else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
-      else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
-      const dmodeEl = document.getElementById('val-dash-dmode');
-      if (dmodeEl) { dmodeEl.className = `status-pill-val ${dmodeClass}`; dmodeEl.innerText = dmodeText; }
-
-      const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
-      const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
-      const pbrakeEl = document.getElementById('val-dash-pbrake');
-      if (pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
-      const fbrakeEl = document.getElementById('val-dash-fbrake');
-      if (fbrakeEl) { fbrakeEl.innerText = isFBrakeOn ? 'ON' : 'OFF'; fbrakeEl.className = `status-pill-val ${isFBrakeOn ? 'brake-on' : 'off'}`; }
-
-      // 13. Re-render active embedded sparkline graphs
-      renderActiveGraphs();
-
-      // 14. Re-render Fullscreen Zoom Modal if open
-      if (activeModalMetric) {
-        updateFullScreenModalData();
-      }
-
-      // 15. Session Flight Recorder Logging Hook
-      if (isCockpitCsvLogging) {
-        const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
-        const row = [
-          elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, (atrvVal || ecuRailV).toFixed(1), ecuRailV.toFixed(1), vDrop, 
-          gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
-        ].join(',');
-        logCsvRow(row);
+        responseResolver(res);
+        responseResolver = null;
       }
     }
+  }
 
-    /* Central Metric History Buffer Hook */
-    function getBufferWindowMs() {
-      const maxTf = Math.max(300, ...appSettings.timeframes);
-      return maxTf * 1000;
+  async function writeBLE(data) {
+    if (!writeChar) return;
+    if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
+      await writeChar.writeValueWithoutResponse(data);
+    } else {
+      await writeChar.writeValue(data);
     }
+  }
 
-    function pushMetricData(key, time, value) {
-      if (!METRICS[key]) return;
-      METRICS[key].data.push({ time, value });
-      // Trim data older than the longest configured graph time frame (min 5 minutes)
-      const cutoff = time - getBufferWindowMs();
-      if (METRICS[key].data.length > 300 && METRICS[key].data[0].time < cutoff) {
-        METRICS[key].data = METRICS[key].data.filter(pt => pt.time >= cutoff);
+  async function sendCommand(cmd, timeoutMs = 2000) {
+    return new Promise(async (resolve) => {
+      rxBuffer = '';
+      const timer = setTimeout(() => { responseResolver = null; resolve("TIMEOUT"); }, timeoutMs);
+      responseResolver = (res) => { clearTimeout(timer); resolve(res); };
+      try {
+        await writeBLE(new TextEncoder().encode(cmd + '\r'));
+      } catch (e) {
+        clearTimeout(timer);
+        responseResolver = null;
+        resolve("WRITE_ERR");
       }
+    });
+  }
+
+  async function initYamahaELM327() {
+    await writeBLE(new TextEncoder().encode('\r\r\r'));
+    await new Promise(r => setTimeout(r, 200));
+    await sendCommand("ATD", 1000);
+    await sendCommand("ATZ", 2000);
+    await new Promise(r => setTimeout(r, 400));
+    await sendCommand("ATE0", 1000);
+    await sendCommand("ATL0", 1000);
+    await sendCommand("ATS0", 1000);
+    await sendCommand("ATH0", 1000);
+    await sendCommand("ATAT2", 1000);
+    await sendCommand("ATSTFF", 1000);
+    await sendCommand("ATSP6", 1500);
+    await sendCommand("ATSH7E0", 1000);
+    log("Yamaha ECU Protocol Synced. Live telemetry active.");
+  }
+
+  async function startPolling() {
+    if (isPolling) return;
+    isPolling = true;
+
+    while (isPolling && bleDevice?.gatt?.connected) {
+      const rawRes = await sendCommand("2101", 1200);
+      const voltRes = await sendCommand("ATRV", 600);
+      let atrvVal = 0;
+      const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
+      if (m && m[1]) atrvVal = parseFloat(m[1]);
+
+      parseYamahaPayload(rawRes, atrvVal);
+      await new Promise(r => setTimeout(r, 30));
+    }
+    isPolling = false;
+  }
+
+  /* ==========================================================
+     TELEMETRY DECODER (22-Byte Calibrated Engine Payload)
+     ========================================================== */
+  function parseYamahaPayload(raw, atrvVal = 0) {
+    if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
+
+    let hexStream = '';
+    const lines = raw.split(/[\r\n]+/);
+    for (const line of lines) {
+      const clean = line.replace(/\s+/g, '');
+      const match = clean.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+      if (match && match[1]) hexStream += match[1];
+      else if (!clean.match(/^[0-9A-Fa-f]{3}$/)) hexStream += clean;
     }
 
-    function getMetricStats(key, durationSec) {
-      if (!METRICS[key] || !METRICS[key].data.length) return { min: 0, max: 0, avg: 0, current: 0 };
-      const now = Date.now();
-      const cutoff = now - (durationSec * 1000);
-      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
-      if (!points.length) return { min: 0, max: 0, avg: 0, current: 0 };
+    if (!hexStream.includes("6101")) return;
+    const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
+    const bytes = [];
+    for (let i = 0; i < payloadHex.length; i += 2) {
+      bytes.push(parseInt(payloadHex.substr(i, 2), 16));
+    }
+    if (bytes.length < 18) return;
 
-      const vals = points.map(p => p.value);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const avg = Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
-      const current = vals[vals.length - 1];
-      return { min, max, avg, current };
+    const now = Date.now();
+
+    // 1. Engine RPM
+    const rpm = (bytes[0] * 256) + bytes[1];
+    if (!isNaN(rpm) && rpm <= 10000) {
+      pushMetricData('rpm', now, rpm);
+      document.getElementById('val-dash-rpm').innerText = rpm;
+      updateRadialGauge('rpm', rpm, 9000);
     }
 
-    /* Radial & Gauge Fill Helpers */
-    function updateRadialGauge(type, val, maxVal) {
-      const arcLength = 293.2;
-      const pct = Math.min(1, Math.max(0, val / maxVal));
-      const offset = arcLength - (pct * arcLength);
+    // 2. Ground Speed
+    const rawMph = bytes[2];
+    const speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
+    pushMetricData('speed', now, speed);
+    document.getElementById('val-dash-speed').innerText = speed;
+    updateRadialGauge('speed', speed, speedUnit === 'kmh' ? 115 : 75);
 
-      if (type === 'rpm') {
-        const bar = document.getElementById('gauge-rpm-bar');
-        const redlineEl = document.getElementById('redline-alert');
-        if (bar) {
-          bar.style.strokeDashoffset = offset;
-          if (val >= 7800) {
-            bar.style.stroke = 'var(--redline)';
-            bar.style.filter = 'drop-shadow(0 0 12px var(--redline))';
-            redlineEl?.classList.add('active');
-          } else if (val >= 5500) {
-            bar.style.stroke = 'var(--amber)';
-            bar.style.filter = 'drop-shadow(0 0 8px var(--amber))';
-            redlineEl?.classList.remove('active');
-          } else {
-            bar.style.stroke = 'var(--cyan)';
-            bar.style.filter = 'drop-shadow(0 0 8px var(--cyan))';
-            redlineEl?.classList.remove('active');
-          }
-        }
-      } else if (type === 'speed') {
-        const bar = document.getElementById('gauge-speed-bar');
-        if (bar) bar.style.strokeDashoffset = offset;
-      } else if (type === 'coolant') {
-        const bar = document.getElementById('gauge-coolant-bar');
-        if (bar) {
-          bar.style.strokeDashoffset = offset;
-          bar.style.stroke = val >= 96 ? 'var(--red)' : val >= 88 ? 'var(--amber)' : 'var(--green)';
-        }
-      }
+    // 3. Coolant Temp
+    const coolantC = bytes[14] - 31;
+    const displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
+    pushMetricData('coolant', now, displayCoolant);
+    document.getElementById('val-dash-coolant').innerText = displayCoolant;
+    updateRadialGauge('coolant', coolantC, 115);
+
+    // 4. Intake Air Temp (IAT)
+    const iatC = bytes[15] - 31;
+    const displayIat = (tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
+    pushMetricData('iat', now, displayIat);
+    document.getElementById('val-dash-iat').innerText = displayIat;
+    updateMeterBar('iat', displayIat, 80);
+
+    // 5. Engine Load %
+    const mapMbar = (bytes[5] * 256) + bytes[6];
+    const baroMbar = Math.round((bytes[18] && bytes[18] > 100 ? bytes[18] : 192) * 5.25);
+    const engineLoadPct = Math.min(100, Math.max(0, Math.round((mapMbar / baroMbar) * 100)));
+    pushMetricData('load', now, engineLoadPct);
+    document.getElementById('val-dash-load').innerText = engineLoadPct;
+    updateMeterBar('load', engineLoadPct, 100);
+
+    // 6. Pedal (APS %) & Throttle Blade (TPS %)
+    const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
+    const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
+    pushMetricData('pedal', now, pedalPct);
+    pushMetricData('throttle', now, tpsPct);
+    document.getElementById('val-dash-pedal').innerText = pedalPct;
+    document.getElementById('val-dash-throttle').innerText = tpsPct;
+    updateMeterBar('pedal', pedalPct, 100);
+    updateMeterBar('throttle', tpsPct, 100);
+
+    // 7. Fuel Delivery & Duty %
+    const fuelIndex = bytes[8];
+    const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
+    pushMetricData('fuel', now, fuelIndex);
+    document.getElementById('val-dash-fuel').innerText = fuelIndex;
+    document.getElementById('val-dash-duty').innerText = `${estDutyPct}%`;
+    updateMeterBar('fuel', fuelIndex, 170);
+
+    // 8. Spark Advance
+    const timingDeg = Math.round((bytes[16] - 80) / 2);
+    pushMetricData('timing', now, timingDeg);
+    document.getElementById('val-dash-timing').innerText = (timingDeg > -30 && timingDeg < 85) ? timingDeg : '--';
+    updateMeterBar('timing', timingDeg + 20, 95);
+
+    // 9. Manifold Pressure (MAP)
+    pushMetricData('map', now, mapMbar);
+    document.getElementById('val-dash-map').innerText = mapMbar > 0 ? mapMbar : '--';
+    updateMeterBar('map', mapMbar, 300);
+
+    // 10. Warmup Fuel Decay (ASE %)
+    const rawB11 = bytes[11] !== undefined ? bytes[11] : 2;
+    const asePct = Math.min(100, Math.max(0, Math.round(((rawB11 - 2) / 46) * 100)));
+    pushMetricData('ase', now, asePct);
+    document.getElementById('val-dash-ase').innerText = asePct;
+    updateMeterBar('ase', asePct, 100);
+
+    // 11. Battery & ECU Voltage Drop
+    const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
+    const ecuRailV = rawB13 * 0.0706;
+    const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
+    pushMetricData('voltage', now, atrvVal || ecuRailV);
+    document.getElementById('val-dash-voltage').innerText = (atrvVal || ecuRailV).toFixed(1);
+    document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop`;
+    updateMeterBar('voltage', (atrvVal || ecuRailV) - 10, 5);
+
+    // 12. Drive Status Strip (Yamaha Gear & D-Mode Logic)
+    const b19 = bytes[19];
+    const gearNibble = b19 & 0x0F;
+    let gearText = 'N';
+    let gearClass = 'gear-n';
+    if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+    else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+    else if (gearNibble === 0x03) { gearText = 'R'; gearClass = 'gear-r'; }
+    else if (gearNibble === 0x04) { gearText = 'P'; gearClass = 'gear-p'; }
+    const gearEl = document.getElementById('val-dash-gear');
+    if (gearEl) { gearEl.className = `status-pill-val ${gearClass}`; gearEl.innerText = gearText; }
+
+    const b20 = bytes[20];
+    let dmodeText = 'TRAIL';
+    let dmodeClass = 'dmode-trail';
+    if (b20 === 0x82) { dmodeText = 'CRAWL'; dmodeClass = 'dmode-crawl'; }
+    else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
+    else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
+    const dmodeEl = document.getElementById('val-dash-dmode');
+    if (dmodeEl) { dmodeEl.className = `status-pill-val ${dmodeClass}`; dmodeEl.innerText = dmodeText; }
+
+    const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+    const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
+    const pbrakeEl = document.getElementById('val-dash-pbrake');
+    if (pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
+    const fbrakeEl = document.getElementById('val-dash-fbrake');
+    if (fbrakeEl) { fbrakeEl.innerText = isFBrakeOn ? 'ON' : 'OFF'; fbrakeEl.className = `status-pill-val ${isFBrakeOn ? 'brake-on' : 'off'}`; }
+
+    // Re-render graphs & modal
+    renderActiveGraphs();
+    if (activeModalMetric) updateFullScreenModalData();
+
+    // Flight Recorder Logging
+    if (isCockpitCsvLogging) {
+      const elapsed = ((Date.now() - cockpitCsvStartTime) / 1000).toFixed(3);
+      const row = [
+        elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, (atrvVal || ecuRailV).toFixed(1), ecuRailV.toFixed(1), vDrop, 
+        gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
+      ].join(',');
+      logCsvRow(row);
     }
+  }
 
-    function updateMeterBar(key, val, maxVal) {
-      const bar = document.getElementById(`bar-${key}`);
+  /* Metric Data Buffer Management */
+  function getBufferWindowMs() {
+    const maxTf = Math.max(300, ...appSettings.timeframes);
+    return maxTf * 1000;
+  }
+
+  function pushMetricData(key, time, value) {
+    if (!METRICS[key]) return;
+    METRICS[key].data.push({ time, value });
+    const cutoff = time - getBufferWindowMs();
+    if (METRICS[key].data.length > 300 && METRICS[key].data[0].time < cutoff) {
+      METRICS[key].data = METRICS[key].data.filter(pt => pt.time >= cutoff);
+    }
+  }
+
+  function getMetricStats(key, durationSec) {
+    if (!METRICS[key] || !METRICS[key].data.length) return { min: 0, max: 0, avg: 0, current: 0 };
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+    if (!points.length) return { min: 0, max: 0, avg: 0, current: 0 };
+
+    const vals = points.map(p => p.value);
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const avg = Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
+    const current = vals[vals.length - 1];
+    return { min, max, avg, current };
+  }
+
+  /* Radial & Gauge Fill Helpers */
+  function updateRadialGauge(type, val, maxVal) {
+    const arcLength = 293.2;
+    const pct = Math.min(1, Math.max(0, val / maxVal));
+    const offset = arcLength - (pct * arcLength);
+
+    if (type === 'rpm') {
+      const bar = document.getElementById('gauge-rpm-bar');
+      const redlineEl = document.getElementById('redline-alert');
       if (bar) {
-        const pct = Math.min(100, Math.max(0, (val / maxVal) * 100));
-        bar.style.width = pct + '%';
+        bar.style.strokeDashoffset = offset;
+        if (val >= 7800) {
+          bar.style.stroke = 'var(--redline)';
+          bar.style.filter = 'drop-shadow(0 0 14px var(--redline))';
+          redlineEl?.classList.add('active');
+        } else if (val >= 6000) {
+          bar.style.stroke = 'var(--amber)';
+          bar.style.filter = 'drop-shadow(0 0 10px var(--amber))';
+          redlineEl?.classList.remove('active');
+        } else {
+          bar.style.stroke = 'var(--yamaha-blue)';
+          bar.style.filter = 'drop-shadow(0 0 10px var(--yamaha-blue))';
+          redlineEl?.classList.remove('active');
+        }
+      }
+    } else if (type === 'speed') {
+      const bar = document.getElementById('gauge-speed-bar');
+      if (bar) bar.style.strokeDashoffset = offset;
+    } else if (type === 'coolant') {
+      const bar = document.getElementById('gauge-coolant-bar');
+      if (bar) {
+        bar.style.strokeDashoffset = offset;
+        bar.style.stroke = val >= 96 ? 'var(--red)' : val >= 88 ? 'var(--amber)' : 'var(--green)';
       }
     }
+  }
 
-    /* ==========================================================
-       INTERACTIVE CLICK & TRIPLE-CLICK MODAL ENGINE
-       ========================================================== */
-    window.handleCardClick = function(key, element) {
-      const now = Date.now();
-      if (!clickTrackers[key]) clickTrackers[key] = { count: 0, last: 0 };
+  function updateMeterBar(key, val, maxVal) {
+    const bar = document.getElementById(`bar-${key}`);
+    if (bar) {
+      const pct = Math.min(100, Math.max(0, (val / maxVal) * 100));
+      bar.style.width = pct + '%';
+    }
+  }
 
-      if (now - clickTrackers[key].last < 380) {
-        clickTrackers[key].count++;
-      } else {
-        clickTrackers[key].count = 1;
-      }
-      clickTrackers[key].last = now;
+  /* ==========================================================
+     INTERACTIVE CARD CLICK & ZOOM ENGINE
+     ========================================================== */
+  window.handleCardClick = function(key, element) {
+    const now = Date.now();
+    if (!clickTrackers[key]) clickTrackers[key] = { count: 0, last: 0 };
+    if (now - clickTrackers[key].last < 380) {
+      clickTrackers[key].count++;
+    } else {
+      clickTrackers[key].count = 1;
+    }
+    clickTrackers[key].last = now;
 
-      // Double Tap Detection
-      if (clickTrackers[key].count >= 2) {
+    if (clickTrackers[key].count >= 2) {
+      clickTrackers[key].count = 0;
+      openFullScreenModal(key);
+      return;
+    }
+
+    setTimeout(() => {
+      if (clickTrackers[key].count === 1) {
+        cycleCardMode(key);
         clickTrackers[key].count = 0;
-        openFullScreenModal(key);
-        return;
       }
+    }, 300);
+  };
 
-      // Single Tap Mode Cycle (Live -> Time Frame 1 -> Time Frame 2 -> Time Frame 3 -> Live)
-      setTimeout(() => {
-        if (clickTrackers[key].count === 1) {
-          cycleCardMode(key);
-          clickTrackers[key].count = 0;
-        }
-      }, 300);
-    };
+  function cycleCardMode(key) {
+    const card = METRICS[key];
+    if (!card) return;
+    if (card.mode === 'live') card.mode = 'tf0';
+    else if (card.mode === 'tf0') card.mode = 'tf1';
+    else if (card.mode === 'tf1') card.mode = 'tf2';
+    else card.mode = 'live';
+    updateCardUI(key);
+  }
 
-    // Card mode is 'live' or 'tf0' / 'tf1' / 'tf2', mapped to appSettings.timeframes[0..2]
-    function cycleCardMode(key) {
-      const card = METRICS[key];
-      if (!card) return;
+  function modeToDurationSec(mode) {
+    const slot = { tf0: 0, tf1: 1, tf2: 2 }[mode];
+    return slot === undefined ? null : appSettings.timeframes[slot];
+  }
 
-      if (card.mode === 'live') card.mode = 'tf0';
-      else if (card.mode === 'tf0') card.mode = 'tf1';
-      else if (card.mode === 'tf1') card.mode = 'tf2';
-      else card.mode = 'live';
+  function timeframeLabel(sec) {
+    const preset = TIMEFRAME_PRESETS.find(p => p.sec === sec);
+    if (preset) return preset.label;
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.round(sec / 60)}m`;
+    return `${(sec / 3600).toFixed(1)}h`;
+  }
 
-      updateCardUI(key);
+  function updateCardUI(key) {
+    const card = METRICS[key];
+    const isHero = ['speed', 'rpm', 'coolant'].includes(key);
+
+    const liveView = isHero ? document.getElementById(`live-gauge-${key}`) : document.getElementById(`live-view-${key}`);
+    const graphView = document.getElementById(`graph-view-${key}`);
+    const badge = document.getElementById(`badge-${key}`);
+    const cardBox = document.getElementById(`card-${key}`);
+
+    cardBox.classList.remove('active-tf');
+    badge.classList.remove('badge-active');
+
+    if (card.mode === 'live') {
+      if (liveView) liveView.style.display = 'flex';
+      if (graphView) graphView.style.display = 'none';
+      badge.innerText = 'LIVE';
+    } else {
+      if (liveView) liveView.style.display = 'none';
+      if (graphView) graphView.style.display = 'flex';
+
+      const durationSec = modeToDurationSec(card.mode);
+      badge.innerText = timeframeLabel(durationSec);
+      badge.classList.add('badge-active');
+      cardBox.classList.add('active-tf');
+      renderGraph(key, durationSec);
+    }
+  }
+
+  function renderActiveGraphs() {
+    for (const [key, metric] of Object.entries(METRICS)) {
+      if (metric.mode !== 'live') renderGraph(key, modeToDurationSec(metric.mode));
+    }
+  }
+
+  function renderGraph(key, durationSec) {
+    const canvas = document.getElementById(`canvas-${key}`);
+    if (!canvas) return;
+
+    const stats = getMetricStats(key, durationSec);
+    document.getElementById(`min-${key}`).innerText = stats.min;
+    document.getElementById(`avg-${key}`).innerText = stats.avg;
+    document.getElementById(`max-${key}`).innerText = stats.max;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+    if (points.length < 2) {
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.font = "10px JetBrains Mono";
+      ctx.fillText("Buffering telemetry...", 10, h / 2);
+      return;
     }
 
-    function modeToDurationSec(mode) {
-      const slot = { tf0: 0, tf1: 1, tf2: 2 }[mode];
-      return slot === undefined ? null : appSettings.timeframes[slot];
-    }
+    const minVal = stats.min;
+    const maxVal = Math.max(stats.max, minVal + 1);
+    const range = maxVal - minVal;
 
-    function updateCardUI(key) {
-      const card = METRICS[key];
-      const isHero = ['speed', 'rpm', 'coolant'].includes(key);
+    // Gridlines
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
+    ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+    ctx.stroke();
 
-      const liveView = isHero ? document.getElementById(`live-gauge-${key}`) : document.getElementById(`live-view-${key}`);
-      const graphView = document.getElementById(`graph-view-${key}`);
-      const badge = document.getElementById(`badge-${key}`);
-      const cardBox = document.getElementById(`card-${key}`);
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+      const y = h - ((p.value - minVal) / range) * (h - 10) - 5;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
 
-      cardBox.classList.remove('active-30s', 'active-5m');
-      badge.classList.remove('badge-30s', 'badge-5m');
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, `${METRICS[key].color}55`);
+    grad.addColorStop(1, `${METRICS[key].color}00`);
 
-      if (card.mode === 'live') {
-        if (liveView) liveView.style.display = 'flex';
-        if (graphView) graphView.style.display = 'none';
-        badge.innerText = 'LIVE';
-      } else {
-        if (liveView) liveView.style.display = 'none';
-        if (graphView) graphView.style.display = 'flex';
+    ctx.save();
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
 
-        const durationSec = modeToDurationSec(card.mode);
-        badge.innerText = timeframeLabel(durationSec);
-        // Reuse the existing accent classes: slot 0 gets the cyan treatment, others get the purple treatment
-        if (card.mode === 'tf0') { badge.classList.add('badge-30s'); cardBox.classList.add('active-30s'); }
-        else { badge.classList.add('badge-5m'); cardBox.classList.add('active-5m'); }
-        renderGraph(key, durationSec);
+    ctx.strokeStyle = METRICS[key].color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = METRICS[key].color;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+  }
+
+  /* Fullscreen Zoom Modal */
+  function renderModalRangeButtons() {
+    const wrap = document.getElementById('modal-range-toggles');
+    if (!wrap) return;
+    wrap.innerHTML = appSettings.timeframes.map(sec => `
+      <button class="btn-touch" style="flex:1;" id="modal-btn-${sec}s" onclick="setModalRange(${sec})">${timeframeLabel(sec)}</button>
+    `).join('');
+    highlightModalRangeButton(modalDurationSec);
+  }
+
+  function highlightModalRangeButton(sec) {
+    appSettings.timeframes.forEach(s => {
+      const btn = document.getElementById(`modal-btn-${s}s`);
+      if (btn) {
+        btn.style.background = s === sec ? 'var(--yamaha-cyan)' : 'rgba(255,255,255,0.08)';
+        btn.style.color = s === sec ? '#02050e' : '#fff';
       }
-    }
+    });
+  }
 
-    function renderActiveGraphs() {
-      for (const [key, metric] of Object.entries(METRICS)) {
-        if (metric.mode !== 'live') {
-          renderGraph(key, modeToDurationSec(metric.mode));
-        }
-      }
-    }
+  window.openFullScreenModal = function(key) {
+    activeModalMetric = key;
+    const metric = METRICS[key];
+    const modal = document.getElementById('fullscreen-modal');
 
-    /* HTML5 Canvas Sparkline Graph Renderer */
-    function renderGraph(key, durationSec) {
-      const canvas = document.getElementById(`canvas-${key}`);
-      if (!canvas) return;
+    document.getElementById('modal-metric-title').innerText = metric.name;
+    document.getElementById('modal-main-unit').innerText = metric.unit;
+    if (!appSettings.timeframes.includes(modalDurationSec)) modalDurationSec = appSettings.timeframes[0];
+    renderModalRangeButtons();
+    setModalRange(modalDurationSec);
 
-      const stats = getMetricStats(key, durationSec);
-      document.getElementById(`min-${key}`).innerText = stats.min;
-      document.getElementById(`avg-${key}`).innerText = stats.avg;
-      document.getElementById(`max-${key}`).innerText = stats.max;
+    modal.style.display = 'flex';
+    updateFullScreenModalData();
+  };
 
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
+  window.closeFullScreenModal = function() {
+    activeModalMetric = null;
+    document.getElementById('fullscreen-modal').style.display = 'none';
+  };
 
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+  window.setModalRange = function(sec) {
+    modalDurationSec = sec;
+    highlightModalRangeButton(sec);
+    updateFullScreenModalData();
+  };
 
-      const w = rect.width;
-      const h = rect.height;
-      ctx.clearRect(0, 0, w, h);
+  function updateFullScreenModalData() {
+    if (!activeModalMetric) return;
+    const key = activeModalMetric;
+    const stats = getMetricStats(key, modalDurationSec);
 
-      const now = Date.now();
-      const cutoff = now - (durationSec * 1000);
-      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+    document.getElementById('modal-main-val').innerText = stats.current;
+    document.getElementById('modal-main-val').style.color = METRICS[key].color;
+    document.getElementById('modal-stat-min').innerText = stats.min;
+    document.getElementById('modal-stat-avg').innerText = stats.avg;
+    document.getElementById('modal-stat-max').innerText = stats.max;
 
-      if (points.length < 2) {
-        ctx.fillStyle = "rgba(255,255,255,0.2)";
-        ctx.font = "10px JetBrains Mono";
-        ctx.fillText("Buffering telemetry...", 10, h / 2);
-        return;
-      }
+    renderModalCanvas(key, modalDurationSec);
+  }
 
-      const minVal = stats.min;
-      const maxVal = Math.max(stats.max, minVal + 1);
-      const range = maxVal - minVal;
+  function renderModalCanvas(key, durationSec) {
+    const canvas = document.getElementById('modal-canvas');
+    if (!canvas) return;
 
-      // Draw subtle background gridlines
-      ctx.strokeStyle = "rgba(255,255,255,0.06)";
-      ctx.lineWidth = 1;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+    if (points.length < 2) return;
+
+    const stats = getMetricStats(key, durationSec);
+    const minVal = stats.min;
+    const maxVal = Math.max(stats.max, minVal + 1);
+    const range = maxVal - minVal;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
       ctx.beginPath();
-      ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
-      ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
-      ctx.stroke();
-
-      // Path creation
-      ctx.beginPath();
-      points.forEach((p, idx) => {
-        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
-        const y = h - ((p.value - minVal) / range) * (h - 10) - 5;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-
-      // Area fill gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, `${METRICS[key].color}44`);
-      grad.addColorStop(1, `${METRICS[key].color}00`);
-
-      ctx.save();
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.restore();
-
-      // Glow Stroke
-      ctx.strokeStyle = METRICS[key].color;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = METRICS[key].color;
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-    }
-
-    /* ==========================================================
-       FULLSCREEN ZOOM MODAL
-       ========================================================== */
-    function renderModalRangeButtons() {
-      const wrap = document.getElementById('modal-range-toggles');
-      if (!wrap) return;
-      wrap.innerHTML = appSettings.timeframes.map(sec => `
-        <button class="btn-touch" style="flex:1;" id="modal-btn-${sec}s" onclick="setModalRange(${sec})">${timeframeLabel(sec)}</button>
-      `).join('');
-      highlightModalRangeButton(modalDurationSec);
-    }
-
-    function highlightModalRangeButton(sec) {
-      appSettings.timeframes.forEach(s => {
-        const btn = document.getElementById(`modal-btn-${s}s`);
-        if (btn) {
-          btn.style.background = s === sec ? 'var(--cyan)' : 'rgba(255,255,255,0.08)';
-          btn.style.color = s === sec ? '#05070e' : '#fff';
-        }
-      });
-    }
-
-    window.openFullScreenModal = function(key) {
-      activeModalMetric = key;
-      const metric = METRICS[key];
-      const modal = document.getElementById('fullscreen-modal');
-
-      document.getElementById('modal-metric-title').innerText = metric.name;
-      document.getElementById('modal-main-unit').innerText = metric.unit;
-      if (!appSettings.timeframes.includes(modalDurationSec)) modalDurationSec = appSettings.timeframes[0];
-      renderModalRangeButtons();
-      setModalRange(modalDurationSec);
-
-      modal.style.display = 'flex';
-      updateFullScreenModalData();
-    };
-
-    window.closeFullScreenModal = function() {
-      activeModalMetric = null;
-      document.getElementById('fullscreen-modal').style.display = 'none';
-    };
-
-    window.setModalRange = function(sec) {
-      modalDurationSec = sec;
-      highlightModalRangeButton(sec);
-      updateFullScreenModalData();
-    };
-
-    function updateFullScreenModalData() {
-      if (!activeModalMetric) return;
-      const key = activeModalMetric;
-      const stats = getMetricStats(key, modalDurationSec);
-
-      document.getElementById('modal-main-val').innerText = stats.current;
-      document.getElementById('modal-main-val').style.color = METRICS[key].color;
-      document.getElementById('modal-stat-min').innerText = stats.min;
-      document.getElementById('modal-stat-avg').innerText = stats.avg;
-      document.getElementById('modal-stat-max').innerText = stats.max;
-
-      renderModalCanvas(key, modalDurationSec);
-    }
-
-    function renderModalCanvas(key, durationSec) {
-      const canvas = document.getElementById('modal-canvas');
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      const w = rect.width;
-      const h = rect.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const now = Date.now();
-      const cutoff = now - (durationSec * 1000);
-      const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
-
-      if (points.length < 2) return;
-
-      const stats = getMetricStats(key, durationSec);
-      const minVal = stats.min;
-      const maxVal = Math.max(stats.max, minVal + 1);
-      const range = maxVal - minVal;
-
-      // Draw grid
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 1;
-      for (let i = 1; i <= 4; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, (h / 5) * i);
-        ctx.lineTo(w, (h / 5) * i);
-        ctx.stroke();
-      }
-
-      ctx.beginPath();
-      points.forEach((p, idx) => {
-        const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
-        const y = h - ((p.value - minVal) / range) * (h - 30) - 15;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, `${METRICS[key].color}55`);
-      grad.addColorStop(1, `${METRICS[key].color}00`);
-
-      ctx.save();
-      ctx.lineTo(w, h);
-      ctx.lineTo(0, h);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.restore();
-
-      ctx.strokeStyle = METRICS[key].color;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = METRICS[key].color;
-      ctx.shadowBlur = 10;
+      ctx.moveTo(0, (h / 5) * i); ctx.lineTo(w, (h / 5) * i);
       ctx.stroke();
     }
 
-    window.handleModalClick = function(e) {
-      if (e.target.id === 'fullscreen-modal') {
-        const now = Date.now();
-        if (!clickTrackers['modal']) clickTrackers['modal'] = { count: 0, last: 0 };
-        if (now - clickTrackers['modal'].last < 380) {
-          clickTrackers['modal'].count++;
-        } else {
-          clickTrackers['modal'].count = 1;
-        }
-        clickTrackers['modal'].last = now;
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+      const y = h - ((p.value - minVal) / range) * (h - 30) - 15;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
 
-        if (clickTrackers['modal'].count >= 2) {
-          closeFullScreenModal();
-        }
-      }
-    };
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, `${METRICS[key].color}66`);
+    grad.addColorStop(1, `${METRICS[key].color}00`);
 
-    /* ==========================================================
-       IndexedDB — persists the chosen auto-save FOLDER handle
-       (localStorage can't hold a FileSystemDirectoryHandle)
-       ========================================================== */
-    const IDB_NAME = 'rmaxProStore';
-    const IDB_STORE = 'handles';
-    function idbOpen() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
+    ctx.save();
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = METRICS[key].color;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = METRICS[key].color;
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+  }
+
+  window.handleModalClick = function(e) {
+    if (e.target.id === 'fullscreen-modal') closeFullScreenModal();
+  };
+
+  /* ==========================================================
+     SETTINGS & THEME CONFIGURATION
+     ========================================================== */
+  function applyTheme(themeKey) {
+    const theme = THEMES[themeKey] ? themeKey : 'yamaha';
+    appSettings.theme = theme;
+    const accent = THEMES[theme].accent;
+    document.documentElement.style.setProperty('--yamaha-blue', accent);
+    document.documentElement.style.setProperty('--yamaha-blue-glow', THEMES[theme].glow);
+    document.documentElement.style.setProperty('--bg-tint', hexToRgba(accent, 0.18));
+
+    ACCENT_METRICS.forEach(key => { if (METRICS[key]) METRICS[key].color = accent; });
+
+    const grid = document.getElementById('theme-swatch-grid');
+    if (grid) {
+      grid.querySelectorAll('.theme-swatch').forEach(sw => {
+        sw.classList.toggle('active', sw.dataset.theme === theme);
       });
     }
-    async function idbSet(key, val) {
-      const db = await idbOpen();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, 'readwrite');
-        tx.objectStore(IDB_STORE).put(val, key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
+    saveSettings();
+    renderActiveGraphs();
+  }
+
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace('#', '');
+    const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function applyFx() {
+    const fx = document.getElementById('viewport-fx');
+    if (!fx) return;
+    const saturate = appSettings.intensity / 100;
+    const contrast = appSettings.contrast / 100;
+    fx.style.filter = `saturate(${saturate}) contrast(${contrast})`;
+  }
+
+  window.setIntensity = function(val) {
+    appSettings.intensity = Number(val);
+    document.getElementById('intensity-val').innerText = `${val}%`;
+    applyFx(); saveSettings();
+  };
+
+  window.setContrast = function(val) {
+    appSettings.contrast = Number(val);
+    document.getElementById('contrast-val').innerText = `${val}%`;
+    applyFx(); saveSettings();
+  };
+
+  window.selectTheme = function(themeKey) { applyTheme(themeKey); };
+
+  window.setSpeedUnit = function(unit) {
+    speedUnit = unit;
+    appSettings.speedUnit = unit;
+    saveSettings();
+    document.getElementById('label-dash-speed-unit').innerText = speedUnit.toUpperCase();
+    METRICS.speed.unit = speedUnit.toUpperCase();
+    updateSegmentedUI('seg-speed-unit', speedUnit);
+    log(`Speed unit set to ${speedUnit.toUpperCase()}`);
+  };
+
+  window.setTempUnit = function(unit) {
+    tempUnit = unit;
+    appSettings.tempUnit = unit;
+    saveSettings();
+    document.getElementById('label-dash-coolant-unit').innerText = `°${tempUnit.toUpperCase()}`;
+    document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
+    METRICS.coolant.unit = `°${tempUnit.toUpperCase()}`;
+    METRICS.iat.unit = `°${tempUnit.toUpperCase()}`;
+    updateSegmentedUI('seg-temp-unit', tempUnit);
+    log(`Temperature unit set to °${tempUnit.toUpperCase()}`);
+  };
+
+  function updateSegmentedUI(containerId, activeVal) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.val === activeVal);
+    });
+  }
+
+  window.setTimeframe = function(slot, secStr) {
+    const sec = Number(secStr);
+    appSettings.timeframes[slot] = sec;
+    saveSettings();
+    renderModalRangeButtons();
+    for (const key of Object.keys(METRICS)) {
+      if (METRICS[key].mode === `tf${slot}`) updateCardUI(key);
     }
-    async function idbGet(key) {
-      const db = await idbOpen();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction(IDB_STORE, 'readonly');
-        const req = tx.objectStore(IDB_STORE).get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error);
-      });
+  };
+
+  function populateTimeframeSelects() {
+    for (let i = 0; i < 3; i++) {
+      const sel = document.getElementById(`tf-select-${i}`);
+      if (!sel) continue;
+      sel.innerHTML = TIMEFRAME_PRESETS.map(p =>
+        `<option value="${p.sec}" ${appSettings.timeframes[i] === p.sec ? 'selected' : ''}>${p.label}</option>`
+      ).join('');
     }
+  }
 
-    /* ==========================================================
-       AUTO-SAVE SETTINGS UI
-       ========================================================== */
-    window.toggleAutoSave = function() {
-      appSettings.autoSaveEnabled = !appSettings.autoSaveEnabled;
-      document.getElementById('toggle-autosave').classList.toggle('on', appSettings.autoSaveEnabled);
-      saveSettings();
-      refreshAutoSaveStatusUI();
-    };
+  function populateThemeSwatches() {
+    const grid = document.getElementById('theme-swatch-grid');
+    if (!grid) return;
+    grid.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+      <div class="theme-swatch ${appSettings.theme === key ? 'active' : ''}" data-theme="${key}"
+           style="--swatch-color:${t.accent}; --swatch-glow:${t.glow};"
+           onclick="selectTheme('${key}')">
+        <span class="theme-swatch-dot"></span>
+        <span class="theme-swatch-name">${t.name}</span>
+      </div>
+    `).join('');
+  }
 
-    window.chooseAutoSaveFolder = async function() {
-      if (!AUTO_SAVE_SUPPORTED) {
-        alert("Your browser doesn't support saving straight to a folder. Recordings will stay in memory and you can share/download the CSV after each ride instead.");
-        return;
-      }
-      try {
-        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        autoSaveDirHandle = handle;
-        await idbSet('autoSaveDir', handle);
-        appSettings.autoSaveEnabled = true;
-        saveSettings();
-        document.getElementById('toggle-autosave').classList.add('on');
-        refreshAutoSaveStatusUI();
-      } catch (e) {
-        // user cancelled the picker — nothing to do
-      }
-    };
+  window.openSettingsModal = function() {
+    populateTimeframeSelects();
+    populateThemeSwatches();
+    updateSegmentedUI('seg-speed-unit', speedUnit);
+    updateSegmentedUI('seg-temp-unit', tempUnit);
+    document.getElementById('slider-intensity').value = appSettings.intensity;
+    document.getElementById('intensity-val').innerText = `${appSettings.intensity}%`;
+    document.getElementById('slider-contrast').value = appSettings.contrast;
+    document.getElementById('contrast-val').innerText = `${appSettings.contrast}%`;
+    document.getElementById('toggle-autosave').classList.toggle('on', appSettings.autoSaveEnabled);
+    document.getElementById('settings-modal').style.display = 'flex';
+  };
 
-    async function refreshAutoSaveStatusUI() {
-      const note = document.getElementById('autosave-status');
-      const folderBtn = document.getElementById('btn-choose-folder');
-      if (!note) return;
+  window.closeSettingsModal = function() {
+    document.getElementById('settings-modal').style.display = 'none';
+  };
 
-      if (!AUTO_SAVE_SUPPORTED) {
-        note.className = 'settings-status-note warn';
-        note.innerText = "Not supported on this browser — recordings will stay in memory and can be shared/downloaded when you stop.";
-        if (folderBtn) folderBtn.style.display = 'none';
-        return;
-      }
-      if (folderBtn) folderBtn.style.display = 'block';
+  window.toggleFullscreen = function() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+    else document.exitFullscreen?.().catch(() => {});
+  };
 
-      if (!autoSaveDirHandle) {
-        note.className = 'settings-status-note';
-        note.innerText = 'No folder chosen yet. Pick one to stream long rides straight to disk.';
-        return;
-      }
-      try {
-        const perm = await autoSaveDirHandle.queryPermission({ mode: 'readwrite' });
-        if (perm === 'granted') {
-          note.className = 'settings-status-note ok';
-          note.innerText = `Saving to "${autoSaveDirHandle.name}". A new CSV file is created each time you start recording.`;
-        } else {
-          note.className = 'settings-status-note warn';
-          note.innerText = `Folder "${autoSaveDirHandle.name}" needs re-authorization — tap "Choose Auto-Save Folder" again.`;
-        }
-      } catch (e) {
-        note.className = 'settings-status-note warn';
-        note.innerText = 'Could not verify folder access — please re-select the folder.';
-      }
+  /* ==========================================================
+     CSV FLIGHT RECORDER & LOGGING
+     ========================================================== */
+  function csvHeaderLine() {
+    return `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_${tempUnit.toUpperCase()},IAT_${tempUnit.toUpperCase()},MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`;
+  }
+
+  function logCsvRow(row) {
+    if (autoSaveWritable) {
+      autoSavePendingRows.push(row);
+      autoSaveRowCount++;
+    } else {
+      cockpitCsvFrames.push(row);
     }
+  }
 
-    async function restoreAutoSaveFolder() {
-      if (!AUTO_SAVE_SUPPORTED) { refreshAutoSaveStatusUI(); return; }
-      try {
-        const handle = await idbGet('autoSaveDir');
-        if (handle) autoSaveDirHandle = handle;
-      } catch (e) {}
-      refreshAutoSaveStatusUI();
-    }
+  async function flushAutoSaveBuffer() {
+    if (!autoSaveWritable || autoSavePendingRows.length === 0) return;
+    const chunk = autoSavePendingRows.join('\n') + '\n';
+    autoSavePendingRows = [];
+    try { await autoSaveWritable.write(chunk); } catch (e) {}
+  }
 
-    /* ==========================================================
-       FLIGHT RECORDER CSV LOGGING & SHARING
-       Long rides (multi-hour) are entirely feasible: when auto-save
-       is on, rows stream straight to a file on disk in small batches
-       instead of piling up in memory, so a 6-hour ride costs almost
-       no RAM and survives a tab reload. Without auto-save, everything
-       is kept in a JS array and only turned into a file at the end —
-       fine for shorter rides, but a multi-hour session risks losing
-       everything if the tab crashes or the OS kills it.
-       ========================================================== */
-    let autoSaveRowCount = 0;
+  window.toggleCockpitCsvLogger = async function() {
+    const btn = document.getElementById('btn-cockpit-record');
+    const shareBtn = document.getElementById('btn-cockpit-share');
+    const timeEl = document.getElementById('cockpit-csv-time');
+    const frameEl = document.getElementById('cockpit-csv-frames');
 
-    function csvHeaderLine() {
-      return `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_${tempUnit.toUpperCase()},IAT_${tempUnit.toUpperCase()},MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`;
-    }
+    if (!isCockpitCsvLogging) {
+      if (!bleDevice?.gatt?.connected && !isDemoActive) return alert("Connect to OBD-II first!");
 
-    function logCsvRow(row) {
-      if (autoSaveWritable) {
-        autoSavePendingRows.push(row);
-        autoSaveRowCount++;
-      } else {
-        cockpitCsvFrames.push(row);
-      }
-    }
-
-    async function flushAutoSaveBuffer() {
-      if (!autoSaveWritable || autoSavePendingRows.length === 0) return;
-      const chunk = autoSavePendingRows.join('\n') + '\n';
+      cockpitCsvFrames = [csvHeaderLine()];
       autoSavePendingRows = [];
-      try {
-        await autoSaveWritable.write(chunk);
-      } catch (e) {
-        log('Auto-save write failed: ' + e.message);
+      autoSaveRowCount = 0;
+      autoSaveWritable = null;
+
+      isCockpitCsvLogging = true;
+      cockpitCsvStartTime = Date.now();
+
+      btn.innerText = "⏹️ Stop";
+      btn.classList.add('recording');
+      shareBtn.style.opacity = '0.5';
+      shareBtn.style.pointerEvents = 'none';
+
+      cockpitCsvInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - cockpitCsvStartTime) / 1000);
+        const hrs = Math.floor(s / 3600);
+        const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+        const secs = (s % 60).toString().padStart(2, '0');
+        timeEl.innerText = hrs > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}.0`;
+        const count = autoSaveWritable ? autoSaveRowCount : (cockpitCsvFrames.length - 1);
+        frameEl.innerText = `${count} Telemetry Frames`;
+        flushAutoSaveBuffer();
+      }, 1000);
+
+    } else {
+      isCockpitCsvLogging = false;
+      clearInterval(cockpitCsvInterval);
+      btn.innerText = "🔴 Record Flight";
+      btn.classList.remove('recording');
+
+      if (autoSaveWritable) {
+        await flushAutoSaveBuffer();
+        try { await autoSaveWritable.close(); } catch (e) {}
+        autoSaveWritable = null;
+      }
+      if (cockpitCsvFrames.length > 1) {
+        shareBtn.style.opacity = '1';
+        shareBtn.style.pointerEvents = 'auto';
       }
     }
+  };
 
-    window.toggleCockpitCsvLogger = async function() {
-      const btn = document.getElementById('btn-cockpit-record');
-      const shareBtn = document.getElementById('btn-cockpit-share');
-      const timeEl = document.getElementById('cockpit-csv-time');
-      const frameEl = document.getElementById('cockpit-csv-frames');
+  window.shareCockpitCsv = async function() {
+    if (cockpitCsvFrames.length <= 1) return alert("No telemetry frames recorded!");
+    const filename = `Yamaha_RMAX_Log_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+    const blob = new Blob([cockpitCsvFrames.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const file = new File([blob], filename, { type: 'text/csv' });
 
-      if (!isCockpitCsvLogging) {
-        if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ title: 'Yamaha RMAX Flight Telemetry', files: [file] }).catch(() => {});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
-        cockpitCsvFrames = [csvHeaderLine()];
-        autoSavePendingRows = [];
-        autoSaveRowCount = 0;
-        autoSaveWritable = null;
-        autoSaveFileHandle = null;
+  /* Application Bootstrap */
+  (function initApp() {
+    applyTheme(appSettings.theme);
+    applyFx();
+    populateThemeSwatches();
+  })();
+</script>
 
-        // Try to stream this recording straight to disk
-        if (appSettings.autoSaveEnabled && AUTO_SAVE_SUPPORTED && autoSaveDirHandle) {
-          try {
-            const perm = await autoSaveDirHandle.queryPermission({ mode: 'readwrite' }) === 'granted'
-              ? 'granted'
-              : await autoSaveDirHandle.requestPermission({ mode: 'readwrite' });
-            if (perm === 'granted') {
-              const filename = `RMAX_Flight_Log_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
-              autoSaveFileHandle = await autoSaveDirHandle.getFileHandle(filename, { create: true });
-              autoSaveWritable = await autoSaveFileHandle.createWritable();
-              await autoSaveWritable.write(csvHeaderLine() + '\n');
-              log(`Streaming telemetry to disk: ${filename}`);
-            } else {
-              log('Folder permission not granted — recording to memory instead.');
-            }
-          } catch (e) {
-            autoSaveWritable = null;
-            autoSaveFileHandle = null;
-            log('Could not open auto-save file — recording to memory instead.');
-          }
-        }
-
-        isCockpitCsvLogging = true;
-        cockpitCsvStartTime = Date.now();
-
-        btn.innerText = "⏹️ Stop";
-        btn.classList.add('recording');
-        shareBtn.style.opacity = '0.5';
-        shareBtn.style.pointerEvents = 'none';
-
-        cockpitCsvInterval = setInterval(() => {
-          const s = Math.floor((Date.now() - cockpitCsvStartTime) / 1000);
-          const hrs = Math.floor(s / 3600);
-          const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
-          const secs = (s % 60).toString().padStart(2, '0');
-          timeEl.innerText = hrs > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}.0`;
-          const count = autoSaveWritable ? autoSaveRowCount : (cockpitCsvFrames.length - 1);
-          frameEl.innerText = `${count} Telemetry Frames${autoSaveWritable ? ' (saving to disk)' : ''}`;
-          flushAutoSaveBuffer();
-        }, 1000);
-
-      } else {
-        isCockpitCsvLogging = false;
-        clearInterval(cockpitCsvInterval);
-        btn.innerText = "🔴 Record Flight";
-        btn.classList.remove('recording');
-
-        if (autoSaveWritable) {
-          await flushAutoSaveBuffer();
-          try { await autoSaveWritable.close(); } catch (e) {}
-          autoSaveWritable = null;
-        }
-
-        const hasData = autoSaveFileHandle ? true : cockpitCsvFrames.length > 1;
-        if (hasData) {
-          shareBtn.style.opacity = '1';
-          shareBtn.style.pointerEvents = 'auto';
-        }
-      }
-    };
-
-    window.shareCockpitCsv = async function() {
-      // Prefer the file we streamed to disk, since it holds the whole session
-      if (autoSaveFileHandle) {
-        try {
-          const file = await autoSaveFileHandle.getFile();
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            navigator.share({ title: 'Yamaha RMAX Flight Telemetry', files: [file] }).catch(() => {});
-          } else {
-            const url = URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-          }
-        } catch (e) {
-          alert("Couldn't access the saved file: " + e.message);
-        }
-        return;
-      }
-
-      if (cockpitCsvFrames.length <= 1) return alert("No telemetry frames recorded!");
-      const filename = `RMAX_Flight_Log_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
-      const blob = new Blob([cockpitCsvFrames.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const file = new File([blob], filename, { type: 'text/csv' });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ title: 'Yamaha RMAX Flight Telemetry', files: [file] }).catch(() => {});
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    };
-
-    /* ==========================================================
-       APP INIT — apply saved settings on load
-       ========================================================== */
-    (function initApp() {
-      applyTheme(appSettings.theme);
-      applyFx();
-      populateThemeSwatches();
-      restoreAutoSaveFolder();
-      log("System initialized. Tap Connect to pair Bluetooth.");
-    })();
-  </script>
 </body>
 </html>
