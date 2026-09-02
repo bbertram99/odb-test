@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Yamaha RMAX Research Lab (v2.0 DIAG)</title>
+  <title>Yamaha RMAX Research Workbench (v2.5 DIAG)</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
 
     :root {
       --bg: #030611;
-      --card-bg: rgba(13, 20, 38, 0.9);
-      --card-border: rgba(56, 189, 248, 0.2);
+      --card-bg: rgba(13, 20, 38, 0.92);
+      --card-border: rgba(56, 189, 248, 0.22);
       --text: #f8fafc;
       --text-muted: #64748b;
       --cyan: #38bdf8;
@@ -27,63 +27,80 @@
       background: var(--bg);
       background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12) 0%, transparent 60%);
       color: var(--text);
-      padding: 0.6rem 0.6rem 5.5rem 0.6rem;
+      padding: 0.5rem 0.5rem 5.5rem 0.5rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       user-select: none;
     }
 
-    header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.5rem; }
-    .brand { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 0.4rem; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 0.2rem 0.2rem 0.5rem 0.2rem; }
+    .brand { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 0.4rem; }
     .brand-glow { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
     .version-tag { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 6px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--amber); }
 
-    .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; padding: 0.3rem 0.6rem; border-radius: 999px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); }
+    .status-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.55rem; border-radius: 999px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-muted); }
     .status-badge.connected { background: rgba(74, 222, 128, 0.15); border-color: var(--green); color: var(--green); }
     .status-badge.recording { background: rgba(239, 68, 68, 0.25); border-color: var(--red); color: var(--red); animation: pulse 0.6s infinite alternate; }
     @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
 
-    .view-panel { display: none; flex-direction: column; gap: 0.6rem; }
+    .view-panel { display: none; flex-direction: column; gap: 0.55rem; }
     .view-panel.active { display: flex; }
 
-    .box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.65rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
     .box-title { font-size: 0.72rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.05em; display: flex; justify-content: space-between; align-items: center; }
 
+    /* Control Bar for Per-Tab Recording */
+    .tab-recorder-bar { background: rgba(2, 6, 23, 0.85); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.45rem; display: flex; flex-direction: column; gap: 0.35rem; }
+    .recorder-btn-row { display: flex; gap: 0.35rem; }
+    .rec-stats { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--amber); display: flex; justify-content: space-between; align-items: center; }
+
     .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; font-family: 'JetBrains Mono', monospace; }
-    .grid-item { background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.25rem 0.4rem; }
-    .grid-label { font-size: 0.52rem; color: var(--text-muted); text-transform: uppercase; }
+    .grid-item { background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.25rem 0.35rem; }
+    .grid-label { font-size: 0.5rem; color: var(--text-muted); text-transform: uppercase; }
     .grid-val { font-size: 0.82rem; font-weight: 800; color: #fff; margin-top: 0.1rem; }
 
     /* Synthetic Gauges */
-    .meshed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-    .meshed-card { background: rgba(15, 23, 42, 0.75); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; }
-    .meshed-title { font-size: 0.68rem; font-weight: 800; color: var(--purple); }
-    .meshed-val { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 800; color: #fff; }
-    .meshed-desc { font-size: 0.58rem; color: var(--text-muted); }
+    .meshed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+    .meshed-card { background: rgba(15, 23, 42, 0.75); border: 1px solid var(--card-border); border-radius: 8px; padding: 0.45rem; display: flex; flex-direction: column; gap: 0.15rem; }
+    .meshed-title { font-size: 0.65rem; font-weight: 800; color: var(--purple); }
+    .meshed-val { font-family: 'JetBrains Mono', monospace; font-size: 1.15rem; font-weight: 800; color: #fff; }
+    .meshed-desc { font-size: 0.55rem; color: var(--text-muted); }
 
     /* Raw Byte Grid */
-    .raw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 0.3rem; font-family: 'JetBrains Mono', monospace; }
-    .raw-tile { background: rgba(2, 6, 23, 0.85); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 0.3rem 0.2rem; text-align: center; }
+    .raw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 0.25rem; font-family: 'JetBrains Mono', monospace; }
+    .raw-tile { background: rgba(2, 6, 23, 0.85); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px; padding: 0.25rem 0.2rem; text-align: center; }
     .raw-tile.delta-active { border-color: var(--amber); background: rgba(245, 158, 11, 0.12); }
-    .b-idx { font-size: 0.52rem; color: var(--text-muted); }
+    .b-idx { font-size: 0.5rem; color: var(--text-muted); }
     .b-hex { font-size: 1rem; font-weight: 800; color: #fff; line-height: 1.1; }
-    .b-sub { font-size: 0.55rem; color: var(--cyan); }
+    .b-sub { font-size: 0.52rem; color: var(--cyan); }
 
     /* Bit Inspector */
-    .bit-strip { display: flex; gap: 0.2rem; align-items: center; margin-top: 0.2rem; }
+    .bit-strip { display: flex; gap: 0.2rem; align-items: center; margin-top: 0.15rem; }
     .bit-cell { flex: 1; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; padding: 0.2rem 0; border-radius: 4px; background: rgba(2,6,23,0.8); border: 1px solid rgba(255,255,255,0.06); color: var(--text-muted); }
     .bit-cell.on { background: var(--green); color: #000; font-weight: 800; box-shadow: 0 0 8px rgba(74, 222, 128, 0.4); }
 
-    .btn { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.5rem 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
+    /* Mission Checklist & Step Guide */
+    .step-list { display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.3rem; font-family: 'JetBrains Mono', monospace; }
+    .step-item { background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.68rem; display: flex; align-items: center; justify-content: space-between; gap: 0.3rem; }
+    .step-item.active { border-color: var(--amber); background: rgba(245, 158, 11, 0.15); color: #fff; font-weight: 700; }
+    .step-item.completed { border-color: var(--green); color: var(--green); opacity: 0.7; }
+    .step-num { font-weight: 800; color: var(--cyan); }
+
+    .btn { background: rgba(56, 189, 248, 0.15); border: 1px solid var(--cyan); color: #fff; padding: 0.45rem 0.75rem; border-radius: 8px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem; }
     .btn:active { transform: scale(0.96); background: var(--cyan); color: #000; }
     .btn.action { background: var(--cyan); color: #05070e; font-weight: 800; }
     .btn.danger { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
-    .btn.danger.active { background: var(--red); color: #fff; }
+    .btn.danger.recording { background: var(--red); color: #fff; box-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+    .btn.share { background: rgba(74, 222, 128, 0.2); border-color: var(--green); color: var(--green); font-weight: 800; }
+    .btn.share:active { background: var(--green); color: #000; }
+    .btn.secondary { background: #1e293b; border-color: rgba(255,255,255,0.12); color: var(--text); }
 
-    .touch-dock { position: fixed; bottom: 0.6rem; left: 0.6rem; right: 0.6rem; background: rgba(10, 15, 29, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 0.35rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; backdrop-filter: blur(15px); z-index: 100; }
+    input[type="text"] { background: #020617; border: 1px solid var(--card-border); color: #fff; padding: 0.4rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+
+    .touch-dock { position: fixed; bottom: 0.5rem; left: 0.5rem; right: 0.5rem; background: rgba(10, 15, 29, 0.94); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 0.35rem 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; backdrop-filter: blur(15px); z-index: 100; }
     .dock-btn { flex: 1; padding: 0.45rem 0.1rem; display: flex; flex-direction: column; align-items: center; gap: 0.15rem; background: transparent; border: none; border-radius: 10px; color: var(--text-muted); cursor: pointer; }
-    .dock-btn span { font-size: 0.62rem; font-weight: 700; }
+    .dock-btn span { font-size: 0.65rem; font-weight: 700; }
     .dock-btn.active { color: var(--amber); background: rgba(245, 158, 11, 0.12); }
 
     #log { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-muted); min-height: 32px; max-height: 42px; overflow-y: auto; background: #020617; padding: 0.3rem 0.5rem; border-radius: 6px; border: 1px solid var(--card-border); margin-top: 0.3rem; }
@@ -97,14 +114,30 @@
       RMAX LAB WORKBENCH
     </div>
     <div style="display:flex; align-items:center; gap:0.35rem;">
-      <span class="version-tag">v2.0 DIAG</span>
+      <span class="version-tag">v2.5 DIAG</span>
       <span id="status" class="status-badge">OFFLINE</span>
     </div>
   </header>
 
-  <!-- TAB 1: LIVE LABORATORY & MESHED METRICS -->
+  <!-- TAB 1: LIVE LABORATORY & CONTINUOUS RAW STREAM RECORDER -->
   <div id="tab-lab" class="view-panel active">
     
+    <!-- Dedicated Tab 1 Data Collection Bar -->
+    <div class="tab-recorder-bar">
+      <div class="rec-stats">
+        <span id="lab-rec-status">STANDBY (Not Recording)</span>
+        <span id="lab-rec-counter">Frames: 0 | 0.0s</span>
+      </div>
+      <div class="recorder-btn-row">
+        <button class="btn danger" id="btn-lab-record" style="flex:1;" onclick="toggleLabFlightRecorder()">🔴 Record Live Stream</button>
+        <button class="btn share" id="btn-lab-share" style="flex:1;" onclick="shareLabCsv()">📤 Share CSV Flight</button>
+      </div>
+      <div style="display:flex; gap:0.3rem; margin-top:0.1rem;">
+        <input type="text" id="lab-event-input" placeholder="Tag test step (e.g. 'Engaged 4WD', 'WOT')" style="flex:1;" />
+        <button class="btn secondary" style="padding:0.35rem 0.6rem; font-size:0.68rem;" onclick="tagLabEvent()">📌 Tag Event</button>
+      </div>
+    </div>
+
     <!-- 1. Ground Truth Baseline -->
     <div class="box">
       <div class="box-title">
@@ -153,13 +186,13 @@
       </div>
     </div>
 
-    <!-- 3. Bitmask Switch Detective (Bytes 19, 20, 21, 23) -->
+    <!-- 3. Bitmask Switch Detective (Bytes 19, 21, 23) -->
     <div class="box">
       <div class="box-title">
         <span>🔍 Switch Detective (Bitmask Inspector)</span>
         <span style="font-size:0.58rem; color:var(--green);">WATCH FOR FLIPS</span>
       </div>
-      <div style="display:flex; flex-direction:column; gap:0.35rem;">
+      <div style="display:flex; flex-direction:column; gap:0.3rem;">
         <div>
           <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700;">BYTE 19 (Gear & State Bits):</span>
           <div class="bit-strip" id="bits-b19"></div>
@@ -178,7 +211,7 @@
     <!-- 4. 26-Byte Raw Stream Matrix -->
     <div class="box">
       <div class="box-title">
-        <span>26-Byte Live Stream Matrix [21 01]</span>
+        <span>26-Byte Raw Stream Inspector [21 01]</span>
         <span style="font-size:0.58rem; color:var(--amber);">Active Deltas Highlighted</span>
       </div>
       <div class="raw-grid" id="raw-grid-container"></div>
@@ -186,18 +219,28 @@
 
   </div>
 
-  <!-- TAB 2: EXPLORATION & PROTOCOL DISCOVERY -->
+  <!-- TAB 2: PROTOCOL DISCOVERY & SWEEPS -->
   <div id="tab-discovery" class="view-panel">
     
+    <div class="tab-recorder-bar">
+      <div class="rec-stats">
+        <span>DISCOVERY LOG BUFFER</span>
+        <span id="disc-items-count">0 Results</span>
+      </div>
+      <div class="recorder-btn-row">
+        <button class="btn share" style="flex:1;" onclick="shareDiscoveryResults()">📤 Share Sweep Log</button>
+        <button class="btn secondary" style="flex:0.6;" onclick="clearDiscoveryResults()">Clear</button>
+      </div>
+    </div>
+
     <div class="box">
       <div class="box-title">
         <span>🔭 Sweeper: Alternate Table Finder (Service 21)</span>
       </div>
       <p style="font-size:0.68rem; color:var(--text-muted);">
-        Sweeps local identifiers from <code>21 00</code> to <code>21 20</code> to detect other factory diagnostic tables (e.g. Engine Hours, Trip Data, Secondary Calibration).
+        Sweeps local identifiers from <code>21 00</code> to <code>21 25</code> to detect other factory diagnostic tables (Engine Hours, Trip, Calibrations).
       </p>
-      <button class="btn action" id="btn-sweep-21" onclick="runTable21Sweeper()">⚡ Sweep Tables (21 00 - 21 20)</button>
-      <div id="sweep-21-res" style="font-family:'JetBrains Mono', monospace; font-size:0.65rem; color:var(--cyan); max-height:120px; overflow-y:auto; background:#020617; padding:0.4rem; border-radius:6px; border:1px solid var(--card-border);">Results will appear here...</div>
+      <button class="btn action" id="btn-sweep-21" onclick="runTable21Sweeper()">⚡ Sweep Tables (21 00 - 21 25)</button>
     </div>
 
     <div class="box">
@@ -205,69 +248,107 @@
         <span>🚗 Sweeper: Standard OBD-II Mode 01 Support</span>
       </div>
       <p style="font-size:0.68rem; color:var(--text-muted);">
-        Sweeps standard automotive Mode 01 PIDs to see if the Yamaha ECU exposes standard fuel trims or oxygen sensor voltages.
+        Sweeps standard automotive Mode 01 PIDs to find fuel trims, O2 sensors, and emission telemetry.
       </p>
       <button class="btn" onclick="runOBD2Sweeper()">⚡ Sweep Mode 01 PIDs (00 - 20)</button>
-      <div id="sweep-obd-res" style="font-family:'JetBrains Mono', monospace; font-size:0.65rem; color:var(--cyan); max-height:120px; overflow-y:auto; background:#020617; padding:0.4rem; border-radius:6px; border:1px solid var(--card-border);">OBD-II results will appear here...</div>
-    </div>
-
-  </div>
-
-  <!-- TAB 3: MISSION RECORDER & RESEARCH PACKET -->
-  <div id="tab-missions" class="view-panel">
-    
-    <div class="box">
-      <div class="box-title">
-        <span>🎯 Active Research Missions</span>
-      </div>
-      <select id="mission-select" style="padding:0.4rem; background:#020617; border:1px solid var(--card-border); color:#fff; border-radius:6px; font-family:'JetBrains Mono', monospace; font-size:0.75rem;">
-        <option value="switch_hunting">Mission 1: Switch Hunting (Toggle 4WD/Diff/Brakes)</option>
-        <option value="cold_decay">Mission 2: Cold-Start Warmup (Idle to 80°C)</option>
-        <option value="cvt_pull">Mission 3: CVT Full Throttle Pull (High Gear)</option>
-        <option value="steady_cruise">Mission 4: Steady State Cruise (O2 Oscillation)</option>
-      </select>
-      <div style="display:flex; gap:0.4rem; margin-top:0.2rem;">
-        <button class="btn danger" id="btn-mission-rec" style="flex:1;" onclick="toggleMissionRecorder()">🔴 Record Mission</button>
-      </div>
-      <div id="mission-status-label" style="font-size:0.7rem; color:var(--amber); font-weight:700;">Mission Standby</div>
     </div>
 
     <div class="box" style="flex:1;">
       <div class="box-title">
-        <span>📤 AI Research Teleport Packet</span>
-        <button class="btn" style="padding:0.2rem 0.5rem; font-size:0.65rem;" onclick="copyAiResearchPacket()">📋 Copy for Prompt Review</button>
+        <span>📋 Discovery Output Feed</span>
       </div>
-      <p style="font-size:0.65rem; color:var(--text-muted);">
-        Click below to copy a compressed Markdown analysis of all 26 bytes, observed deltas, and bit transitions to paste directly into our chat!
-      </p>
-      <textarea id="ai-packet-output" rows="9" readonly style="width:100%; font-family:'JetBrains Mono', monospace; font-size:0.62rem; background:#020617; color:var(--green); border:1px solid var(--card-border); border-radius:6px; padding:0.4rem;"></textarea>
+      <div id="sweep-res-feed" style="font-family:'JetBrains Mono', monospace; font-size:0.68rem; line-height:1.35; color:var(--cyan); max-height:220px; overflow-y:auto; background:#020617; padding:0.45rem; border-radius:6px; border:1px solid var(--card-border);">
+        Sweepers idle. Touch a sweep button above.
+      </div>
     </div>
 
   </div>
 
-  <!-- Live Bottom Notification Strip -->
-  <div id="log">Lab Ready. Tap Connect to start Bluetooth link.</div>
+  <!-- TAB 3: GUIDED MISSIONS & STEP RUNNER -->
+  <div id="tab-missions" class="view-panel">
+    
+    <!-- Dedicated Tab 3 Mission Recording Bar -->
+    <div class="tab-recorder-bar">
+      <div class="rec-stats">
+        <span id="mission-rec-status">MISSION STANDBY</span>
+        <span id="mission-rec-counter">Frames: 0 | 0.0s</span>
+      </div>
+      <div class="recorder-btn-row">
+        <button class="btn danger" id="btn-mission-record" style="flex:1;" onclick="toggleMissionFlightRecorder()">🔴 Record Mission Flight</button>
+        <button class="btn share" id="btn-mission-share" style="flex:1;" onclick="shareMissionData()">📤 Share Mission Log</button>
+      </div>
+    </div>
+
+    <!-- Mission Selector & Step Guide -->
+    <div class="box">
+      <div class="box-title">
+        <span>🎯 Active Mission Protocol</span>
+      </div>
+      <select id="mission-select" onchange="onMissionSelected()" style="padding:0.45rem; background:#020617; border:1px solid var(--card-border); color:#fff; border-radius:6px; font-family:'JetBrains Mono', monospace; font-size:0.75rem; font-weight:700;">
+        <option value="mission_switches">Mission 1: Switch & Drivetrain Detective (Static)</option>
+        <option value="mission_coldstart">Mission 2: Cold-Start Warmup & Fast-Idle Decay</option>
+        <option value="mission_cvt_pull">Mission 3: CVT Shift & Belt Slip Pull (Dynamic)</option>
+        <option value="mission_dmode_dbw">Mission 4: Drive-by-Wire D-Mode Throttle Damping</option>
+      </select>
+
+      <div style="background:rgba(2,6,23,0.7); border:1px solid var(--card-border); border-radius:6px; padding:0.4rem; font-size:0.7rem; color:var(--amber); margin-top:0.2rem;" id="mission-precond-text">
+        Pre-conditions: Key ON, Engine OFF. Stationary.
+      </div>
+
+      <!-- Current Step Prompter -->
+      <div style="background:rgba(15,23,42,0.85); border:1px solid var(--purple); border-radius:8px; padding:0.55rem; margin-top:0.3rem; display:flex; flex-direction:column; gap:0.3rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.65rem; color:var(--purple); font-weight:800; text-transform:uppercase;">CURRENT ACTION STEP:</span>
+          <span id="mission-step-indicator" style="font-size:0.65rem; font-family:'JetBrains Mono', monospace; color:var(--text-muted);">Step 1 of 6</span>
+        </div>
+        <div id="mission-current-step-label" style="font-size:0.95rem; font-weight:800; color:#fff;">Select a mission to view steps</div>
+        <button class="btn action" id="btn-stamp-step" style="padding:0.5rem; font-size:0.75rem; margin-top:0.15rem;" onclick="stampAndAdvanceMissionStep()">
+          ➡️ Complete & Stamp Step Into Stream
+        </button>
+      </div>
+
+      <!-- Step-by-Step List Breakdown -->
+      <div class="step-list" id="mission-steps-container"></div>
+    </div>
+
+    <!-- AI Review Summary Box -->
+    <div class="box">
+      <div class="box-title">
+        <span>📋 Prompt Review Digest</span>
+        <button class="btn secondary" style="padding:0.2rem 0.45rem; font-size:0.65rem;" onclick="copyMissionDigest()">📋 Copy Digest</button>
+      </div>
+      <p style="font-size:0.62rem; color:var(--text-muted);">
+        A compressed breakdown of min/max values and bit flips recorded during this mission, ready to paste straight back into the chat!
+      </p>
+      <textarea id="mission-digest-output" rows="6" readonly style="width:100%; font-family:'JetBrains Mono', monospace; font-size:0.62rem; background:#020617; color:var(--cyan); border:1px solid var(--card-border); border-radius:6px; padding:0.35rem; margin-top:0.2rem;"></textarea>
+    </div>
+
+  </div>
+
+  <!-- Real-time Bottom Log -->
+  <div id="log">System initialized. Touch Connect to start.</div>
 
   <!-- BOTTOM DOCK -->
   <div class="touch-dock">
     <button class="dock-btn active" id="btn-tab-lab" onclick="switchTab('tab-lab')">
-      <span>🧪 Lab</span>
+      <span>🧪 Live Lab</span>
     </button>
     <button class="dock-btn" id="btn-tab-discovery" onclick="switchTab('tab-discovery')">
-      <span>🔭 Discover</span>
+      <span>🔭 Discovery</span>
     </button>
     <button class="dock-btn" id="btn-tab-missions" onclick="switchTab('tab-missions')">
       <span>🎯 Missions</span>
     </button>
-    <button class="btn action" id="btn-connect" onclick="handleConnectToggle()" style="padding:0.5rem 0.9rem;">
+    <button class="btn action" id="btn-connect" onclick="handleConnectToggle()" style="padding:0.45rem 0.85rem;">
       <span>⚡ Connect</span>
     </button>
   </div>
 
   <script>
     /* ==========================================================
-       YAMAHA RMAX RESEARCH LAB CORE ENGINE
+       APP STATE & GATT SETUP
        ========================================================== */
+    const APP_VERSION = "v2.5 DIAG";
     const SERVICE_UUIDS = [
       '0000fff0-0000-1000-8000-00805f9b34fb',
       '0000ffe0-0000-1000-8000-00805f9b34fb',
@@ -282,18 +363,81 @@
     let isSweeping = false;
     let responseResolver = null;
 
-    // Mission Recording
+    // Active Mission Definitions
+    const MISSIONS = {
+      mission_switches: {
+        title: "Switch & Drivetrain Detective",
+        precond: "Engine OFF, Key ON. Stationary in Park. Battery voltage stable.",
+        steps: [
+          "Baseline: Stationary in Park, 2WD, Brakes released.",
+          "Shift selector from Park -> Reverse (Hold 3s).",
+          "Shift selector into Neutral (Hold 3s).",
+          "Shift selector into High (Hold 3s).",
+          "Shift selector into Low (Hold 3s), then return to Park.",
+          "Rotate D-Mode switch: Trail -> Sport -> Crawl -> Trail.",
+          "Turn 4WD switch from 2WD to 4WD (Wait for engagement).",
+          "Engage 4WD Diff-Lock Solenoid (Wait 4s).",
+          "Return switch back to 2WD.",
+          "Press Foot Brake firmly (Hold 3s), then release.",
+          "Engage Parking Brake lever firmly (Hold 3s), then release."
+        ]
+      },
+      mission_coldstart: {
+        title: "Cold-Start Warmup & Fast-Idle Decay",
+        precond: "Stone cold engine (< 30°C Coolant). Key ON.",
+        steps: [
+          "Baseline: Key ON, Engine OFF cold soak (Wait 5s).",
+          "Start Engine. Do not touch throttle. Idle in Park/Neutral.",
+          "Fast idle observation (Watch B3 and B11 countdown).",
+          "Coolant reaches 50°C (Observe idle RPM settling).",
+          "Coolant reaches 80°C operating temperature (Radiator fan cycle)."
+        ]
+      },
+      mission_cvt_pull: {
+        title: "CVT Shift & Belt Slip Pull",
+        precond: "Engine at full operating temp (>70°C). Open, safe flat terrain.",
+        steps: [
+          "Stop vehicle. Gear in HIGH. Idle stationary 3s.",
+          "WOT: Accelerate at 100% full throttle from 0 to 65 km/h.",
+          "Steady cruise at 50 km/h in High gear (Hold for 5s).",
+          "Coast down to a complete stop with throttle closed.",
+          "Repeat short burst in LOW gear (0 to 30 km/h)."
+        ]
+      },
+      mission_dmode_dbw: {
+        title: "Drive-by-Wire D-Mode Throttle Damping",
+        precond: "Key ON, Engine OFF. Test pedal travel.",
+        steps: [
+          "D-Mode in SPORT: Slowly sweep pedal 0% -> 50% -> 100% -> 0%.",
+          "D-Mode in SPORT: Quick snap pedal 0% to 100% to test lag.",
+          "Switch D-Mode to TRAIL: Sweep pedal 0% -> 100%.",
+          "Switch D-Mode to CRAWL: Sweep pedal 0% -> 100% (Note throttle dampening)."
+        ]
+      }
+    };
+
+    let currentMissionKey = "mission_switches";
+    let currentStepIndex = 0;
+
+    // Recording Buffers
+    // 1. Tab 1: Live Flight Recording
+    let isLabRecording = false;
+    let labStartTime = 0;
+    let labFrames = [];
+    let activeLabMarker = "";
+
+    // 2. Tab 2: Discovery Buffer
+    let discoveryLogs = [];
+
+    // 3. Tab 3: Mission Flight Recording
     let isMissionRecording = false;
-    let missionFrames = [];
     let missionStartTime = 0;
+    let missionFrames = [];
 
-    // Byte Tracking Statistics (0 to 25)
+    // 26-Byte Tracking Stats
     const byteStats = Array.from({ length: 26 }, () => ({
-      min: 255, max: 0, current: 0, initial: null, changes: 0, history: []
+      min: 255, max: 0, current: 0, initial: null
     }));
-
-    // Bit-transition tracking for mystery bytes
-    const bitTransitionHistory = { 19: [], 21: [], 23: [] };
 
     let pollCount = 0;
     let pollFpsTimer = Date.now();
@@ -303,7 +447,7 @@
       if (el) el.innerText = msg;
     }
 
-    /* Bit Inspector Element Initializer */
+    /* UI Builders */
     function initBitStrips() {
       [19, 21, 23].forEach(bIdx => {
         const container = document.getElementById(`bits-b${bIdx}`);
@@ -318,7 +462,6 @@
       });
     }
 
-    /* Raw 26-Byte Grid Initializer */
     function initRawGrid() {
       const container = document.getElementById('raw-grid-container');
       container.innerHTML = '';
@@ -335,7 +478,7 @@
       }
     }
 
-    function switchTab(tabId) {
+    window.switchTab = function(tabId) {
       ['tab-lab', 'tab-discovery', 'tab-missions'].forEach(t => {
         document.getElementById(t).classList.toggle('active', t === tabId);
         document.getElementById(`btn-${t}`).classList.toggle('active', t === tabId);
@@ -343,13 +486,13 @@
       if (bleDevice?.gatt?.connected && !isPolling && !isSweeping) {
         startLivePolling();
       }
-    }
+    };
 
-    /* Web Bluetooth Connect */
-    async function handleConnectToggle() {
+    /* Bluetooth GATT Connection */
+    window.handleConnectToggle = async function() {
       if (bleDevice?.gatt?.connected) disconnect();
       else await connect();
-    }
+    };
 
     async function connect() {
       try {
@@ -410,7 +553,8 @@
     }
 
     function disconnect() {
-      if (isMissionRecording) toggleMissionRecorder();
+      if (isLabRecording) toggleLabFlightRecorder();
+      if (isMissionRecording) toggleMissionFlightRecorder();
       if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
       onDisconnected();
     }
@@ -452,7 +596,7 @@
       log("RMAX ECU Initialized (7E0 / 500kbps CAN).");
     }
 
-    /* Main Polling Loop */
+    /* Polling Loop */
     async function startLivePolling() {
       if (isPolling) return;
       isPolling = true;
@@ -482,7 +626,7 @@
       isPolling = false;
     }
 
-    /* Master Decoder & Meshing Engine */
+    /* Master Decoder & Multi-Tab Flight Recorders */
     function decodeRmaxPayload(raw, atrvVal) {
       if (!raw || raw.includes("7F") || raw.includes("NO") || raw.includes("ERR")) return;
 
@@ -516,7 +660,18 @@
       const ecuRailV = (bytes[13] * 0.0706);
       const vSag = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(2) : "0.00";
 
-      // Update Baseline
+      // 2. Meshed Math
+      let cvtRatio = 0;
+      let cvtRatioText = "IDLE";
+      if (speedKmh >= 5) {
+        cvtRatio = (rpm / speedKmh).toFixed(1);
+        cvtRatioText = cvtRatio;
+      }
+      const lag = apsPct - tpsPct;
+      const tempK = (iatC + 273.15);
+      const veIndex = Math.round(((mapMbar * rpm) / tempK) / 100);
+
+      // Update Baseline Views
       document.getElementById('gt-rpm').innerText = rpm;
       document.getElementById('gt-speed').innerText = `${speedKmh} km/h`;
       document.getElementById('gt-clt').innerText = `${cltC} °C`;
@@ -526,26 +681,12 @@
       document.getElementById('gt-timing').innerText = `${timing}°`;
       document.getElementById('gt-volts').innerText = `${atrvVal.toFixed(1)} V`;
 
-      // 2. Synthetic Meshed Engine
-      // CVT Ratio: only meaningful when moving (>5 km/h)
-      let cvtRatioText = "IDLE";
-      if (speedKmh >= 5) {
-        const ratio = (rpm / speedKmh).toFixed(1);
-        cvtRatioText = ratio;
-      }
       document.getElementById('mesh-cvt').innerText = cvtRatioText;
-
-      // DBW Lag (APS vs TPS demand delta)
-      const lag = apsPct - tpsPct;
       document.getElementById('mesh-lag').innerText = `${lag > 0 ? '+' : ''}${lag}%`;
-
-      // VE Airflow index: Speed-Density proxy (MAP * RPM) / Temp(Kelvin)
-      const tempK = (iatC + 273.15);
-      const veIndex = Math.round(((mapMbar * rpm) / tempK) / 100);
       document.getElementById('mesh-ve').innerText = veIndex;
       document.getElementById('mesh-sag').innerText = `${vSag} V`;
 
-      // 3. Bitmask Detective Updates (Bytes 19, 21, 23)
+      // 3. Bitmask Inspector
       [19, 21, 23].forEach(bIdx => {
         const val = bytes[bIdx] || 0;
         for (let bit = 0; bit < 8; bit++) {
@@ -555,7 +696,7 @@
         }
       });
 
-      // 4. Raw Matrix & Delta Tracking
+      // 4. Raw Matrix & Deltas
       for (let i = 0; i < bytes.length && i < 26; i++) {
         const val = bytes[i];
         const hex = val.toString(16).toUpperCase().padStart(2, '0');
@@ -571,36 +712,119 @@
         document.getElementById(`tile-${i}`)?.classList.toggle('delta-active', delta > 0);
       }
 
-      // Mission Recording Stream
-      if (isMissionRecording) {
-        const timeSec = ((Date.now() - missionStartTime) / 1000).toFixed(2);
-        missionFrames.push({
-          timeSec, rpm, speedKmh, mapMbar, apsPct, tpsPct, cltC, iatC, timing,
-          bytes: [...bytes]
+      // Build Frame Log Object
+      const frameRecord = {
+        rpm, speedKmh, cltC, iatC, mapMbar, apsPct, tpsPct, timing, atrvVal,
+        ecuRailV: ecuRailV.toFixed(2), vSag, cvtRatio, lag, veIndex,
+        bytesHex: bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()),
+        bytesDec: [...bytes]
+      };
+
+      // 5. TAB 1: Live Lab Recording Engine
+      if (isLabRecording) {
+        const elapsed = ((Date.now() - labStartTime) / 1000).toFixed(2);
+        labFrames.push({
+          timeSec: elapsed,
+          marker: activeLabMarker || "Normal Poll",
+          ...frameRecord
         });
+        activeLabMarker = ""; // Marker consumed
+        document.getElementById('lab-rec-counter').innerText = `Frames: ${labFrames.length} | ${elapsed}s`;
+      }
+
+      // 6. TAB 3: Guided Mission Recording Engine
+      if (isMissionRecording) {
+        const elapsed = ((Date.now() - missionStartTime) / 1000).toFixed(2);
+        const missionDef = MISSIONS[currentMissionKey];
+        const currentStepText = missionDef.steps[currentStepIndex] || "Mission in progress";
+
+        missionFrames.push({
+          timeSec: elapsed,
+          stepIdx: currentStepIndex + 1,
+          stepText: currentStepText,
+          ...frameRecord
+        });
+        document.getElementById('mission-rec-counter').innerText = `Frames: ${missionFrames.length} | ${elapsed}s`;
       }
     }
 
     /* ==========================================================
-       DISCOVERY SWEEPERS (SERVICE 21 & SERVICE 01)
+       TAB 1: LIVE RECORDER & SHARING
+       ========================================================== */
+    window.toggleLabFlightRecorder = function() {
+      const btn = document.getElementById('btn-lab-record');
+      const statusLabel = document.getElementById('lab-rec-status');
+
+      if (!isLabRecording) {
+        if (!bleDevice?.gatt?.connected) return alert("Connect to OBD adapter first!");
+        isLabRecording = true;
+        labFrames = [];
+        labStartTime = Date.now();
+        btn.innerText = "⏹️ Stop Stream Record";
+        btn.classList.add('recording');
+        statusLabel.innerText = "🔴 RECORDING LIVE STREAM";
+        statusLabel.style.color = "var(--red)";
+      } else {
+        isLabRecording = false;
+        btn.innerText = "🔴 Record Live Stream";
+        btn.classList.remove('recording');
+        statusLabel.innerText = `COMPLETED (${labFrames.length} frames logged)`;
+        statusLabel.style.color = "var(--green)";
+      }
+    };
+
+    window.tagLabEvent = function() {
+      const input = document.getElementById('lab-event-input');
+      const val = input.value.trim();
+      if (!val) return;
+      activeLabMarker = `STEP: ${val}`;
+      log(`Tagged: ${val}`);
+      input.value = "";
+    };
+
+    window.shareLabCsv = function() {
+      if (!labFrames.length) return alert("No live flight data recorded yet! Tap 'Record Live Stream' first.");
+
+      let csv = "Time_Sec,Step_Marker,RPM,Speed_KMH,Coolant_C,IAT_C,MAP_mb,APS_Pct,TPS_Pct,Spark_Deg,ATRV_V,ECU_Rail_V,Sag_V,CVT_Ratio,DBW_Lag,VE_Index";
+      for (let i = 0; i < 26; i++) csv += `,B${i}_Hex,B${i}_Dec`;
+      csv += "\n";
+
+      labFrames.forEach(f => {
+        let row = `${f.timeSec},"${f.marker.replace(/"/g, '""')}",${f.rpm},${f.speedKmh},${f.cltC},${f.iatC},${f.mapMbar},${f.apsPct},${f.tpsPct},${f.timing},${f.atrvVal},${f.ecuRailV},${f.vSag},${f.cvtRatio},${f.lag},${f.veIndex}`;
+        for (let i = 0; i < 26; i++) {
+          const h = f.bytesHex[i] !== undefined ? f.bytesHex[i] : "00";
+          const d = f.bytesDec[i] !== undefined ? f.bytesDec[i] : 0;
+          row += `,${h},${d}`;
+        }
+        csv += row + "\n";
+      });
+
+      dispatchFileShare(csv, `RMAX_Live_Stream_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`, "text/csv");
+    };
+
+    /* ==========================================================
+       TAB 2: DISCOVERY SWEEPERS & LOG SHARING
        ========================================================== */
     window.runTable21Sweeper = async function() {
       if (!bleDevice?.gatt?.connected) return alert("Connect first!");
       isSweeping = true;
       isPolling = false;
-      const out = document.getElementById('sweep-21-res');
-      out.innerText = "Sweeping tables 21 00 through 21 20 on ECU 7E0...\n";
+      const out = document.getElementById('sweep-res-feed');
+      out.innerText = "=== SWEEPING SERVICE 21 TABLES (00 - 25) ===\n";
 
-      for (let tid = 0x00; tid <= 0x20; tid++) {
+      for (let tid = 0x00; tid <= 0x25; tid++) {
         const hexId = tid.toString(16).toUpperCase().padStart(2, '0');
         const cmd = `21${hexId}`;
         const res = await sendCommand(cmd, 600);
         if (!res.includes("7F11") && !res.includes("7F12") && !res.includes("7F31") && !res.includes("TIMEOUT")) {
-          out.innerText += `✅ Found Table ${cmd} ➜ ${res}\n`;
+          const entry = `✅ Found Table 21 ${hexId} ➜ ${res}`;
+          out.innerText += entry + "\n";
+          discoveryLogs.push(`[Table21] ${entry}`);
         }
-        await new Promise(r => setTimeout(r, 40));
+        await new Promise(r => setTimeout(r, 35));
       }
-      out.innerText += "\n--- Sweep Complete ---";
+      out.innerText += "=== Service 21 Sweep Finished ===\n";
+      document.getElementById('disc-items-count').innerText = `${discoveryLogs.length} Entries`;
       isSweeping = false;
       startLivePolling();
     };
@@ -609,96 +833,195 @@
       if (!bleDevice?.gatt?.connected) return alert("Connect first!");
       isSweeping = true;
       isPolling = false;
-      const out = document.getElementById('sweep-obd-res');
-      out.innerText = "Sweeping Mode 01 PIDs 00 through 20 on ECU 7E0...\n";
+      const out = document.getElementById('sweep-res-feed');
+      out.innerText = "=== SWEEPING STANDARD OBD-II MODE 01 ===\n";
 
       const pids = [
         { id: "0100", name: "Supported PIDs [01-20]" },
         { id: "0104", name: "Calculated Engine Load" },
-        { id: "0105", name: "Engine Coolant Temp" },
+        { id: "0105", name: "Coolant Temp" },
         { id: "0106", name: "Short Term Fuel Trim" },
         { id: "0107", name: "Long Term Fuel Trim" },
-        { id: "010B", name: "Intake Manifold Pressure" },
+        { id: "010B", name: "MAP Sensor" },
         { id: "010C", name: "Engine RPM" },
         { id: "010D", name: "Vehicle Speed" },
         { id: "010E", name: "Timing Advance" },
         { id: "010F", name: "Intake Air Temp" },
         { id: "0111", name: "Throttle Position" },
-        { id: "0114", name: "O2 Sensor Bank 1 (Voltage/Trim)" }
+        { id: "0114", name: "O2 Sensor Bank 1" }
       ];
 
       for (const p of pids) {
         const res = await sendCommand(p.id, 600);
         if (!res.includes("7F") && !res.includes("NO") && !res.includes("TIMEOUT")) {
-          out.innerText += `✅ Mode ${p.id} (${p.name}) ➜ ${res}\n`;
+          const entry = `✅ Mode ${p.id} (${p.name}) ➜ ${res}`;
+          out.innerText += entry + "\n";
+          discoveryLogs.push(`[OBD2] ${entry}`);
         }
-        await new Promise(r => setTimeout(r, 40));
+        await new Promise(r => setTimeout(r, 35));
       }
-      out.innerText += "\n--- OBD-II Sweep Complete ---";
+      out.innerText += "=== OBD-II Sweep Finished ===\n";
+      document.getElementById('disc-items-count').innerText = `${discoveryLogs.length} Entries`;
       isSweeping = false;
       startLivePolling();
     };
 
-    /* ==========================================================
-       MISSION RECORDER & AI PACKET EXPORT
-       ========================================================== */
-    window.toggleMissionRecorder = function() {
-      const btn = document.getElementById('btn-mission-rec');
-      const label = document.getElementById('mission-status-label');
-      const missionName = document.getElementById('mission-select').value;
+    window.shareDiscoveryResults = function() {
+      if (!discoveryLogs.length) return alert("No sweep results to share!");
+      const report = `=== YAMAHA RMAX 1000 PROTOCOL DISCOVERY REPORT ===\nTimestamp: ${new Date().toISOString()}\nTotal Hits: ${discoveryLogs.length}\n\n` + discoveryLogs.join("\n");
+      dispatchFileShare(report, `RMAX_Discovery_Sweep_${new Date().toISOString().replace(/[:.]/g,'-')}.txt`, "text/plain");
+    };
 
-      if (!isMissionRecording) {
-        if (!bleDevice?.gatt?.connected) return alert("Connect first!");
-        isMissionRecording = true;
-        missionFrames = [];
-        missionStartTime = Date.now();
-        btn.innerText = "⏹️ Stop Mission & Compile";
-        btn.classList.add('active');
-        label.innerText = `🔴 Recording: ${missionName}...`;
+    window.clearDiscoveryResults = function() {
+      discoveryLogs = [];
+      document.getElementById('disc-items-count').innerText = "0 Results";
+      document.getElementById('sweep-res-feed').innerText = "Cleared.";
+    };
+
+    /* ==========================================================
+       TAB 3: GUIDED MISSIONS & STEP RUNNER
+       ========================================================== */
+    window.onMissionSelected = function() {
+      currentMissionKey = document.getElementById('mission-select').value;
+      currentStepIndex = 0;
+      renderMissionSteps();
+    };
+
+    function renderMissionSteps() {
+      const def = MISSIONS[currentMissionKey];
+      document.getElementById('mission-precond-text').innerText = `Pre-conditions: ${def.precond}`;
+      const container = document.getElementById('mission-steps-container');
+      container.innerHTML = '';
+
+      def.steps.forEach((st, idx) => {
+        const item = document.createElement('div');
+        item.className = `step-item ${idx === currentStepIndex ? 'active' : ''} ${idx < currentStepIndex ? 'completed' : ''}`;
+        item.id = `step-item-${idx}`;
+        item.innerHTML = `
+          <div><span class="step-num">#${idx + 1}</span> ${st}</div>
+          <span style="font-size:0.6rem;">${idx < currentStepIndex ? '✓ DONE' : (idx === currentStepIndex ? 'ACTIVE' : '')}</span>
+        `;
+        container.appendChild(item);
+      });
+
+      document.getElementById('mission-step-indicator').innerText = `Step ${currentStepIndex + 1} of ${def.steps.length}`;
+      document.getElementById('mission-current-step-label').innerText = def.steps[currentStepIndex] || "Mission Completed!";
+    }
+
+    window.stampAndAdvanceMissionStep = function() {
+      const def = MISSIONS[currentMissionKey];
+      const completedStep = def.steps[currentStepIndex];
+      log(`Stamped: Step ${currentStepIndex + 1} - ${completedStep}`);
+
+      currentStepIndex++;
+      if (currentStepIndex >= def.steps.length) {
+        document.getElementById('mission-current-step-label').innerText = "🎉 All steps completed! Tap 'Stop Mission Flight'.";
+        document.getElementById('mission-step-indicator').innerText = `Complete (${def.steps.length}/${def.steps.length})`;
       } else {
-        isMissionRecording = false;
-        btn.innerText = "🔴 Record Mission";
-        btn.classList.remove('active');
-        label.innerText = `✅ Finished. Captured ${missionFrames.length} frames.`;
-        compileAiResearchPacket(missionName);
+        renderMissionSteps();
       }
     };
 
-    function compileAiResearchPacket(missionName) {
-      let doc = `### YAMAHA RMAX 1000 AI DIAGNOSTIC REPORT\n`;
-      doc += `- **Mission Tag:** ${missionName}\n`;
+    window.toggleMissionFlightRecorder = function() {
+      const btn = document.getElementById('btn-mission-record');
+      const statusLabel = document.getElementById('mission-rec-status');
+
+      if (!isMissionRecording) {
+        if (!bleDevice?.gatt?.connected) return alert("Connect to OBD adapter first!");
+        isMissionRecording = true;
+        currentStepIndex = 0;
+        renderMissionSteps();
+        missionFrames = [];
+        missionStartTime = Date.now();
+        btn.innerText = "⏹️ Stop Mission Flight";
+        btn.classList.add('recording');
+        statusLabel.innerText = `🔴 RECORDING: ${MISSIONS[currentMissionKey].title.toUpperCase()}`;
+        statusLabel.style.color = "var(--red)";
+      } else {
+        isMissionRecording = false;
+        btn.innerText = "🔴 Record Mission Flight";
+        btn.classList.remove('recording');
+        statusLabel.innerText = `FINISHED (${missionFrames.length} frames logged)`;
+        statusLabel.style.color = "var(--green)";
+        compileMissionDigest();
+      }
+    };
+
+    function compileMissionDigest() {
+      const def = MISSIONS[currentMissionKey];
+      let doc = `### YAMAHA RMAX 1000 MISSION FLIGHT REPORT\n`;
+      doc += `- **Mission:** ${def.title}\n`;
       doc += `- **Total Frames Logged:** ${missionFrames.length}\n`;
       doc += `- **Timestamp:** ${new Date().toISOString()}\n\n`;
-      
-      doc += `#### 1. 26-BYTE BEHAVIOR MATRIX (Min / Max / Delta)\n`;
-      doc += `| Byte | Initial | Min | Max | Delta | Active? |\n`;
-      doc += `|---|---|---|---|---|---|\n`;
+
+      doc += `#### STEP SEQUENCE EXECUTED:\n`;
+      def.steps.forEach((st, i) => {
+        doc += `${i + 1}. ${st}\n`;
+      });
+
+      doc += `\n#### 26-BYTE REACTION MATRIX (Min / Max / Delta during this run):\n`;
+      doc += `| Byte | Initial | Min | Max | Delta | Active? |\n|---|---|---|---|---|---|\n`;
       byteStats.forEach((st, i) => {
         const delta = st.max - st.min;
         doc += `| B[${i}] | 0x${(st.initial||0).toString(16).toUpperCase()} | ${st.min} | ${st.max} | ${delta} | ${delta > 0 ? '🔥 YES' : 'Static'} |\n`;
       });
 
-      doc += `\n#### 2. SAMPLE HIGH-LOAD FRAME EXTRACT\n`;
-      if (missionFrames.length > 0) {
-        const mid = missionFrames[Math.floor(missionFrames.length / 2)];
-        doc += `- **RPM:** ${mid.rpm}\n- **Speed:** ${mid.speedKmh} km/h\n- **MAP:** ${mid.mapMbar} mb\n- **Pedal/TPS:** ${mid.apsPct}% / ${mid.tpsPct}%\n`;
-        doc += `- **Raw Bytes:** \`${mid.bytes.map(b => b.toString(16).padStart(2,'0').toUpperCase()).join(' ')}\`\n`;
-      }
-
-      document.getElementById('ai-packet-output').value = doc;
+      document.getElementById('mission-digest-output').value = doc;
     }
 
-    window.copyAiResearchPacket = function() {
-      const text = document.getElementById('ai-packet-output').value;
-      if (!text) return alert("Run a mission or record first!");
+    window.copyMissionDigest = function() {
+      const text = document.getElementById('mission-digest-output').value;
+      if (!text) return alert("Record a mission flight first!");
       navigator.clipboard.writeText(text)
-        .then(() => alert("AI Research Packet copied! Paste it directly into our chat."))
-        .catch(() => alert("Could not copy directly; please select and copy the text inside the box."));
+        .then(() => alert("Mission Review Digest copied! Paste it directly into our chat."))
+        .catch(() => alert("Please copy the text manually from the box."));
     };
 
-    // Initialize UI Elements
+    window.shareMissionData = function() {
+      if (!missionFrames.length) return alert("No mission data recorded yet! Tap 'Record Mission Flight' first.");
+
+      let csv = "Time_Sec,Step_Number,Step_Action,RPM,Speed_KMH,Coolant_C,IAT_C,MAP_mb,APS_Pct,TPS_Pct,Spark_Deg,ATRV_V,ECU_Rail_V,Sag_V,CVT_Ratio,DBW_Lag,VE_Index";
+      for (let i = 0; i < 26; i++) csv += `,B${i}_Hex,B${i}_Dec`;
+      csv += "\n";
+
+      missionFrames.forEach(f => {
+        let row = `${f.timeSec},${f.stepIdx},"${f.stepText.replace(/"/g, '""')}",${f.rpm},${f.speedKmh},${f.cltC},${f.iatC},${f.mapMbar},${f.apsPct},${f.tpsPct},${f.timing},${f.atrvVal},${f.ecuRailV},${f.vSag},${f.cvtRatio},${f.lag},${f.veIndex}`;
+        for (let i = 0; i < 26; i++) {
+          const h = f.bytesHex[i] !== undefined ? f.bytesHex[i] : "00";
+          const d = f.bytesDec[i] !== undefined ? f.bytesDec[i] : 0;
+          row += `,${h},${d}`;
+        }
+        csv += row + "\n";
+      });
+
+      dispatchFileShare(csv, `RMAX_${currentMissionKey}_${new Date().toISOString().replace(/[:.]/g,'-')}.csv`, "text/csv");
+    };
+
+    /* Universal Web Share or File Downloader Dispatcher */
+    function dispatchFileShare(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType + ';charset=utf-8;' });
+      const file = new File([blob], filename, { type: mimeType });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ title: filename, files: [file] }).catch(() => {});
+      } else {
+        // Fallback to direct download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert(`Exported: ${filename}\n(Saved to Downloads)`);
+      }
+    }
+
+    // Initializations
     initBitStrips();
     initRawGrid();
+    renderMissionSteps();
   </script>
 </body>
 </html>
