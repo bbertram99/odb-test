@@ -11,18 +11,23 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="RMAX Pro" />
   <title>Yamaha RMAX Pro Cockpit</title>
+
+  <!-- Leaflet.js for Offline-Capable Topo & Satellite Off-Road Trail Mapping -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap');
 
     :root {
       --bg: #02050e;
-      --card-bg: rgba(7, 14, 32, 0.84);
+      --card-bg: rgba(7, 14, 32, 0.86);
       --card-border: rgba(0, 102, 255, 0.32);
       --card-glow: rgba(0, 102, 255, 0.14);
       --text: #f8fafc;
       --text-muted: #7084a4;
       
-      /* Yamaha Official Racing Colors */
+      /* Yamaha Official Factory Racing Colors */
       --yamaha-blue: #0066ff;
       --yamaha-blue-glow: rgba(0, 102, 255, 0.65);
       --yamaha-cyan: #00d2ff;
@@ -52,7 +57,6 @@
       overflow-x: hidden;
     }
 
-    /* Global visual FX wrapper */
     #viewport-fx {
       display: flex;
       flex-direction: column;
@@ -64,7 +68,7 @@
     }
 
     /* ==========================================================
-       YAMAHA EMBLEM VECTOR GRAPHIC (Reusable SVG Component)
+       YAMAHA EMBLEM VECTOR GRAPHIC
        ========================================================== */
     .yamaha-roundel {
       display: inline-block;
@@ -74,7 +78,7 @@
     }
 
     /* ==========================================================
-       CONNECT & SPLASH SCREEN (First Thing to Load)
+       CONNECT & SPLASH SCREEN
        ========================================================== */
     #connect-screen {
       position: fixed;
@@ -97,7 +101,6 @@
       pointer-events: none;
     }
 
-    /* Outer Animated Radar/Energy Halo */
     .emblem-pulse-stage {
       position: relative;
       width: 240px;
@@ -138,7 +141,6 @@
       100% { transform: scale(1.22); opacity: 0.95; }
     }
 
-    /* Center Yamaha Logo Button */
     .yamaha-logo-btn {
       position: relative;
       width: 176px;
@@ -159,14 +161,13 @@
     }
     @keyframes logoFloat {
       0% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 18px rgba(0, 102, 255, 0.75)); }
-      100% { transform: translateY(-4px) scale(1.03); filter: drop-shadow(0 0 32px rgba(0, 180, 255, 0.95)) drop-shadow(0 0 60px rgba(0, 102, 255, 0.4)); }
+      100% { transform: translateY(-4px) scale(1.03); filter: drop-shadow(0 0 32px rgba(0, 180, 255, 0.95)); }
     }
     @keyframes logoPulseFast {
       0% { transform: scale(0.97); filter: drop-shadow(0 0 25px #0066ff); }
       100% { transform: scale(1.08); filter: drop-shadow(0 0 50px #00f0ff); }
     }
 
-    /* Words Below Logo */
     .connect-brand-group {
       display: flex;
       flex-direction: column;
@@ -204,7 +205,6 @@
       margin-top: 0.2rem;
     }
 
-    /* Action Trigger: Tap To Connect */
     .btn-tap-connect {
       display: flex;
       align-items: center;
@@ -246,23 +246,6 @@
       max-width: 280px;
       line-height: 1.45;
     }
-
-    .demo-mode-link {
-      margin-top: 1rem;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--yamaha-cyan);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 0.4rem 0.8rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .demo-mode-link:hover { background: rgba(0, 102, 255, 0.2); border-color: var(--yamaha-cyan); }
 
     /* ==========================================================
        DASHBOARD APP SHELL
@@ -331,11 +314,6 @@
       color: var(--green); 
       box-shadow: 0 0 14px rgba(34, 197, 94, 0.3); 
     }
-    .status-badge.demo {
-      background: rgba(0, 102, 255, 0.2);
-      border-color: var(--yamaha-cyan);
-      color: var(--yamaha-cyan);
-    }
     .status-badge.recording { 
       background: rgba(239, 68, 68, 0.25); 
       border-color: var(--red); 
@@ -361,7 +339,7 @@
     .btn-hud-icon:active { transform: scale(0.92); background: var(--yamaha-blue); color: #fff; }
 
     /* ==========================================================
-       HERO TRIPLE RADIAL CLUSTER (Speed, Tachometer RPM, Coolant)
+       TOP HERO TRIPLE CLUSTER (Analog Needles / Selectable Styles)
        ========================================================== */
     .hero-triple-cluster { 
       display: grid; 
@@ -392,72 +370,75 @@
       box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); 
     }
     
-    .gauge-wrapper { position: relative; width: 100%; height: 142px; display: flex; align-items: center; justify-content: center; }
-    .gauge-wrapper.large { height: 168px; }
-    .gauge-svg { width: 100%; height: 100%; transform: rotate(-30deg); }
+    .gauge-wrapper { position: relative; width: 100%; height: 146px; display: flex; align-items: center; justify-content: center; }
+    .gauge-wrapper.large { height: 172px; }
+    .gauge-svg { width: 100%; height: 100%; overflow: visible; }
     
-    .gauge-bg-track { 
-      fill: none; 
-      stroke: rgba(255, 255, 255, 0.06); 
-      stroke-width: 12; 
-      stroke-linecap: round; 
-      stroke-dasharray: 293.2; 
-      stroke-dashoffset: 0; 
-    }
-    .gauge-val-track { 
-      fill: none; 
-      stroke: var(--yamaha-blue); 
-      stroke-width: 12; 
-      stroke-linecap: round; 
-      stroke-dasharray: 293.2; 
-      stroke-dashoffset: 293.2; 
-      transition: stroke-dashoffset 0.12s linear, stroke 0.25s ease; 
-      filter: drop-shadow(0 0 10px var(--yamaha-blue)); 
-    }
+    /* ANALOG NEEDLE GAUGE VISUALS */
+    .analog-dial-bg { fill: #030715; stroke: rgba(0, 102, 255, 0.35); stroke-width: 3; filter: drop-shadow(0 0 10px rgba(0, 102, 255, 0.25)); }
+    .analog-bezel-ring { fill: none; stroke: url(#bezelGradient); stroke-width: 6; }
+    .analog-tick-major { stroke: #ffffff; stroke-width: 2.2; stroke-linecap: round; }
+    .analog-tick-minor { stroke: rgba(255,255,255,0.4); stroke-width: 1.2; }
+    .analog-tick-num { fill: #94a3b8; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+    .analog-redline-arc { fill: none; stroke: var(--redline); stroke-width: 5.5; stroke-linecap: round; filter: drop-shadow(0 0 6px var(--redline)); }
     
-    .gauge-center-readout { 
-      position: absolute; 
-      top: 52%; 
-      left: 50%; 
-      transform: translate(-50%, -50%); 
-      text-align: center; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      pointer-events: none; 
+    .analog-needle {
+      transform-origin: 100px 100px;
+      transition: transform 0.08s cubic-bezier(0.1, 0.9, 0.2, 1);
+      filter: drop-shadow(0 0 8px var(--yamaha-cyan));
     }
-    .gauge-center-val { 
-      font-size: 2.35rem; 
-      font-weight: 800; 
-      line-height: 1; 
-      font-variant-numeric: tabular-nums; 
-      letter-spacing: -0.02em; 
-      color: #fff;
-      text-shadow: 0 0 12px rgba(255,255,255,0.4);
+    .analog-needle-blade { stroke: var(--yamaha-cyan); stroke-width: 3.2; stroke-linecap: round; }
+    .analog-needle-cap { fill: #0a1128; stroke: var(--yamaha-blue); stroke-width: 2.5; filter: drop-shadow(0 0 6px var(--yamaha-blue)); }
+
+    .analog-digital-inset {
+      position: absolute;
+      bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+      background: rgba(3, 7, 20, 0.85);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 102, 255, 0.25);
     }
-    .gauge-center-val.large { font-size: 3.2rem; }
-    .gauge-center-unit { 
-      font-size: 0.72rem; 
-      font-weight: 700; 
-      letter-spacing: 0.12em; 
-      color: var(--text-muted); 
-      text-transform: uppercase; 
-      margin-top: 0.15rem; 
-    }
+    .analog-inset-val { font-size: 1.25rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .analog-inset-unit { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted); text-transform: uppercase; }
+
+    /* CYBER RADIAL ARC STYLE */
+    .gauge-bg-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 0; }
+    .gauge-val-track { fill: none; stroke: var(--yamaha-blue); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 293.2; stroke-dashoffset: 293.2; transition: stroke-dashoffset 0.1s linear; filter: drop-shadow(0 0 10px var(--yamaha-blue)); }
+    .cyber-readout { position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+    .cyber-val { font-size: 2.3rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: #fff; }
+    .cyber-val.large { font-size: 3.1rem; }
+
+    /* RACING RIBBON / LADDER STYLE */
+    .ribbon-container { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0.8rem 0.4rem; gap: 0.35rem; }
+    .ribbon-track { width: 100%; height: 16px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; border: 1px solid rgba(0, 102, 255, 0.4); }
+    .ribbon-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--yamaha-blue), var(--yamaha-cyan)); transition: width 0.1s linear; box-shadow: 0 0 10px var(--yamaha-cyan); }
+    .ribbon-val { font-size: 2.4rem; font-weight: 800; line-height: 1; color: #fff; }
+
+    /* MINIMAL HUD STYLE */
+    .minimal-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .minimal-val { font-size: 3.4rem; font-weight: 800; line-height: 0.95; color: #fff; font-variant-numeric: tabular-nums; text-shadow: 0 0 20px var(--yamaha-blue-glow); }
+    .minimal-val.large { font-size: 4.4rem; }
+    .minimal-unit { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.15em; color: var(--yamaha-cyan); }
+
     .redline-indicator { 
       position: absolute; 
-      bottom: 6px; 
-      font-size: 0.7rem; 
+      bottom: 32px; 
+      font-size: 0.68rem; 
       font-weight: 800; 
       letter-spacing: 0.15em; 
       color: var(--redline); 
       opacity: 0; 
       transition: opacity 0.2s ease;
+      background: rgba(255, 0, 76, 0.15);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      border: 1px solid var(--redline);
     }
-    .redline-indicator.active { 
-      opacity: 1; 
-      animation: redlineBlink 0.3s infinite alternate; 
-    }
+    .redline-indicator.active { opacity: 1; animation: redlineBlink 0.3s infinite alternate; }
     @keyframes redlineBlink { from { opacity: 0.3; } to { opacity: 1; text-shadow: 0 0 12px var(--redline); } }
 
     /* ==========================================================
@@ -554,7 +535,11 @@
     .graph-stat-val { color: #fff; }
     .card-canvas { width: 100%; height: 48px; display: block; border-radius: 6px; }
 
-    /* Embedded Logger Dock */
+    /* Special GPS Card Styling */
+    .gps-preview-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--yamaha-cyan); font-weight: 700; }
+    .gps-coords-text { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: #fff; line-height: 1.25; }
+
+    /* Embedded Logger Docks */
     .logger-dock-bar { 
       background: rgba(4, 9, 24, 0.94); 
       border: 1px solid var(--card-border); 
@@ -588,12 +573,26 @@
     .btn-touch:active { transform: scale(0.96); background: var(--yamaha-blue); color: #fff; }
     .btn-touch.record-btn { background: rgba(239, 68, 68, 0.2); border-color: var(--red); color: var(--red); }
     .btn-touch.record-btn.recording { background: var(--red); color: #fff; font-weight: 800; box-shadow: 0 0 14px rgba(239, 68, 68, 0.5); }
+    .btn-touch.gps-btn { background: rgba(0, 210, 255, 0.18); border-color: var(--yamaha-cyan); color: #fff; }
+    .btn-touch.gps-btn.recording { background: var(--yamaha-cyan); color: #02050e; font-weight: 800; box-shadow: 0 0 14px rgba(0, 210, 255, 0.6); }
 
-    /* Fullscreen Expanded Modal */
-    #fullscreen-modal { display: none; position: fixed; inset: 0; background: rgba(2, 4, 12, 0.96); z-index: 1000; padding: 1rem; flex-direction: column; justify-content: space-between; backdrop-filter: blur(22px); animation: fadeIn 0.2s ease-out; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+    /* Fullscreen Expanded Modals */
+    #fullscreen-modal, #map-modal { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(2, 4, 12, 0.96); 
+      z-index: 1000; 
+      padding: 1rem; 
+      flex-direction: column; 
+      justify-content: space-between; 
+      backdrop-filter: blur(22px); 
+      animation: fadeIn 0.2s ease-out; 
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
     .modal-title { font-size: 1.3rem; font-weight: 800; color: var(--yamaha-cyan); text-transform: uppercase; letter-spacing: 0.08em; }
     .btn-close-modal { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 38px; height: 38px; border-radius: 10px; font-size: 1.1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    
     .modal-main-readout { display: flex; align-items: baseline; gap: 0.5rem; justify-content: center; margin: 0.75rem 0; }
     .modal-val { font-size: 4.8rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
     .modal-unit { font-size: 1.35rem; font-weight: 700; color: var(--text-muted); }
@@ -603,6 +602,19 @@
     .modal-stat-num { font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.15rem; }
     .modal-canvas { width: 100%; height: 230px; border-radius: 12px; background: rgba(2, 6, 20, 0.9); border: 1px solid var(--card-border); margin: 0.75rem 0; }
     .modal-range-toggles { display: flex; gap: 0.5rem; }
+
+    /* Off-Road Map Modal View */
+    #leaflet-map-container { 
+      width: 100%; 
+      flex: 1; 
+      min-height: 340px; 
+      border-radius: 14px; 
+      border: 1px solid var(--card-border); 
+      overflow: hidden; 
+      box-shadow: 0 0 25px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .map-controls-row { display: flex; gap: 0.5rem; margin-bottom: 0.6rem; }
 
     /* Bottom Touch Dock */
     .touch-dock { 
@@ -685,9 +697,6 @@
     .theme-swatch.active .theme-swatch-name { color: #fff; }
 
     .settings-btn-full { width: 100%; background: rgba(0, 102, 255, 0.18); border: 1px solid var(--yamaha-blue); color: #fff; padding: 0.55rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
-    .settings-status-note { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); margin-top: 0.4rem; line-height: 1.4; }
-    .settings-status-note.ok { color: var(--green); }
-    .settings-status-note.warn { color: var(--amber); }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
@@ -696,14 +705,17 @@
 
 <div id="viewport-fx">
 
-  <!-- ==========================================================
-       SVG ASSET DEF: AUTHENTIC YAMAHA MOTOR ROUNDEL
-       ========================================================== -->
+  <!-- SVG DEFS: METALLIC GRADIENTS & YAMAHA ROUNDEL -->
   <svg style="display:none;">
     <defs>
-      <!-- Single Precision Tuning Fork -->
+      <linearGradient id="bezelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#475569" />
+        <stop offset="50%" stop-color="#0f172a" />
+        <stop offset="100%" stop-color="#334155" />
+      </linearGradient>
+
+      <!-- Yamaha Single Tuning Fork -->
       <g id="yamaha-single-fork">
-        <!-- Stem & Tines Outline -->
         <path d="
           M 200,24
           L 226,63
@@ -723,33 +735,26 @@
           L 174,63
           Z
         " fill="currentColor" />
-        <!-- Pill Hole in Stem -->
         <rect x="195" y="86" width="10" height="52" rx="5" fill="#000000" />
       </g>
 
-      <!-- Complete Roundel (Tuning Forks at 0, 120, 240 deg) -->
+      <!-- Complete Roundel -->
       <g id="yamaha-motor-roundel-symbol">
-        <!-- Solid Base Disc -->
         <circle cx="200" cy="200" r="192" fill="#000000" />
-        <!-- Outer Thin Rim -->
         <circle cx="200" cy="200" r="188" fill="none" stroke="currentColor" stroke-width="4.5" />
-        <!-- Main White Ring -->
         <circle cx="200" cy="200" r="162" fill="none" stroke="currentColor" stroke-width="18" />
-        <!-- 3 Interlocking Tuning Forks -->
         <use href="#yamaha-single-fork" />
         <use href="#yamaha-single-fork" transform="rotate(120 200 200)" />
         <use href="#yamaha-single-fork" transform="rotate(240 200 200)" />
-        <!-- Center Hole -->
         <circle cx="200" cy="200" r="14" fill="#000000" />
       </g>
     </defs>
   </svg>
 
   <!-- ==========================================================
-       CONNECT SCREEN (First thing to load with Yamaha Glow)
+       CONNECT SCREEN (Yamaha Emblem + Glow + Tap to Connect)
        ========================================================== -->
   <div id="connect-screen">
-    
     <div class="emblem-pulse-stage">
       <div class="halo-ring r1"></div>
       <div class="halo-ring r2"></div>
@@ -762,14 +767,12 @@
       </button>
     </div>
 
-    <!-- Words below the logo -->
     <div class="connect-brand-group">
       <div class="connect-title">YAMAHA</div>
       <div class="connect-sub">RMAX 1000 PRO COCKPIT</div>
       <span class="connect-model-badge">FACTORY TELEMETRY v1.0.0</span>
     </div>
 
-    <!-- Tap to Connect Button -->
     <button class="btn-tap-connect" id="btn-tap-connect" onclick="handleConnectClick()">
       <span>⚡ TAP TO CONNECT</span>
     </button>
@@ -777,15 +780,10 @@
     <div class="connect-hint-msg" id="connect-hint">
       Touch the emblem or button to pair with your RMAX OBD-II Bluetooth adapter.
     </div>
-
-    <button class="demo-mode-link" onclick="launchDemoMode()">
-      ▶ Launch Interactive Demo Mode
-    </button>
-
   </div>
 
   <!-- ==========================================================
-       APP SHELL (Revealed with cinematic sweep after connection)
+       DASHBOARD COCKPIT (Fades in after connection)
        ========================================================== -->
   <div id="app-shell" class="app-shell">
 
@@ -805,26 +803,18 @@
       </div>
     </header>
 
-    <!-- Main Cockpit View -->
+    <!-- Main View -->
     <div id="cockpit-view" style="display: flex; flex-direction: column; gap: 0.45rem;">
       
-      <!-- 1. TOP HERO TRIPLE CLUSTER (Speed, RPM Tachometer, Coolant) -->
-      <div class="hero-triple-cluster">
+      <!-- 1. TOP HERO TRIPLE CLUSTER (Speed, Tachometer RPM, Coolant) -->
+      <div class="hero-triple-cluster" id="top-hero-cluster">
         
-        <!-- Left: Ground Speed -->
+        <!-- Left: Ground Speed Gauge -->
         <div class="hero-gauge-box" id="card-speed" onclick="handleCardClick('speed', this)">
-          <div class="card-mode-badge" id="badge-speed" style="position:absolute; top:6px; left:8px;">LIVE</div>
+          <div class="card-mode-badge" id="badge-speed" style="position:absolute; top:6px; left:8px; z-index:5;">LIVE</div>
           <div class="gauge-wrapper" id="live-gauge-speed">
-            <svg class="gauge-svg" viewBox="0 0 200 200">
-              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-              <circle id="gauge-speed-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-            </svg>
-            <div class="gauge-center-readout">
-              <span id="val-dash-speed" class="gauge-center-val">0</span>
-              <span class="gauge-center-unit" id="label-dash-speed-unit">KM/H</span>
-            </div>
+            <!-- Rendered Dynamically (Analog Needle / Radial Arc / Ribbon / Minimal) -->
           </div>
-          <!-- Graph View -->
           <div class="card-graph-view" id="graph-view-speed">
             <div class="graph-stats-row">
               <span>MIN: <span class="graph-stat-val" id="min-speed">0</span></span>
@@ -835,21 +825,13 @@
           </div>
         </div>
 
-        <!-- Center: Engine RPM Tachometer (Yamaha Redline) -->
+        <!-- Center: Engine RPM Tachometer Gauge -->
         <div class="hero-gauge-box" id="card-rpm" onclick="handleCardClick('rpm', this)">
-          <div class="card-mode-badge" id="badge-rpm" style="position:absolute; top:6px; left:8px;">LIVE</div>
+          <div class="card-mode-badge" id="badge-rpm" style="position:absolute; top:6px; left:8px; z-index:5;">LIVE</div>
           <div class="gauge-wrapper large" id="live-gauge-rpm">
-            <svg class="gauge-svg" viewBox="0 0 200 200">
-              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-              <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-            </svg>
-            <div class="gauge-center-readout">
-              <span id="val-dash-rpm" class="gauge-center-val large">0</span>
-              <span class="gauge-center-unit">RPM</span>
-            </div>
-            <div id="redline-alert" class="redline-indicator">REDLINE</div>
+            <!-- Rendered Dynamically -->
           </div>
-          <!-- Graph View -->
+          <div id="redline-alert" class="redline-indicator">REDLINE</div>
           <div class="card-graph-view" id="graph-view-rpm">
             <div class="graph-stats-row">
               <span>MIN: <span class="graph-stat-val" id="min-rpm">0</span></span>
@@ -860,20 +842,12 @@
           </div>
         </div>
 
-        <!-- Right: Coolant Temp (ECT) -->
+        <!-- Right: Coolant Temp (ECT) Gauge -->
         <div class="hero-gauge-box" id="card-coolant" onclick="handleCardClick('coolant', this)">
-          <div class="card-mode-badge" id="badge-coolant" style="position:absolute; top:6px; right:8px;">LIVE</div>
+          <div class="card-mode-badge" id="badge-coolant" style="position:absolute; top:6px; right:8px; z-index:5;">LIVE</div>
           <div class="gauge-wrapper" id="live-gauge-coolant">
-            <svg class="gauge-svg" viewBox="0 0 200 200">
-              <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
-              <circle id="gauge-coolant-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
-            </svg>
-            <div class="gauge-center-readout">
-              <span id="val-dash-coolant" class="gauge-center-val">--</span>
-              <span class="gauge-center-unit" id="label-dash-coolant-unit">°C</span>
-            </div>
+            <!-- Rendered Dynamically -->
           </div>
-          <!-- Graph View -->
           <div class="card-graph-view" id="graph-view-coolant">
             <div class="graph-stats-row">
               <span>MIN: <span class="graph-stat-val" id="min-coolant">0</span></span>
@@ -886,7 +860,7 @@
 
       </div>
 
-      <!-- 2. STATUS STRIP (Gear, D-Mode, P-Brake, Foot Brake) -->
+      <!-- 2. DRIVE STATUS STRIP (Gear, D-Mode, P-Brake, Foot Brake) -->
       <div class="drive-status-strip">
         <div class="status-pill-box">
           <span class="status-pill-label">Gear</span>
@@ -909,6 +883,49 @@
       <!-- 3. INTERACTIVE CLICKABLE METRIC CARDS GRID -->
       <div class="cockpit-grid">
         
+        <!-- GPS NAVIGATION & TRAIL CARD (DOUBLE CLICK TO LAUNCH TOPO/SAT MAP) -->
+        <div class="touch-card" id="card-gps" onclick="handleCardClick('gps', this)" style="grid-column: span 2; border-color: rgba(0, 210, 255, 0.45);">
+          <div class="card-top">
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="font-size:0.9rem;">🛰️</span>
+              <span class="card-label" style="color:var(--yamaha-cyan);">GPS Navigation & Off-Road Trail</span>
+            </div>
+            <span class="card-mode-badge" id="badge-gps">TAP: ZOOM MAP</span>
+          </div>
+          <div class="card-live-view" style="margin-top:0.3rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="gps-coords-text" id="gps-coords-display">Searching GPS satellites...</div>
+              <div class="gps-preview-sub" id="gps-stats-sub">Accuracy: -- | Heading: --° | Speed: 0 km/h</div>
+            </div>
+            <button class="btn-touch" style="padding:0.4rem 0.75rem; font-size:0.7rem; background:rgba(0, 210, 255, 0.2);" onclick="event.stopPropagation(); openMapModal();">
+              🗺️ Open Map
+            </button>
+          </div>
+        </div>
+
+        <!-- Elevation Altitude Gauge (Acts like other gauges) -->
+        <div class="touch-card" id="card-elevation" onclick="handleCardClick('elevation', this)">
+          <div class="card-top">
+            <span class="card-label">Elevation (GPS)</span>
+            <span class="card-mode-badge" id="badge-elevation">LIVE</span>
+          </div>
+          <div class="card-live-view" id="live-view-elevation">
+            <div class="card-main">
+              <span id="val-dash-elevation" class="card-val">--</span>
+              <span class="card-unit" id="label-dash-ele-unit">M</span>
+            </div>
+            <div class="meter-bar-track"><div id="bar-elevation" class="meter-bar-fill"></div></div>
+          </div>
+          <div class="card-graph-view" id="graph-view-elevation">
+            <div class="graph-stats-row">
+              <span>MIN: <span class="graph-stat-val" id="min-elevation">0</span></span>
+              <span>AVG: <span class="graph-stat-val" id="avg-elevation">0</span></span>
+              <span>MAX: <span class="graph-stat-val" id="max-elevation">0</span></span>
+            </div>
+            <canvas id="canvas-elevation" class="card-canvas"></canvas>
+          </div>
+        </div>
+
         <!-- Engine Load % -->
         <div class="touch-card" id="card-load" onclick="handleCardClick('load', this)">
           <div class="card-top">
@@ -1094,9 +1111,9 @@
         </div>
 
         <!-- Battery & ECU Voltage Drop -->
-        <div class="touch-card" id="card-voltage" onclick="handleCardClick('voltage', this)" style="grid-column: span 2;">
+        <div class="touch-card" id="card-voltage" onclick="handleCardClick('voltage', this)">
           <div class="card-top">
-            <span class="card-label">Battery & ECU Rail Voltage</span>
+            <span class="card-label">ECU Rail Voltage</span>
             <span class="card-mode-badge" id="badge-voltage">LIVE</span>
           </div>
           <div class="card-live-view" id="live-view-voltage">
@@ -1118,11 +1135,12 @@
 
       </div>
 
-      <!-- 4. FLIGHT RECORDER LOGGING BAR -->
+      <!-- 4. FLIGHT RECORDER & GPS TRACK LOGGERS -->
+      <!-- Flight Telemetry Logger -->
       <div class="logger-dock-bar">
         <div class="logger-stats-col">
           <span class="logger-stats-time" id="cockpit-csv-time">00:00.0</span>
-          <span class="logger-stats-frames" id="cockpit-csv-frames">0 Telemetry Frames</span>
+          <span class="logger-stats-frames" id="cockpit-csv-frames">0 Engine Frames</span>
         </div>
         <div style="display:flex; gap:0.4rem;">
           <button class="btn-touch record-btn" id="btn-cockpit-record" onclick="toggleCockpitCsvLogger()">
@@ -1130,6 +1148,22 @@
           </button>
           <button class="btn-touch" id="btn-cockpit-share" onclick="shareCockpitCsv()" style="background:rgba(0, 102, 255, 0.25); color:var(--yamaha-cyan); opacity:0.5; pointer-events:none;">
             📤 Share CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- GPS Trail Recording Dock -->
+      <div class="logger-dock-bar" style="border-color: rgba(0, 210, 255, 0.35);">
+        <div class="logger-stats-col">
+          <span class="logger-stats-time" id="gps-rec-dist" style="color:var(--yamaha-cyan);">0.00 KM</span>
+          <span class="logger-stats-frames" id="gps-rec-pts">0 GPS Track Points</span>
+        </div>
+        <div style="display:flex; gap:0.4rem;">
+          <button class="btn-touch gps-btn" id="btn-gps-record" onclick="toggleGpsTrackRecording()">
+            📍 Start GPS Track
+          </button>
+          <button class="btn-touch" id="btn-gps-export" onclick="exportGpxTrackFile()" style="background:rgba(0, 210, 255, 0.25); color:#fff; opacity:0.5; pointer-events:none;">
+            📥 Export .GPX
           </button>
         </div>
       </div>
@@ -1150,7 +1184,36 @@
 
 </div><!-- /viewport-fx -->
 
-<!-- 6. FULLSCREEN ZOOM MODAL -->
+<!-- ==========================================================
+     INTERACTIVE MAP MODAL (Satellite & Topo Trail Navigation)
+     ========================================================== -->
+<div id="map-modal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">OFF-ROAD TRAIL MAP</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--text-muted);" id="map-trail-stats">
+        TRACK: 0.00 KM | POINTS: 0 | ELEVATION: -- M
+      </div>
+    </div>
+    <button class="btn-close-modal" onclick="closeMapModal()">✕</button>
+  </div>
+
+  <div class="map-controls-row">
+    <div class="segmented" style="flex:1;">
+      <button class="active" id="btn-layer-sat" onclick="switchMapLayer('satellite')">🛰️ Satellite View</button>
+      <button id="btn-layer-topo" onclick="switchMapLayer('topo')">🏔️ Topo Terrain</button>
+    </div>
+    <button class="btn-touch" onclick="recenterMapOnVehicle()" style="padding:0.4rem 0.8rem;">
+      🎯 Center
+    </button>
+  </div>
+
+  <div id="leaflet-map-container"></div>
+</div>
+
+<!-- ==========================================================
+     FULLSCREEN METRIC ZOOM MODAL
+     ========================================================== -->
 <div id="fullscreen-modal" onclick="handleModalClick(event)">
   <div class="modal-header">
     <div class="modal-title" id="modal-metric-title">METRIC ZOOM</div>
@@ -1181,7 +1244,9 @@
   <div class="modal-range-toggles" id="modal-range-toggles"></div>
 </div>
 
-<!-- 7. SETTINGS MODAL -->
+<!-- ==========================================================
+     SETTINGS MODAL
+     ========================================================== -->
 <div id="settings-modal">
   <div class="modal-header">
     <div class="modal-title">COCKPIT SETTINGS</div>
@@ -1189,14 +1254,26 @@
   </div>
   <div class="settings-body">
 
+    <!-- Top Hero Gauges Style Selector -->
+    <div class="settings-section">
+      <div class="settings-section-title">Top Cluster Gauge Style</div>
+      <div class="settings-row-desc" style="margin-bottom:0.6rem;">Choose how Speed, RPM, and Coolant render at the top:</div>
+      <div class="segmented" id="seg-gauge-style" style="display:grid; grid-template-columns:1fr 1fr; gap:4px; border-radius:12px; padding:4px;">
+        <button data-val="analog" onclick="setGaugeStyle('analog')" class="active">Classic Analog Needle</button>
+        <button data-val="radial" onclick="setGaugeStyle('radial')">Cyber Radial Arc</button>
+        <button data-val="ribbon" onclick="setGaugeStyle('ribbon')">Racing Ribbon Ladder</button>
+        <button data-val="minimal" onclick="setGaugeStyle('minimal')">Minimalist HUD</button>
+      </div>
+    </div>
+
     <!-- Units -->
     <div class="settings-section">
       <div class="settings-section-title">Units & Readouts</div>
       <div class="settings-row">
-        <div><div class="settings-row-label">Speed Unit</div></div>
+        <div><div class="settings-row-label">Speed & Distance</div></div>
         <div class="segmented" id="seg-speed-unit">
-          <button data-val="kmh" onclick="setSpeedUnit('kmh')">KM/H</button>
-          <button data-val="mph" onclick="setSpeedUnit('mph')">MPH</button>
+          <button data-val="kmh" onclick="setSpeedUnit('kmh')">KM/H & Meters</button>
+          <button data-val="mph" onclick="setSpeedUnit('mph')">MPH & Feet</button>
         </div>
       </div>
       <div class="settings-row">
@@ -1211,7 +1288,7 @@
     <!-- Graph Time Frames -->
     <div class="settings-section">
       <div class="settings-section-title">Graph Time Frames</div>
-      <div class="settings-row-desc" style="margin-bottom:0.5rem;">Select the three time spans cycled when tapping cards.</div>
+      <div class="settings-row-desc" style="margin-bottom:0.5rem;">Select the three durations cycled when tapping metric cards:</div>
       <div class="settings-row">
         <div class="settings-row-label">Time Frame 1</div>
         <select class="tf-select" id="tf-select-0" onchange="setTimeframe(0, this.value)"></select>
@@ -1224,20 +1301,6 @@
         <div class="settings-row-label">Time Frame 3</div>
         <select class="tf-select" id="tf-select-2" onchange="setTimeframe(2, this.value)"></select>
       </div>
-    </div>
-
-    <!-- Data Recording -->
-    <div class="settings-section">
-      <div class="settings-section-title">Long-Term Data Recording</div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-row-label">Auto-save CSV to folder</div>
-          <div class="settings-row-desc">Streams telemetry straight to storage for multi-hour trail sessions.</div>
-        </div>
-        <button class="toggle-switch" id="toggle-autosave" onclick="toggleAutoSave()"></button>
-      </div>
-      <button class="settings-btn-full" id="btn-choose-folder" onclick="chooseAutoSaveFolder()" style="margin-top:0.6rem;">📁 Choose Auto-Save Folder</button>
-      <div class="settings-status-note" id="autosave-status">Not supported on this browser — session logs can be exported directly when stopped.</div>
     </div>
 
     <!-- Themes & Visual FX -->
@@ -1264,7 +1327,7 @@
 
 <script>
   /* ==========================================================
-     APP CORE & THEME SYSTEM
+     APP CORE, GAUGES & THEME SYSTEM
      ========================================================== */
   const APP_VERSION = "v1.0.0 PRO";
   const SERVICE_UUIDS = [
@@ -1278,17 +1341,14 @@
   let readChar = null;
   let rxBuffer = '';
   let isPolling = false;
-  let isDemoActive = false;
-  let demoInterval = null;
 
-  const SETTINGS_KEY = 'rmaxYamahaSettings_v1';
+  const SETTINGS_KEY = 'rmaxYamahaSettings_v2';
   const TIMEFRAME_PRESETS = [
     { sec: 10, label: '10s' }, { sec: 30, label: '30s' }, { sec: 60, label: '1min' },
     { sec: 120, label: '2min' }, { sec: 300, label: '5min' }, { sec: 600, label: '10min' },
     { sec: 900, label: '15min' }, { sec: 1800, label: '30min' }, { sec: 3600, label: '1hr' }
   ];
 
-  /* Themes: Yamaha Racing Blue is flagship default */
   const THEMES = {
     yamaha:  { name: 'Yamaha Racing Blue', accent: '#0066ff', glow: 'rgba(0,102,255,0.7)' },
     cyan:    { name: 'Ice Recon',          accent: '#00d2ff', glow: 'rgba(0,210,255,0.7)' },
@@ -1298,16 +1358,16 @@
     stealth: { name: 'Titanium Stealth',   accent: '#e2e8f0', glow: 'rgba(226,232,240,0.5)' }
   };
 
-  const ACCENT_METRICS = ['speed', 'rpm', 'iat', 'throttle', 'timing', 'map'];
+  const ACCENT_METRICS = ['speed', 'rpm', 'iat', 'throttle', 'timing', 'map', 'elevation'];
 
   const DEFAULT_SETTINGS = {
+    gaugeStyle: 'analog', // 'analog' | 'radial' | 'ribbon' | 'minimal'
     speedUnit: 'kmh',
     tempUnit: 'c',
     timeframes: [30, 60, 300],
     theme: 'yamaha',
     intensity: 105,
-    contrast: 102,
-    autoSaveEnabled: false
+    contrast: 102
   };
 
   function loadSettings() {
@@ -1326,35 +1386,23 @@
   let appSettings = loadSettings();
   let speedUnit = appSettings.speedUnit;
   let tempUnit = appSettings.tempUnit;
-
-  // Flight Recorder State
-  let isCockpitCsvLogging = false;
-  let cockpitCsvFrames = [];
-  let cockpitCsvStartTime = 0;
-  let cockpitCsvInterval = null;
-
-  // Auto-save handles
-  let autoSaveDirHandle = null;
-  let autoSaveFileHandle = null;
-  let autoSaveWritable = null;
-  let autoSavePendingRows = [];
-  let autoSaveRowCount = 0;
-  const AUTO_SAVE_SUPPORTED = typeof window.showDirectoryPicker === 'function';
+  let currentGaugeStyle = appSettings.gaugeStyle || 'analog';
 
   // Metrics Data Definition
   const METRICS = {
-    speed:    { name: "Ground Speed", unit: "km/h", max: 115, color: "#0066ff", data: [], mode: "live" },
-    rpm:      { name: "Engine RPM", unit: "RPM", max: 9000, color: "#0066ff", data: [], mode: "live" },
-    coolant:  { name: "Coolant Temp", unit: "°C", max: 115, color: "#22c55e", data: [], mode: "live" },
-    load:     { name: "Engine Load", unit: "%", max: 100, color: "#a855f7", data: [], mode: "live" },
-    iat:      { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#0066ff", data: [], mode: "live" },
-    pedal:    { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-    throttle: { name: "Throttle Blade", unit: "%", max: 100, color: "#0066ff", data: [], mode: "live" },
-    fuel:     { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#a855f7", data: [], mode: "live" },
-    timing:   { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#0066ff", data: [], mode: "live" },
-    map:      { name: "Intake MAP", unit: "mbar", max: 300, color: "#0066ff", data: [], mode: "live" },
-    ase:      { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
-    voltage:  { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#22c55e", data: [], mode: "live" }
+    speed:     { name: "Ground Speed", unit: "km/h", max: 115, color: "#0066ff", data: [], mode: "live" },
+    rpm:       { name: "Engine RPM", unit: "RPM", max: 9000, color: "#0066ff", data: [], mode: "live" },
+    coolant:   { name: "Coolant Temp", unit: "°C", max: 115, color: "#22c55e", data: [], mode: "live" },
+    elevation: { name: "Elevation", unit: "M", max: 3500, min: 0, color: "#00d2ff", data: [], mode: "live" },
+    load:      { name: "Engine Load", unit: "%", max: 100, color: "#a855f7", data: [], mode: "live" },
+    iat:       { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#0066ff", data: [], mode: "live" },
+    pedal:     { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    throttle:  { name: "Throttle Blade", unit: "%", max: 100, color: "#0066ff", data: [], mode: "live" },
+    fuel:      { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#a855f7", data: [], mode: "live" },
+    timing:    { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#0066ff", data: [], mode: "live" },
+    map:       { name: "Intake MAP", unit: "mbar", max: 300, color: "#0066ff", data: [], mode: "live" },
+    ase:       { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    voltage:   { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#22c55e", data: [], mode: "live" }
   };
 
   let activeModalMetric = null;
@@ -1367,18 +1415,467 @@
   }
 
   /* ==========================================================
-     CONNECT & TRANSITION FLOW
+     TOP HERO GAUGE CLUSTER BUILDER (4 SELECTABLE STYLES)
+     ========================================================== */
+  function setGaugeStyle(style) {
+    currentGaugeStyle = style;
+    appSettings.gaugeStyle = style;
+    saveSettings();
+    updateSegmentedUI('seg-gauge-style', style);
+    buildTopGaugesDOM();
+    log(`Top cluster style: ${style.toUpperCase()}`);
+  }
+
+  function buildTopGaugesDOM() {
+    const speedWrap = document.getElementById('live-gauge-speed');
+    const rpmWrap = document.getElementById('live-gauge-rpm');
+    const coolantWrap = document.getElementById('live-gauge-coolant');
+    if (!speedWrap || !rpmWrap || !coolantWrap) return;
+
+    if (currentGaugeStyle === 'analog') {
+      // 1. CLASSIC ANALOG NEEDLE WITH PHYSICAL DIAL FACES
+      speedWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          <!-- Ticks & Numbers -->
+          ${generateAnalogTicks(0, 120, 20, 10, 140)}
+          <!-- Rotating Needle -->
+          <g id="needle-speed" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="22" class="analog-needle-blade" />
+            <circle cx="100" cy="100" r="10" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-speed" class="analog-inset-val">0</span>
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+
+      rpmWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          <!-- Redline Arc Sector (7800-9000 RPM) -->
+          <path d="M 172,142 A 90 90 0 0 0 178,72" class="analog-redline-arc" />
+          ${generateAnalogTicks(0, 9, 1, 1, 140, true)}
+          <g id="needle-rpm" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="18" class="analog-needle-blade" style="stroke:var(--yamaha-cyan);" />
+            <circle cx="100" cy="100" r="11" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-rpm" class="analog-inset-val" style="font-size:1.45rem;">0</span>
+          <span class="analog-inset-unit">RPM x1000</span>
+        </div>
+      `;
+
+      coolantWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          <!-- Thermal zones: Cold Blue, Normal Green, Hot Red -->
+          <path d="M 38,148 A 90 90 0 0 1 54,64" fill="none" stroke="var(--yamaha-cyan)" stroke-width="4.5" />
+          <path d="M 146,64 A 90 90 0 0 1 162,148" fill="none" stroke="var(--redline)" stroke-width="4.5" />
+          ${generateAnalogTicks(40, 120, 20, 10, 140, false, true)}
+          <g id="needle-coolant" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="22" class="analog-needle-blade" style="stroke:var(--green);" />
+            <circle cx="100" cy="100" r="10" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-coolant" class="analog-inset-val">--</span>
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    } 
+    else if (currentGaugeStyle === 'radial') {
+      // 2. CYBER RADIAL ARC STYLE
+      speedWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-speed-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-speed" class="cyber-val">0</span>
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-rpm" class="cyber-val large">0</span>
+          <span class="analog-inset-unit">RPM</span>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-coolant-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-coolant" class="cyber-val">--</span>
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    }
+    else if (currentGaugeStyle === 'ribbon') {
+      // 3. RACING RIBBON / LADDER STYLE
+      speedWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+          <span id="val-dash-speed" class="ribbon-val">0</span>
+          <div class="ribbon-track"><div id="ribbon-speed-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit">ENGINE RPM</span>
+          <span id="val-dash-rpm" class="ribbon-val" style="font-size:3rem;">0</span>
+          <div class="ribbon-track" style="height:22px;"><div id="ribbon-rpm-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()} COOLANT</span>
+          <span id="val-dash-coolant" class="ribbon-val">--</span>
+          <div class="ribbon-track"><div id="ribbon-coolant-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+    }
+    else if (currentGaugeStyle === 'minimal') {
+      // 4. MINIMALIST HUD STYLE
+      speedWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-speed" class="minimal-val">0</span>
+          <span class="minimal-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-rpm" class="minimal-val large">0</span>
+          <span class="minimal-unit">RPM</span>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-coolant" class="minimal-val">--</span>
+          <span class="minimal-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    }
+  }
+
+  /* Analog Dial Tick Marks Generator */
+  function generateAnalogTicks(min, max, majorStep, minorStep, sweepRange, isRpm = false, isCoolant = false) {
+    let svg = '';
+    const totalSpan = max - min;
+    const startAngle = -135;
+    const endAngle = 135;
+    
+    for (let val = min; val <= max; val += minorStep) {
+      const pct = (val - min) / totalSpan;
+      const angle = startAngle + (pct * (endAngle - startAngle));
+      const rad = (angle - 90) * (Math.PI / 180);
+      const isMajor = (val % majorStep === 0);
+      
+      const rOuter = 82;
+      const rInner = isMajor ? 70 : 76;
+
+      const x1 = 100 + rOuter * Math.cos(rad);
+      const y1 = 100 + rOuter * Math.sin(rad);
+      const x2 = 100 + rInner * Math.cos(rad);
+      const y2 = 100 + rInner * Math.sin(rad);
+
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="${isMajor ? 'analog-tick-major' : 'analog-tick-minor'}" />`;
+
+      if (isMajor) {
+        const rText = 58;
+        const tx = 100 + rText * Math.cos(rad);
+        const ty = 100 + rText * Math.sin(rad);
+        let label = val;
+        if (isCoolant) {
+          if (val === min) label = 'C';
+          else if (val === max) label = 'H';
+        }
+        svg += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="analog-tick-num">${label}</text>`;
+      }
+    }
+    return svg;
+  }
+
+  /* Universal Top Gauge State Updater */
+  function updateTopClusterGauge(type, val, maxVal) {
+    const clamped = Math.max(0, Math.min(maxVal, val));
+    const pct = clamped / maxVal;
+
+    if (currentGaugeStyle === 'analog') {
+      const angle = -135 + (pct * 270);
+      const needle = document.getElementById(`needle-${type}`);
+      if (needle) needle.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+
+      if (type === 'rpm') {
+        const redlineEl = document.getElementById('redline-alert');
+        if (redlineEl) redlineEl.classList.toggle('active', val >= 7800);
+      }
+    }
+    else if (currentGaugeStyle === 'radial') {
+      const arcLength = 293.2;
+      const offset = arcLength - (pct * arcLength);
+      const bar = document.getElementById(`gauge-${type}-bar`);
+      if (bar) bar.style.strokeDashoffset = offset;
+    }
+    else if (currentGaugeStyle === 'ribbon') {
+      const fill = document.getElementById(`ribbon-${type}-fill`);
+      if (fill) fill.style.width = `${(pct * 100).toFixed(1)}%`;
+    }
+  }
+
+  /* ==========================================================
+     SMARTPHONE GPS & ELEVATION TELEMETRY ENGINE
+     ========================================================== */
+  let geoWatchId = null;
+  let isGpsRecording = false;
+  let gpsTrackPoints = [];
+  let gpsTotalDistanceKm = 0;
+  let lastGpsPoint = null;
+  let leafletMap = null;
+  let leafletMarker = null;
+  let leafletTrail = null;
+  let satTileLayer = null;
+  let topoTileLayer = null;
+
+  function initPhoneGpsTelemetry() {
+    if (!('geolocation' in navigator)) {
+      document.getElementById('gps-coords-display').innerText = "GPS unavailable on this browser";
+      return;
+    }
+
+    geoWatchId = navigator.geolocation.watchPosition(
+      handleGeoPosition,
+      (err) => {
+        document.getElementById('gps-coords-display').innerText = `GPS: ${err.message}`;
+      },
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 7000 }
+    );
+  }
+
+  function handleGeoPosition(pos) {
+    const { latitude, longitude, altitude, accuracy, speed, heading } = pos.coords;
+    const now = Date.now();
+
+    // Coordinates Display
+    const latStr = `${Math.abs(latitude).toFixed(4)}°${latitude >= 0 ? 'N' : 'S'}`;
+    const lonStr = `${Math.abs(longitude).toFixed(4)}°${longitude >= 0 ? 'E' : 'W'}`;
+    document.getElementById('gps-coords-display').innerText = `${latStr}, ${lonStr}`;
+
+    const kmhSpeed = speed ? Math.round(speed * 3.6) : 0;
+    const dispSpeed = (speedUnit === 'kmh') ? `${kmhSpeed} km/h` : `${Math.round(kmhSpeed * 0.621371)} mph`;
+    const headingStr = heading ? `${Math.round(heading)}°` : '--';
+    document.getElementById('gps-stats-sub').innerText = `Acc: ±${Math.round(accuracy)}m | Head: ${headingStr} | GPS Spd: ${dispSpeed}`;
+
+    // Elevation Handling (Acts like other gauges)
+    if (altitude !== null && !isNaN(altitude)) {
+      const dispElevation = (speedUnit === 'kmh') ? Math.round(altitude) : Math.round(altitude * 3.28084);
+      pushMetricData('elevation', now, dispElevation);
+      const eleEl = document.getElementById('val-dash-elevation');
+      if (eleEl) eleEl.innerText = dispElevation;
+      updateMeterBar('elevation', dispElevation, (speedUnit === 'kmh') ? 3500 : 11500);
+    }
+
+    // Active Trail Recording
+    if (isGpsRecording) {
+      if (lastGpsPoint) {
+        const delta = calculateHaversineKm(lastGpsPoint.lat, lastGpsPoint.lon, latitude, longitude);
+        if (delta > 0.003) { // Filter micro-jitter < 3m
+          gpsTotalDistanceKm += delta;
+          lastGpsPoint = { lat: latitude, lon: longitude };
+          gpsTrackPoints.push({ lat: latitude, lon: longitude, ele: altitude, speed: speed, time: now });
+          updateGpsRecordingStats();
+          if (leafletTrail) leafletTrail.addLatLng([latitude, longitude]);
+        }
+      } else {
+        lastGpsPoint = { lat: latitude, lon: longitude };
+        gpsTrackPoints.push({ lat: latitude, lon: longitude, ele: altitude, speed: speed, time: now });
+        updateGpsRecordingStats();
+      }
+    }
+
+    // Update Live Map Marker
+    if (leafletMap && leafletMarker) {
+      leafletMarker.setLatLng([latitude, longitude]);
+    }
+  }
+
+  function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function updateGpsRecordingStats() {
+    const dispDist = (speedUnit === 'kmh') 
+      ? `${gpsTotalDistanceKm.toFixed(2)} KM` 
+      : `${(gpsTotalDistanceKm * 0.621371).toFixed(2)} MI`;
+    document.getElementById('gps-rec-dist').innerText = dispDist;
+    document.getElementById('gps-rec-pts').innerText = `${gpsTrackPoints.length} GPS Trail Points`;
+    document.getElementById('map-trail-stats').innerText = `TRACK: ${dispDist} | POINTS: ${gpsTrackPoints.length}`;
+  }
+
+  window.toggleGpsTrackRecording = function() {
+    const btn = document.getElementById('btn-gps-record');
+    const exportBtn = document.getElementById('btn-gps-export');
+
+    if (!isGpsRecording) {
+      isGpsRecording = true;
+      gpsTrackPoints = [];
+      gpsTotalDistanceKm = 0;
+      lastGpsPoint = null;
+      btn.innerText = "⏹ Stop GPS Track";
+      btn.classList.add('recording');
+      exportBtn.style.opacity = '0.5';
+      exportBtn.style.pointerEvents = 'none';
+      if (leafletTrail) leafletTrail.setLatLngs([]);
+      log("GPS Trail recorder active. Tracking path coordinates...");
+    } else {
+      isGpsRecording = false;
+      btn.innerText = "📍 Start GPS Track";
+      btn.classList.remove('recording');
+      if (gpsTrackPoints.length > 0) {
+        exportBtn.style.opacity = '1';
+        exportBtn.style.pointerEvents = 'auto';
+      }
+      log(`GPS Track stopped. ${gpsTrackPoints.length} trail points recorded.`);
+    }
+  };
+
+  /* GPX Format File Exporter (Universal Off-Road / Gaia / Garmin Standard) */
+  window.exportGpxTrackFile = function() {
+    if (gpsTrackPoints.length === 0) return alert("No GPS track points recorded yet!");
+
+    let gpx = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    gpx += `<gpx version="1.1" creator="Yamaha RMAX Pro Cockpit" xmlns="http://www.topografix.com/GPX/1/1">\n`;
+    gpx += `  <metadata>\n    <name>Yamaha RMAX Off-Road Trail</name>\n    <time>${new Date().toISOString()}</time>\n  </metadata>\n`;
+    gpx += `  <trk>\n    <name>RMAX Flight Track ${new Date().toLocaleDateString()}</name>\n    <trkseg>\n`;
+
+    for (const pt of gpsTrackPoints) {
+      gpx += `      <trkpt lat="${pt.lat.toFixed(6)}" lon="${pt.lon.toFixed(6)}">\n`;
+      if (pt.ele !== null && !isNaN(pt.ele)) gpx += `        <ele>${pt.ele.toFixed(1)}</ele>\n`;
+      gpx += `        <time>${new Date(pt.time).toISOString()}</time>\n`;
+      if (pt.speed !== null && !isNaN(pt.speed)) gpx += `        <speed>${pt.speed.toFixed(2)}</speed>\n`;
+      gpx += `      </trkpt>\n`;
+    }
+
+    gpx += `    </trkseg>\n  </trk>\n</gpx>`;
+
+    const filename = `RMAX_Trail_${new Date().toISOString().replace(/[:.]/g, '-')}.gpx`;
+    const blob = new Blob([gpx], { type: 'application/gpx+xml;charset=utf-8;' });
+    const file = new File([blob], filename, { type: 'application/gpx+xml' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ title: 'Yamaha RMAX GPX Track', files: [file] }).catch(() => {});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  /* ==========================================================
+     INTERACTIVE LEAFLET OFFLINE-READY TOPO & SAT MAP
+     ========================================================== */
+  window.openMapModal = function() {
+    const modal = document.getElementById('map-modal');
+    modal.style.display = 'flex';
+
+    if (!leafletMap) {
+      // Initialize Leaflet Map
+      const startCoord = lastGpsPoint ? [lastGpsPoint.lat, lastGpsPoint.lon] : [34.05, -118.25];
+      leafletMap = L.map('leaflet-map-container', { zoomControl: false }).setView(startCoord, 14);
+
+      // Satellite Layer (Esri World Imagery)
+      satTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        attribution: 'Esri Satellite'
+      }).addTo(leafletMap);
+
+      // Topo Layer (OpenTopoMap)
+      topoTileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'OpenTopoMap'
+      });
+
+      // Trail Polyline (Yamaha Cyan Neon Glow)
+      leafletTrail = L.polyline([], { color: '#00d2ff', weight: 4.5, opacity: 0.9 }).addTo(leafletMap);
+      if (gpsTrackPoints.length > 0) {
+        leafletTrail.setLatLngs(gpsTrackPoints.map(p => [p.lat, p.lon]));
+      }
+
+      // Live Vehicle Marker
+      leafletMarker = L.circleMarker(startCoord, {
+        radius: 8,
+        fillColor: '#0066ff',
+        color: '#ffffff',
+        weight: 2.5,
+        opacity: 1,
+        fillOpacity: 1
+      }).addTo(leafletMap);
+    }
+
+    setTimeout(() => {
+      leafletMap.invalidateSize();
+      recenterMapOnVehicle();
+    }, 200);
+  };
+
+  window.closeMapModal = function() {
+    document.getElementById('map-modal').style.display = 'none';
+  };
+
+  window.switchMapLayer = function(type) {
+    if (!leafletMap) return;
+    const btnSat = document.getElementById('btn-layer-sat');
+    const btnTopo = document.getElementById('btn-layer-topo');
+
+    if (type === 'satellite') {
+      leafletMap.removeLayer(topoTileLayer);
+      leafletMap.addLayer(satTileLayer);
+      btnSat.classList.add('active');
+      btnTopo.classList.remove('active');
+    } else {
+      leafletMap.removeLayer(satTileLayer);
+      leafletMap.addLayer(topoTileLayer);
+      btnTopo.classList.add('active');
+      btnSat.classList.remove('active');
+    }
+  };
+
+  window.recenterMapOnVehicle = function() {
+    if (leafletMap && lastGpsPoint) {
+      leafletMap.setView([lastGpsPoint.lat, lastGpsPoint.lon], 15);
+    }
+  };
+
+  /* ==========================================================
+     BLUETOOTH GATT CONNECTION FLOW
      ========================================================== */
   window.handleConnectClick = async function() {
     if (bleDevice?.gatt?.connected) {
       disconnect();
       return;
     }
-    if (isDemoActive) {
-      stopDemoMode();
-      return;
-    }
-
     const btn = document.getElementById('btn-tap-connect');
     const logoBtn = document.getElementById('btn-connect-logo');
     const hint = document.getElementById('connect-hint');
@@ -1432,7 +1929,7 @@
       startPolling();
 
     } catch (err) {
-      log("Connection cancelled or failed: " + err.message);
+      log("Connection cancelled: " + err.message);
       resetConnectScreenState();
     }
   }
@@ -1443,10 +1940,9 @@
     const hint = document.getElementById('connect-hint');
     if (btn) btn.innerHTML = '<span>⚡ TAP TO CONNECT</span>';
     if (logoBtn) logoBtn.classList.remove('connecting');
-    if (hint) hint.innerText = 'Tap to pair your RMAX OBD-II Bluetooth adapter.';
+    if (hint) hint.innerText = 'Touch the emblem or button to pair with your RMAX OBD-II Bluetooth adapter.';
   }
 
-  /* Fade out splash screen to Cockpit with needle calibration sweep */
   function fadeToDashboard() {
     const connectScreen = document.getElementById('connect-screen');
     const appShell = document.getElementById('app-shell');
@@ -1457,7 +1953,7 @@
     setTimeout(() => {
       if (appShell) appShell.classList.add('show');
       if (dock) dock.style.display = 'flex';
-      runGaugeCalibrationSweep();
+      buildTopGaugesDOM();
     }, 320);
   }
 
@@ -1485,88 +1981,8 @@
     showConnectScreen();
   }
 
-  /* Gauge Calibration Startup Sweep (Automotive style) */
-  function runGaugeCalibrationSweep() {
-    let sweep = 0;
-    const interval = setInterval(() => {
-      sweep += 0.05;
-      const factor = Math.sin(sweep);
-      if (sweep >= Math.PI) {
-        clearInterval(interval);
-        updateRadialGauge('rpm', 1250, 9000);
-        document.getElementById('val-dash-rpm').innerText = '1250';
-        updateRadialGauge('speed', 0, 115);
-        document.getElementById('val-dash-speed').innerText = '0';
-        updateRadialGauge('coolant', 82, 115);
-        document.getElementById('val-dash-coolant').innerText = (tempUnit === 'f') ? '180' : '82';
-        return;
-      }
-      const testRpm = Math.round(factor * 8600);
-      const testSpeed = Math.round(factor * (speedUnit === 'kmh' ? 110 : 68));
-      updateRadialGauge('rpm', testRpm, 9000);
-      document.getElementById('val-dash-rpm').innerText = testRpm;
-      updateRadialGauge('speed', testSpeed, speedUnit === 'kmh' ? 115 : 75);
-      document.getElementById('val-dash-speed').innerText = testSpeed;
-    }, 25);
-  }
-
   /* ==========================================================
-     INTERACTIVE DEMO MODE (For Testing without vehicle)
-     ========================================================== */
-  window.launchDemoMode = function() {
-    isDemoActive = true;
-    const statusEl = document.getElementById('status');
-    if (statusEl) { statusEl.innerText = "DEMO SIM"; statusEl.className = "status-badge demo"; }
-    fadeToDashboard();
-    log("Yamaha RMAX Simulator online. Generating live physics telemetry...");
-
-    let t = 0;
-    demoInterval = setInterval(() => {
-      t += 0.12;
-      const simRpm = Math.round(3800 + Math.sin(t * 1.4) * 2600 + Math.sin(t * 3.8) * 800);
-      const simSpeed = Math.max(0, Math.round(38 + Math.sin(t * 0.9) * 35));
-      const simCoolant = 84 + Math.round(Math.sin(t * 0.2) * 4);
-      const simLoad = Math.min(100, Math.max(8, Math.round(45 + Math.sin(t * 1.5) * 38)));
-      const simPedal = Math.min(100, Math.max(0, Math.round(simLoad * 0.95)));
-      const simTps = Math.min(100, Math.max(5, Math.round(simPedal * 0.92)));
-      const simIat = 28 + Math.round(Math.sin(t * 0.1) * 3);
-      const simTiming = Math.round(18 + Math.sin(t * 2) * 14);
-      const simMap = Math.round(210 + (simLoad * 0.7));
-
-      const mockPayload = [
-        Math.floor(simRpm / 256), simRpm % 256,
-        simSpeed,
-        0, 0,
-        Math.floor(simMap / 256), simMap % 256,
-        Math.round((simPedal * 1.62) + 35),
-        Math.round(40 + (simLoad * 0.8)),
-        Math.round((simTps * 1.77) + 33),
-        0, 2, 0, 207,
-        simCoolant + 31,
-        simIat + 31,
-        (simTiming * 2) + 80,
-        0, 192,
-        0x02, // High Gear
-        0x81, // Trail D-Mode
-        0x00
-      ];
-
-      // Format as simulated hex stream
-      let hexStream = "6101";
-      for (const b of mockPayload) hexStream += b.toString(16).padStart(2, '0');
-      parseYamahaPayload(hexStream, 14.1);
-
-    }, 90);
-  };
-
-  function stopDemoMode() {
-    isDemoActive = false;
-    clearInterval(demoInterval);
-    showConnectScreen();
-  }
-
-  /* ==========================================================
-     OBD-II ELM327 COMMAND ENGINE
+     OBD-II ELM327 PROTOCOL HANDLER
      ========================================================== */
   let responseResolver = null;
   function handleNotification(event) {
@@ -1669,23 +2085,26 @@
     const rpm = (bytes[0] * 256) + bytes[1];
     if (!isNaN(rpm) && rpm <= 10000) {
       pushMetricData('rpm', now, rpm);
-      document.getElementById('val-dash-rpm').innerText = rpm;
-      updateRadialGauge('rpm', rpm, 9000);
+      const rpmEl = document.getElementById('val-dash-rpm');
+      if (rpmEl) rpmEl.innerText = (currentGaugeStyle === 'analog') ? (rpm / 1000).toFixed(1) : rpm;
+      updateTopClusterGauge('rpm', rpm, 9000);
     }
 
     // 2. Ground Speed
     const rawMph = bytes[2];
     const speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
     pushMetricData('speed', now, speed);
-    document.getElementById('val-dash-speed').innerText = speed;
-    updateRadialGauge('speed', speed, speedUnit === 'kmh' ? 115 : 75);
+    const speedEl = document.getElementById('val-dash-speed');
+    if (speedEl) speedEl.innerText = speed;
+    updateTopClusterGauge('speed', speed, speedUnit === 'kmh' ? 120 : 75);
 
     // 3. Coolant Temp
     const coolantC = bytes[14] - 31;
     const displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
     pushMetricData('coolant', now, displayCoolant);
-    document.getElementById('val-dash-coolant').innerText = displayCoolant;
-    updateRadialGauge('coolant', coolantC, 115);
+    const coolantEl = document.getElementById('val-dash-coolant');
+    if (coolantEl) coolantEl.innerText = displayCoolant;
+    updateTopClusterGauge('coolant', coolantC, 115);
 
     // 4. Intake Air Temp (IAT)
     const iatC = bytes[15] - 31;
@@ -1747,7 +2166,7 @@
     document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop`;
     updateMeterBar('voltage', (atrvVal || ecuRailV) - 10, 5);
 
-    // 12. Drive Status Strip (Yamaha Gear & D-Mode Logic)
+    // 12. Status Strip Updates
     const b19 = bytes[19];
     const gearNibble = b19 & 0x0F;
     let gearText = 'N';
@@ -1786,7 +2205,7 @@
         elapsed, rpm, speed, coolantC, iatC, mapMbar, engineLoadPct, asePct, fuelIndex, estDutyPct, pedalPct, tpsPct, timingDeg, (atrvVal || ecuRailV).toFixed(1), ecuRailV.toFixed(1), vDrop, 
         gearText, dmodeText, isPBrakeOn ? 1 : 0, isFBrakeOn ? 1 : 0
       ].join(',');
-      logCsvRow(row);
+      cockpitCsvFrames.push(row);
     }
   }
 
@@ -1820,43 +2239,6 @@
     return { min, max, avg, current };
   }
 
-  /* Radial & Gauge Fill Helpers */
-  function updateRadialGauge(type, val, maxVal) {
-    const arcLength = 293.2;
-    const pct = Math.min(1, Math.max(0, val / maxVal));
-    const offset = arcLength - (pct * arcLength);
-
-    if (type === 'rpm') {
-      const bar = document.getElementById('gauge-rpm-bar');
-      const redlineEl = document.getElementById('redline-alert');
-      if (bar) {
-        bar.style.strokeDashoffset = offset;
-        if (val >= 7800) {
-          bar.style.stroke = 'var(--redline)';
-          bar.style.filter = 'drop-shadow(0 0 14px var(--redline))';
-          redlineEl?.classList.add('active');
-        } else if (val >= 6000) {
-          bar.style.stroke = 'var(--amber)';
-          bar.style.filter = 'drop-shadow(0 0 10px var(--amber))';
-          redlineEl?.classList.remove('active');
-        } else {
-          bar.style.stroke = 'var(--yamaha-blue)';
-          bar.style.filter = 'drop-shadow(0 0 10px var(--yamaha-blue))';
-          redlineEl?.classList.remove('active');
-        }
-      }
-    } else if (type === 'speed') {
-      const bar = document.getElementById('gauge-speed-bar');
-      if (bar) bar.style.strokeDashoffset = offset;
-    } else if (type === 'coolant') {
-      const bar = document.getElementById('gauge-coolant-bar');
-      if (bar) {
-        bar.style.strokeDashoffset = offset;
-        bar.style.stroke = val >= 96 ? 'var(--red)' : val >= 88 ? 'var(--amber)' : 'var(--green)';
-      }
-    }
-  }
-
   function updateMeterBar(key, val, maxVal) {
     const bar = document.getElementById(`bar-${key}`);
     if (bar) {
@@ -1869,6 +2251,11 @@
      INTERACTIVE CARD CLICK & ZOOM ENGINE
      ========================================================== */
   window.handleCardClick = function(key, element) {
+    if (key === 'gps') {
+      openMapModal();
+      return;
+    }
+
     const now = Date.now();
     if (!clickTrackers[key]) clickTrackers[key] = { count: 0, last: 0 };
     if (now - clickTrackers[key].last < 380) {
@@ -1985,7 +2372,6 @@
     const maxVal = Math.max(stats.max, minVal + 1);
     const range = maxVal - minVal;
 
-    // Gridlines
     ctx.strokeStyle = "rgba(255,255,255,0.06)";
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -2200,22 +2586,28 @@
     speedUnit = unit;
     appSettings.speedUnit = unit;
     saveSettings();
-    document.getElementById('label-dash-speed-unit').innerText = speedUnit.toUpperCase();
     METRICS.speed.unit = speedUnit.toUpperCase();
+    METRICS.elevation.unit = (speedUnit === 'kmh') ? 'M' : 'FT';
+    document.getElementById('label-dash-ele-unit').innerText = (speedUnit === 'kmh') ? 'M' : 'FT';
+    const spdUnitEl = document.getElementById('label-dash-speed-unit');
+    if (spdUnitEl) spdUnitEl.innerText = speedUnit.toUpperCase();
     updateSegmentedUI('seg-speed-unit', speedUnit);
-    log(`Speed unit set to ${speedUnit.toUpperCase()}`);
+    buildTopGaugesDOM();
+    log(`Speed/Distance unit: ${speedUnit.toUpperCase()}`);
   };
 
   window.setTempUnit = function(unit) {
     tempUnit = unit;
     appSettings.tempUnit = unit;
     saveSettings();
-    document.getElementById('label-dash-coolant-unit').innerText = `°${tempUnit.toUpperCase()}`;
+    const coolUnitEl = document.getElementById('label-dash-coolant-unit');
+    if (coolUnitEl) coolUnitEl.innerText = `°${tempUnit.toUpperCase()}`;
     document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
     METRICS.coolant.unit = `°${tempUnit.toUpperCase()}`;
     METRICS.iat.unit = `°${tempUnit.toUpperCase()}`;
     updateSegmentedUI('seg-temp-unit', tempUnit);
-    log(`Temperature unit set to °${tempUnit.toUpperCase()}`);
+    buildTopGaugesDOM();
+    log(`Temperature unit: °${tempUnit.toUpperCase()}`);
   };
 
   function updateSegmentedUI(containerId, activeVal) {
@@ -2264,11 +2656,11 @@
     populateThemeSwatches();
     updateSegmentedUI('seg-speed-unit', speedUnit);
     updateSegmentedUI('seg-temp-unit', tempUnit);
+    updateSegmentedUI('seg-gauge-style', currentGaugeStyle);
     document.getElementById('slider-intensity').value = appSettings.intensity;
     document.getElementById('intensity-val').innerText = `${appSettings.intensity}%`;
     document.getElementById('slider-contrast').value = appSettings.contrast;
     document.getElementById('contrast-val').innerText = `${appSettings.contrast}%`;
-    document.getElementById('toggle-autosave').classList.toggle('on', appSettings.autoSaveEnabled);
     document.getElementById('settings-modal').style.display = 'flex';
   };
 
@@ -2282,42 +2674,27 @@
   };
 
   /* ==========================================================
-     CSV FLIGHT RECORDER & LOGGING
+     CSV FLIGHT TELEMETRY RECORDER
      ========================================================== */
+  let isCockpitCsvLogging = false;
+  let cockpitCsvFrames = [];
+  let cockpitCsvStartTime = 0;
+  let cockpitCsvInterval = null;
+
   function csvHeaderLine() {
     return `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_${tempUnit.toUpperCase()},IAT_${tempUnit.toUpperCase()},MAP_mbar,Engine_Load_Pct,Warmup_ASE_Pct,Inj_Fuel_Index,Inj_Duty_Pct,APS_Pct,TPS_Pct,Timing_Deg,Volts_ATRV,ECU_Rail_V,Voltage_Drop_V,Gear,D_Mode,PBrake,FootBrake`;
   }
 
-  function logCsvRow(row) {
-    if (autoSaveWritable) {
-      autoSavePendingRows.push(row);
-      autoSaveRowCount++;
-    } else {
-      cockpitCsvFrames.push(row);
-    }
-  }
-
-  async function flushAutoSaveBuffer() {
-    if (!autoSaveWritable || autoSavePendingRows.length === 0) return;
-    const chunk = autoSavePendingRows.join('\n') + '\n';
-    autoSavePendingRows = [];
-    try { await autoSaveWritable.write(chunk); } catch (e) {}
-  }
-
-  window.toggleCockpitCsvLogger = async function() {
+  window.toggleCockpitCsvLogger = function() {
     const btn = document.getElementById('btn-cockpit-record');
     const shareBtn = document.getElementById('btn-cockpit-share');
     const timeEl = document.getElementById('cockpit-csv-time');
     const frameEl = document.getElementById('cockpit-csv-frames');
 
     if (!isCockpitCsvLogging) {
-      if (!bleDevice?.gatt?.connected && !isDemoActive) return alert("Connect to OBD-II first!");
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
 
       cockpitCsvFrames = [csvHeaderLine()];
-      autoSavePendingRows = [];
-      autoSaveRowCount = 0;
-      autoSaveWritable = null;
-
       isCockpitCsvLogging = true;
       cockpitCsvStartTime = Date.now();
 
@@ -2332,9 +2709,7 @@
         const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
         const secs = (s % 60).toString().padStart(2, '0');
         timeEl.innerText = hrs > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}.0`;
-        const count = autoSaveWritable ? autoSaveRowCount : (cockpitCsvFrames.length - 1);
-        frameEl.innerText = `${count} Telemetry Frames`;
-        flushAutoSaveBuffer();
+        frameEl.innerText = `${cockpitCsvFrames.length - 1} Engine Frames`;
       }, 1000);
 
     } else {
@@ -2343,11 +2718,6 @@
       btn.innerText = "🔴 Record Flight";
       btn.classList.remove('recording');
 
-      if (autoSaveWritable) {
-        await flushAutoSaveBuffer();
-        try { await autoSaveWritable.close(); } catch (e) {}
-        autoSaveWritable = null;
-      }
       if (cockpitCsvFrames.length > 1) {
         shareBtn.style.opacity = '1';
         shareBtn.style.pointerEvents = 'auto';
@@ -2355,7 +2725,7 @@
     }
   };
 
-  window.shareCockpitCsv = async function() {
+  window.shareCockpitCsv = function() {
     if (cockpitCsvFrames.length <= 1) return alert("No telemetry frames recorded!");
     const filename = `Yamaha_RMAX_Log_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
     const blob = new Blob([cockpitCsvFrames.join('\n')], { type: 'text/csv;charset=utf-8;' });
@@ -2378,6 +2748,8 @@
     applyTheme(appSettings.theme);
     applyFx();
     populateThemeSwatches();
+    buildTopGaugesDOM();
+    initPhoneGpsTelemetry();
   })();
 </script>
 
