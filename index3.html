@@ -1,0 +1,1875 @@
+<script>
+  /* ==========================================================
+     APP CONFIGURATION & ARCHITECTURE STATE
+     ========================================================== */
+  const APP_VERSION = "v1.2.0 PRO";
+  const SERVICE_UUIDS = [
+    '0000fff0-0000-1000-8000-00805f9b34fb',
+    '0000ffe0-0000-1000-8000-00805f9b34fb',
+    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+  ];
+
+  let bleDevice = null;
+  let writeChar = null;
+  let readChar = null;
+  let rxBuffer = '';
+  let isPolling = false;
+
+  // ECU handshake capture buffer for hacker terminal
+  let ecuExchangeBuffer = [];
+
+  /* ==========================================================
+     INDEXEDDB & NON-BLOCKING DUAL QUEUE ENGINE
+     ========================================================== */
+  const DB_NAME = 'RmaxTelemetryDB';
+  const DB_VERSION = 2; // Supports both Telemetry and GPS stores
+  const STORE_TELEMETRY = 'telemetry_records';
+  const STORE_GPS = 'gps_records';
+
+  let telemetryDb = null;
+
+  // In-Memory Buffers for Engine Telemetry
+  let liveBuffer = [];
+  let stagingQueue = [];
+  let committedRecordCount = 0;
+  let isSessionActive = false;
+  let sessionStartTime = 0;
+  let sessionTimerInterval = null;
+
+  // In-Memory Buffers for GPS Trail Data
+  let liveGpsBuffer = [];
+  let stagingGpsQueue = [];
+  let committedGpsCount = 0;
+  let isGpsRecording = false;
+  let gpsTotalDistanceKm = 0;
+  let lastGpsPoint = null;
+  let currentGpsCoords = null;
+  let isMapAutoTracking = true;
+
+  // Background Periodic Staging Timer (Every X minutes)
+  let stagingTimerInterval = null;
+
+  const SETTINGS_KEY = 'rmaxYamahaSettings_v4';
+  const TIMEFRAME_PRESETS = [
+    { sec: 10, label: '10s' }, { sec: 30, label: '30s' }, { sec: 60, label: '1min' },
+    { sec: 120, label: '2min' }, { sec: 300, label: '5min' }, { sec: 600, label: '10min' },
+    { sec: 900, label: '15min' }, { sec: 1800, label: '30min' }, { sec: 3600, label: '1hr' }
+  ];
+
+  const THEMES = {
+    yamaha:  { name: 'Yamaha Racing Blue', accent: '#0066ff', glow: 'rgba(0,102,255,0.7)' },
+    cyan:    { name: 'Ice Recon',          accent: '#00d2ff', glow: 'rgba(0,210,255,0.7)' },
+    crimson: { name: 'Redline Spec',       accent: '#ff1744', glow: 'rgba(255,23,68,0.7)' },
+    emerald: { name: 'Emerald Trail',      accent: '#10b981', glow: 'rgba(16,185,129,0.7)' },
+    amber:   { name: 'Desert Dune',        accent: '#f59e0b', glow: 'rgba(245,158,11,0.7)' },
+    stealth: { name: 'Titanium Stealth',   accent: '#e2e8f0', glow: 'rgba(226,232,240,0.5)' }
+  };
+
+  const ACCENT_METRICS = ['speed', 'rpm', 'iat', 'throttle', 'timing', 'map', 'elevation'];
+
+  /* USER PREFERENCES: KM/H, CELSIUS, FEET DEFAULT */
+  const DEFAULT_SETTINGS = {
+    gaugeStyle: 'analog',
+    speedUnit: 'kmh',
+    tempUnit: 'c',
+    elevationUnit: 'ft', // FEET by default
+    stagingIntervalMin: 5,
+    timeframes: [30, 60, 300],
+    theme: 'yamaha',
+    intensity: 105,
+    contrast: 102
+  };
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    } catch (e) {
+      return { ...DEFAULT_SETTINGS };
+    }
+  }
+
+  function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(appSettings)); } catch (e) {}
+  }
+
+  let appSettings = loadSettings();
+  let speedUnit = appSettings.speedUnit;
+  let tempUnit = appSettings.tempUnit;
+  let elevationUnit = appSettings.elevationUnit || 'ft';
+  let currentGaugeStyle = appSettings.gaugeStyle || 'analog';
+  let stagingIntervalMinutes = parseInt(appSettings.stagingIntervalMin || 5, 10);
+
+  const METRICS = {
+    speed:     { name: "Ground Speed", unit: "km/h", max: 115, color: "#0066ff", data: [], mode: "live" },
+    rpm:       { name: "Engine RPM", unit: "RPM", max: 9000, color: "#0066ff", data: [], mode: "live" },
+    coolant:   { name: "Coolant Temp", unit: "°C", max: 115, color: "#22c55e", data: [], mode: "live" },
+    elevation: { name: "Elevation", unit: "FT", max: 12000, min: 0, color: "#00d2ff", data: [], mode: "live" },
+    load:      { name: "Engine Load", unit: "%", max: 100, color: "#a855f7", data: [], mode: "live" },
+    iat:       { name: "Intake Air (IAT)", unit: "°C", max: 80, color: "#0066ff", data: [], mode: "live" },
+    pedal:     { name: "Gas Pedal (APS)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    throttle:  { name: "Throttle Blade", unit: "%", max: 100, color: "#0066ff", data: [], mode: "live" },
+    fuel:      { name: "Inj Fuel Rate", unit: "idx", max: 170, color: "#a855f7", data: [], mode: "live" },
+    timing:    { name: "Spark Timing", unit: "°BTDC", max: 75, min: -20, color: "#0066ff", data: [], mode: "live" },
+    map:       { name: "Intake MAP", unit: "mbar", max: 300, color: "#0066ff", data: [], mode: "live" },
+    ase:       { name: "Warmup Fuel (ASE)", unit: "%", max: 100, color: "#f59e0b", data: [], mode: "live" },
+    voltage:   { name: "Battery Volts", unit: "V", max: 16, min: 10, color: "#22c55e", data: [], mode: "live" }
+  };
+
+  let activeModalMetric = null;
+  let modalDurationSec = 30;
+  const clickTrackers = {};
+
+  let leafletMap = null;
+  let leafletMarker = null;
+  let leafletTrail = null;
+  let satTileLayer = null;
+  let topoTileLayer = null;
+
+  function log(msg) {
+    const el = document.getElementById('log');
+    if (el) el.innerText = msg;
+  }
+
+  /* ==========================================================
+     INDEXEDDB INITIALIZATION & TRANSACTION HANDLERS
+     ========================================================== */
+  function initIndexedDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      request.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_TELEMETRY)) {
+          db.createObjectStore(STORE_TELEMETRY, { autoIncrement: true });
+        }
+        if (!db.objectStoreNames.contains(STORE_GPS)) {
+          db.createObjectStore(STORE_GPS, { autoIncrement: true });
+        }
+      };
+      request.onsuccess = (e) => {
+        telemetryDb = e.target.result;
+        resolve(telemetryDb);
+      };
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  function clearStore(storeName) {
+    return new Promise((resolve, reject) => {
+      if (!telemetryDb) return resolve();
+      const tx = telemetryDb.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+      const req = store.clear();
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function commitBatchesToIndexedDB(telemetryRecords, gpsRecords) {
+    return new Promise((resolve, reject) => {
+      if (!telemetryDb) return resolve();
+      const stores = [];
+      if (telemetryRecords.length > 0) stores.push(STORE_TELEMETRY);
+      if (gpsRecords.length > 0) stores.push(STORE_GPS);
+      if (stores.length === 0) return resolve();
+
+      const tx = telemetryDb.transaction(stores, 'readwrite');
+      if (telemetryRecords.length > 0) {
+        const tStore = tx.objectStore(STORE_TELEMETRY);
+        for (let i = 0; i < telemetryRecords.length; i++) tStore.add(telemetryRecords[i]);
+      }
+      if (gpsRecords.length > 0) {
+        const gStore = tx.objectStore(STORE_GPS);
+        for (let j = 0; j < gpsRecords.length; j++) gStore.add(gpsRecords[j]);
+      }
+
+      tx.oncomplete = () => {
+        committedRecordCount += telemetryRecords.length;
+        committedGpsCount += gpsRecords.length;
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  /* ==========================================================
+     PERIODIC STAGING TIMER & CONFIRMATION BANNER (DUAL QUEUE)
+     ========================================================== */
+  function startUnifiedStagingTimer() {
+    if (stagingTimerInterval) clearInterval(stagingTimerInterval);
+    stagingTimerInterval = setInterval(runUnifiedStagingCheck, stagingIntervalMinutes * 60 * 1000);
+  }
+
+  function runUnifiedStagingCheck() {
+    let hasNewData = false;
+
+    // Stage Engine Telemetry
+    if (isSessionActive && liveBuffer.length > 0) {
+      stagingQueue.push(...liveBuffer);
+      liveBuffer = [];
+      hasNewData = true;
+    }
+
+    // Stage GPS Trail Points
+    if (isGpsRecording && liveGpsBuffer.length > 0) {
+      stagingGpsQueue.push(...liveGpsBuffer);
+      liveGpsBuffer = [];
+      hasNewData = true;
+    }
+
+    if (hasNewData || stagingQueue.length > 0 || stagingGpsQueue.length > 0) {
+      showStagingBanner(stagingQueue.length, stagingGpsQueue.length);
+      updateRecorderStatsUI();
+      updateGpsRecordingStats();
+    }
+  }
+
+  function showStagingBanner(engineCount, gpsCount) {
+    const banner = document.getElementById('staging-banner');
+    const sub = document.getElementById('staging-banner-sub');
+    if (banner && sub) {
+      sub.innerText = `${engineCount} Engine / ${gpsCount} GPS records ready (${stagingIntervalMinutes}m batch)`;
+      banner.style.display = 'flex';
+    }
+  }
+
+  window.dismissStagingBanner = function() {
+    const banner = document.getElementById('staging-banner');
+    if (banner) banner.style.display = 'none';
+  };
+
+  window.commitStagingQueue = async function() {
+    if (stagingQueue.length === 0 && stagingGpsQueue.length === 0) {
+      dismissStagingBanner();
+      return;
+    }
+
+    const tBatch = stagingQueue;
+    const gBatch = stagingGpsQueue;
+    stagingQueue = [];
+    stagingGpsQueue = [];
+
+    try {
+      await commitBatchesToIndexedDB(tBatch, gBatch);
+      dismissStagingBanner();
+      updateRecorderStatsUI();
+      updateGpsRecordingStats();
+      log(`✓ Committed ${tBatch.length} engine & ${gBatch.length} GPS records to disk.`);
+    } catch (err) {
+      stagingQueue.unshift(...tBatch);
+      stagingGpsQueue.unshift(...gBatch);
+      log(`Commit failed: ${err.message}`);
+    }
+  };
+
+  /* ==========================================================
+     SMARTPHONE GPS & ELEVATION TELEMETRY ENGINE
+     ========================================================== */
+  function initPhoneGpsTelemetry() {
+    if (!('geolocation' in navigator)) {
+      document.getElementById('gps-coords-display').innerText = "GPS unavailable";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      handleGeoPosition,
+      (err) => { document.getElementById('gps-coords-display').innerText = `GPS: ${err.message}`; },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+
+    navigator.geolocation.watchPosition(
+      handleGeoPosition,
+      (err) => { document.getElementById('gps-coords-display').innerText = `GPS: ${err.message}`; },
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
+    );
+  }
+
+  function handleGeoPosition(pos) {
+    const { latitude, longitude, altitude, accuracy, speed, heading } = pos.coords;
+    const now = Date.now();
+
+    currentGpsCoords = [latitude, longitude];
+
+    const latStr = `${Math.abs(latitude).toFixed(4)}°${latitude >= 0 ? 'N' : 'S'}`;
+    const lonStr = `${Math.abs(longitude).toFixed(4)}°${longitude >= 0 ? 'E' : 'W'}`;
+    document.getElementById('gps-coords-display').innerText = `${latStr}, ${lonStr}`;
+
+    const kmhSpeed = speed ? Math.round(speed * 3.6) : 0;
+    const dispSpeed = (speedUnit === 'kmh') ? `${kmhSpeed} km/h` : `${Math.round(kmhSpeed * 0.621371)} mph`;
+    const headingStr = heading ? `${Math.round(heading)}°` : '--';
+    document.getElementById('gps-stats-sub').innerText = `Acc: ±${Math.round(accuracy)}m | Head: ${headingStr} | Spd: ${dispSpeed}`;
+
+    // Elevation Handling: Feet by default
+    if (altitude !== null && !isNaN(altitude)) {
+      const dispElevation = (elevationUnit === 'ft') ? Math.round(altitude * 3.28084) : Math.round(altitude);
+      pushMetricData('elevation', now, dispElevation);
+      const eleEl = document.getElementById('val-dash-elevation');
+      if (eleEl) eleEl.innerText = dispElevation;
+      updateMeterBar('elevation', dispElevation, (elevationUnit === 'ft') ? 12000 : 3500);
+      document.getElementById('map-trail-stats').innerText = `TRACK: ${gpsTotalDistanceKm.toFixed(2)} KM | ELEV: ${dispElevation} ${elevationUnit.toUpperCase()}`;
+    }
+
+    // Active GPS Ingestion into liveGpsBuffer
+    if (isGpsRecording) {
+      const pt = { lat: latitude, lon: longitude, ele: altitude, speed: speed, heading: heading, time: now };
+      if (lastGpsPoint) {
+        const delta = calculateHaversineKm(lastGpsPoint.lat, lastGpsPoint.lon, latitude, longitude);
+        if (delta > 0.003) { // 3-meter jitter threshold
+          gpsTotalDistanceKm += delta;
+          lastGpsPoint = { lat: latitude, lon: longitude };
+          liveGpsBuffer.push(pt);
+          updateGpsRecordingStats();
+          if (leafletTrail) leafletTrail.addLatLng([latitude, longitude]);
+        }
+      } else {
+        lastGpsPoint = { lat: latitude, lon: longitude };
+        liveGpsBuffer.push(pt);
+        updateGpsRecordingStats();
+      }
+    }
+
+    // Real-time Map Center Follow
+    if (leafletMap && leafletMarker) {
+      leafletMarker.setLatLng([latitude, longitude]);
+      if (isMapAutoTracking) {
+        leafletMap.panTo([latitude, longitude], { animate: true, duration: 0.7 });
+      }
+    }
+  }
+
+  function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function updateGpsRecordingStats() {
+    const dispDist = (speedUnit === 'kmh') 
+      ? `${gpsTotalDistanceKm.toFixed(2)} KM` 
+      : `${(gpsTotalDistanceKm * 0.621371).toFixed(2)} MI`;
+    document.getElementById('gps-rec-dist').innerText = dispDist;
+    const totalPts = committedGpsCount + stagingGpsQueue.length + liveGpsBuffer.length;
+    document.getElementById('gps-rec-pts').innerText = `${totalPts} GPS Points (${committedGpsCount} on disk)`;
+  }
+
+  /* GPS Trail Start / Stop Toggle */
+  window.toggleGpsTrackRecording = async function() {
+    const btn = document.getElementById('btn-gps-record');
+    const exportBtn = document.getElementById('btn-gps-export');
+
+    if (!isGpsRecording) {
+      await initIndexedDB();
+      await clearStore(STORE_GPS);
+
+      liveGpsBuffer = [];
+      stagingGpsQueue = [];
+      committedGpsCount = 0;
+      gpsTotalDistanceKm = 0;
+      lastGpsPoint = null;
+      isGpsRecording = true;
+
+      btn.innerText = "⏹ Stop GPS Track";
+      btn.classList.add('recording');
+      exportBtn.style.opacity = '1';
+      exportBtn.style.pointerEvents = 'auto';
+      if (leafletTrail) leafletTrail.setLatLngs([]);
+
+      startUnifiedStagingTimer();
+      log("GPS Non-blocking Trail capture active.");
+    } else {
+      isGpsRecording = false;
+      btn.innerText = "📍 Start GPS Track";
+      btn.classList.remove('recording');
+      updateGpsRecordingStats();
+      log("GPS Recording paused. Tap 'Close & Export GPX' to commit and share.");
+    }
+  };
+
+  /* ==========================================================
+     CLOSE GPS SESSION & EXPORT .GPX VIA IDBCURSOR & SHARE SHEET
+     ========================================================== */
+  window.closeGpsSessionAndExport = async function() {
+    const totalPoints = committedGpsCount + stagingGpsQueue.length + liveGpsBuffer.length;
+    if (totalPoints === 0) return alert("No GPS track points recorded yet!");
+
+    const btn = document.getElementById('btn-gps-record');
+    const exportBtn = document.getElementById('btn-gps-export');
+
+    isGpsRecording = false;
+    btn.innerText = "📍 Start GPS Track";
+    btn.classList.remove('recording');
+    exportBtn.innerText = "⌛ Streaming GPX...";
+    exportBtn.style.pointerEvents = 'none';
+
+    log("Flushing final GPS buffers to disk...");
+
+    // 1. Flush remaining live buffer into staging
+    if (liveGpsBuffer.length > 0) {
+      stagingGpsQueue.push(...liveGpsBuffer);
+      liveGpsBuffer = [];
+    }
+
+    // 2. Commit staging directly to IndexedDB
+    if (stagingGpsQueue.length > 0) {
+      await commitBatchesToIndexedDB([], stagingGpsQueue);
+      stagingGpsQueue = [];
+    }
+
+    // 3. Stream all GPS records from IndexedDB using IDBCursor
+    try {
+      const header = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Yamaha RMAX Pro Cockpit" xmlns="http://www.topografix.com/GPX/1/1">\n  <metadata>\n    <name>Yamaha RMAX Off-Road Trail</name>\n    <time>${new Date().toISOString()}</time>\n  </metadata>\n  <trk>\n    <name>RMAX Track ${new Date().toLocaleDateString()}</name>\n    <trkseg>\n`;
+      const chunks = [header];
+
+      const tx = telemetryDb.transaction(STORE_GPS, 'readonly');
+      const store = tx.objectStore(STORE_GPS);
+      const cursorReq = store.openCursor();
+
+      await new Promise((resolve, reject) => {
+        cursorReq.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            const pt = cursor.value;
+            let trkpt = `      <trkpt lat="${pt.lat.toFixed(6)}" lon="${pt.lon.toFixed(6)}">\n`;
+            if (pt.ele !== null && !isNaN(pt.ele)) trkpt += `        <ele>${pt.ele.toFixed(1)}</ele>\n`;
+            trkpt += `        <time>${new Date(pt.time).toISOString()}</time>\n`;
+            if (pt.speed !== null && !isNaN(pt.speed)) trkpt += `        <speed>${pt.speed.toFixed(2)}</speed>\n`;
+            trkpt += `      </trkpt>\n`;
+            chunks.push(trkpt);
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        cursorReq.onerror = () => reject(cursorReq.error);
+      });
+
+      chunks.push(`    </trkseg>\n  </trk>\n</gpx>`);
+
+      const timestampStr = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `RMAX_Trail_${timestampStr}.gpx`;
+      const gpxBlob = new Blob(chunks, { type: 'application/gpx+xml;charset=utf-8;' });
+      const gpxFile = new File([gpxBlob], filename, { type: 'application/gpx+xml' });
+
+      log(`Assembled ${chunks.length - 2} GPS points. Launching iOS Share Sheet...`);
+
+      if (navigator.canShare && navigator.canShare({ files: [gpxFile] })) {
+        await navigator.share({
+          title: 'Yamaha RMAX GPX Trail',
+          text: `RMAX GPS Trail Export (${chunks.length - 2} points)`,
+          files: [gpxFile]
+        });
+      } else {
+        const url = URL.createObjectURL(gpxBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      log("GPS Trail exported successfully.");
+    } catch (err) {
+      alert(`GPX Export aborted: ${err.message}`);
+    } finally {
+      exportBtn.innerText = "📥 Close & Export GPX";
+      exportBtn.style.pointerEvents = 'auto';
+    }
+  };
+
+  /* ==========================================================
+     MAP MODAL: SATELLITE & TOPO WITH DIRECT AUTO-TRACKING
+     ========================================================== */
+  window.openMapModal = function() {
+    const modal = document.getElementById('map-modal');
+    modal.style.display = 'flex';
+
+    const targetCoords = currentGpsCoords || [34.0522, -118.2437];
+
+    if (!leafletMap) {
+      leafletMap = L.map('leaflet-map-container', { zoomControl: false }).setView(targetCoords, 16);
+
+      satTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        attribution: 'Esri Satellite'
+      }).addTo(leafletMap);
+
+      topoTileLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'OpenTopoMap'
+      });
+
+      leafletTrail = L.polyline([], { color: '#00d2ff', weight: 4.5, opacity: 0.9 }).addTo(leafletMap);
+
+      leafletMarker = L.circleMarker(targetCoords, {
+        radius: 9,
+        fillColor: '#0066ff',
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 1
+      }).addTo(leafletMap);
+
+      leafletMap.on('dragstart', () => {
+        isMapAutoTracking = false;
+        const btn = document.getElementById('btn-recenter-map');
+        if (btn) btn.classList.remove('tracking-active');
+      });
+    }
+
+    setTimeout(() => {
+      leafletMap.invalidateSize();
+      recenterMapOnVehicle();
+    }, 150);
+  };
+
+  window.closeMapModal = function() {
+    document.getElementById('map-modal').style.display = 'none';
+  };
+
+  window.switchMapLayer = function(type) {
+    if (!leafletMap) return;
+    const btnSat = document.getElementById('btn-layer-sat');
+    const btnTopo = document.getElementById('btn-layer-topo');
+
+    if (type === 'satellite') {
+      leafletMap.removeLayer(topoTileLayer);
+      leafletMap.addLayer(satTileLayer);
+      btnSat.classList.add('active');
+      btnTopo.classList.remove('active');
+    } else {
+      leafletMap.removeLayer(satTileLayer);
+      leafletMap.addLayer(topoTileLayer);
+      btnTopo.classList.add('active');
+      btnSat.classList.remove('active');
+    }
+  };
+
+  window.recenterMapOnVehicle = function() {
+    isMapAutoTracking = true;
+    const btn = document.getElementById('btn-recenter-map');
+    if (btn) btn.classList.add('tracking-active');
+
+    if (currentGpsCoords && leafletMap) {
+      leafletMap.setView(currentGpsCoords, 16, { animate: true });
+      if (leafletMarker) leafletMarker.setLatLng(currentGpsCoords);
+    } else if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        currentGpsCoords = [pos.coords.latitude, pos.coords.longitude];
+        if (leafletMap) leafletMap.setView(currentGpsCoords, 16, { animate: true });
+        if (leafletMarker) leafletMarker.setLatLng(currentGpsCoords);
+      });
+    }
+  };
+
+  /* ==========================================================
+     TOP GAUGE CLUSTERS (ANALOG NEEDLE / RADIAL / RIBBON / HUD)
+     ========================================================== */
+  window.setGaugeStyle = function(style) {
+    currentGaugeStyle = style;
+    appSettings.gaugeStyle = style;
+    saveSettings();
+    updateSegmentedUI('seg-gauge-style', style);
+    buildTopGaugesDOM();
+    log(`Gauge Style: ${style.toUpperCase()}`);
+  };
+
+  function buildTopGaugesDOM() {
+    const speedWrap = document.getElementById('live-gauge-speed');
+    const rpmWrap = document.getElementById('live-gauge-rpm');
+    const coolantWrap = document.getElementById('live-gauge-coolant');
+    if (!speedWrap || !rpmWrap || !coolantWrap) return;
+
+    if (currentGaugeStyle === 'analog') {
+      speedWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          ${generateAnalogTicks(0, 120, 20, 10, 140)}
+          <g id="needle-speed" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="22" class="analog-needle-blade" />
+            <circle cx="100" cy="100" r="10" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-speed" class="analog-inset-val">0</span>
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+
+      rpmWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          <path d="M 172,142 A 90 90 0 0 0 178,72" class="analog-redline-arc" />
+          ${generateAnalogTicks(0, 9, 1, 1, 140, true)}
+          <g id="needle-rpm" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="18" class="analog-needle-blade" style="stroke:var(--yamaha-cyan);" />
+            <circle cx="100" cy="100" r="11" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-rpm" class="analog-inset-val" style="font-size:1.45rem;">0</span>
+          <span class="analog-inset-unit">RPM x1000</span>
+        </div>
+      `;
+
+      coolantWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="92" class="analog-dial-bg" />
+          <circle cx="100" cy="100" r="92" class="analog-bezel-ring" />
+          <path d="M 38,148 A 90 90 0 0 1 54,64" fill="none" stroke="var(--yamaha-cyan)" stroke-width="4.5" />
+          <path d="M 146,64 A 90 90 0 0 1 162,148" fill="none" stroke="var(--redline)" stroke-width="4.5" />
+          ${generateAnalogTicks(40, 120, 20, 10, 140, false, true)}
+          <g id="needle-coolant" class="analog-needle">
+            <line x1="100" y1="100" x2="100" y2="22" class="analog-needle-blade" style="stroke:var(--green);" />
+            <circle cx="100" cy="100" r="10" class="analog-needle-cap" />
+          </g>
+        </svg>
+        <div class="analog-digital-inset">
+          <span id="val-dash-coolant" class="analog-inset-val">--</span>
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    } 
+    else if (currentGaugeStyle === 'radial') {
+      speedWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-speed-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-speed" class="cyber-val">0</span>
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-rpm-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-rpm" class="cyber-val large">0</span>
+          <span class="analog-inset-unit">RPM</span>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <svg class="gauge-svg" viewBox="0 0 200 200" style="transform:rotate(-30deg);">
+          <circle class="gauge-bg-track" cx="100" cy="100" r="70"></circle>
+          <circle id="gauge-coolant-bar" class="gauge-val-track" cx="100" cy="100" r="70"></circle>
+        </svg>
+        <div class="cyber-readout">
+          <span id="val-dash-coolant" class="cyber-val">--</span>
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    }
+    else if (currentGaugeStyle === 'ribbon') {
+      speedWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+          <span id="val-dash-speed" class="ribbon-val">0</span>
+          <div class="ribbon-track"><div id="ribbon-speed-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit">ENGINE RPM</span>
+          <span id="val-dash-rpm" class="ribbon-val" style="font-size:3rem;">0</span>
+          <div class="ribbon-track" style="height:22px;"><div id="ribbon-rpm-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <div class="ribbon-container">
+          <span class="analog-inset-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()} COOLANT</span>
+          <span id="val-dash-coolant" class="ribbon-val">--</span>
+          <div class="ribbon-track"><div id="ribbon-coolant-fill" class="ribbon-fill"></div></div>
+        </div>
+      `;
+    }
+    else if (currentGaugeStyle === 'minimal') {
+      speedWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-speed" class="minimal-val">0</span>
+          <span class="minimal-unit" id="label-dash-speed-unit">${speedUnit.toUpperCase()}</span>
+        </div>
+      `;
+      rpmWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-rpm" class="minimal-val large">0</span>
+          <span class="minimal-unit">RPM</span>
+        </div>
+      `;
+      coolantWrap.innerHTML = `
+        <div class="minimal-container">
+          <span id="val-dash-coolant" class="minimal-val">--</span>
+          <span class="minimal-unit" id="label-dash-coolant-unit">°${tempUnit.toUpperCase()}</span>
+        </div>
+      `;
+    }
+  }
+
+  function generateAnalogTicks(min, max, majorStep, minorStep, sweepRange, isRpm = false, isCoolant = false) {
+    let svg = '';
+    const totalSpan = max - min;
+    const startAngle = -135;
+    const endAngle = 135;
+    
+    for (let val = min; val <= max; val += minorStep) {
+      const pct = (val - min) / totalSpan;
+      const angle = startAngle + (pct * (endAngle - startAngle));
+      const rad = (angle - 90) * (Math.PI / 180);
+      const isMajor = (val % majorStep === 0);
+      
+      const rOuter = 82;
+      const rInner = isMajor ? 70 : 76;
+
+      const x1 = 100 + rOuter * Math.cos(rad);
+      const y1 = 100 + rOuter * Math.sin(rad);
+      const x2 = 100 + rInner * Math.cos(rad);
+      const y2 = 100 + rInner * Math.sin(rad);
+
+      svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="${isMajor ? 'analog-tick-major' : 'analog-tick-minor'}" />`;
+
+      if (isMajor) {
+        const rText = 58;
+        const tx = 100 + rText * Math.cos(rad);
+        const ty = 100 + rText * Math.sin(rad);
+        let label = val;
+        if (isCoolant) {
+          if (val === min) label = 'C';
+          else if (val === max) label = 'H';
+        }
+        svg += `<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" class="analog-tick-num">${label}</text>`;
+      }
+    }
+    return svg;
+  }
+
+  function updateTopClusterGauge(type, val, maxVal) {
+    const clamped = Math.max(0, Math.min(maxVal, val));
+    const pct = clamped / maxVal;
+
+    if (currentGaugeStyle === 'analog') {
+      const angle = -135 + (pct * 270);
+      const needle = document.getElementById(`needle-${type}`);
+      if (needle) needle.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+
+      if (type === 'rpm') {
+        const redlineEl = document.getElementById('redline-alert');
+        if (redlineEl) redlineEl.classList.toggle('active', val >= 7800);
+      }
+    }
+    else if (currentGaugeStyle === 'radial') {
+      const arcLength = 293.2;
+      const offset = arcLength - (pct * arcLength);
+      const bar = document.getElementById(`gauge-${type}-bar`);
+      if (bar) bar.style.strokeDashoffset = offset;
+    }
+    else if (currentGaugeStyle === 'ribbon') {
+      const fill = document.getElementById(`ribbon-${type}-fill`);
+      if (fill) fill.style.width = `${(pct * 100).toFixed(1)}%`;
+    }
+  }
+
+  /* ==========================================================
+     BLUETOOTH GATT CONNECTION + 5S DOT COUNT + HACKER CLI
+     ========================================================== */
+  window.handleConnectClick = async function() {
+    if (bleDevice?.gatt?.connected) {
+      disconnect();
+      return;
+    }
+    await connect();
+  };
+
+  async function connect() {
+    try {
+      if (!navigator.bluetooth) throw new Error("Web Bluetooth not supported.");
+
+      const btn = document.getElementById('btn-tap-connect');
+      const logoBtn = document.getElementById('btn-connect-logo');
+      const hint = document.getElementById('connect-hint');
+
+      if (btn) btn.innerHTML = '<span>⚡ CONNECTING...</span>';
+      if (logoBtn) logoBtn.classList.add('connecting');
+      if (hint) hint.innerText = 'Pairing with OBD-II Bluetooth adapter...';
+
+      bleDevice = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: SERVICE_UUIDS
+      });
+
+      bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+      const server = await bleDevice.gatt.connect();
+      await new Promise(r => setTimeout(r, 200));
+
+      let service = null;
+      for (const uuid of SERVICE_UUIDS) {
+        try {
+          service = await server.getPrimaryService(uuid);
+          if (service) break;
+        } catch (e) {}
+      }
+      if (!service) throw new Error("UART service not found.");
+
+      const chars = await service.getCharacteristics();
+      writeChar = null; readChar = null;
+      for (const char of chars) {
+        if (char.properties.write || char.properties.writeWithoutResponse) writeChar = char;
+        if (char.properties.notify || char.properties.indicate) readChar = char;
+      }
+      if (!writeChar || !readChar) throw new Error("TX/RX pipe failed.");
+
+      await readChar.startNotifications();
+      readChar.addEventListener('characteristicvaluechanged', handleNotification);
+
+      // Start Yamaha Init and buffer transmissions
+      await initYamahaELM327();
+
+      // Launch 5-Second Dot Sequence -> Hacker Terminal -> Fluorescent Strike
+      startLoadingAndHackerSequence();
+
+    } catch (err) {
+      log("Connect cancelled: " + err.message);
+      resetConnectScreenState();
+    }
+  }
+
+  function resetConnectScreenState() {
+    const btn = document.getElementById('btn-tap-connect');
+    const logoBtn = document.getElementById('btn-connect-logo');
+    const hint = document.getElementById('connect-hint');
+    const dotsBanner = document.getElementById('loading-dots-banner');
+    const terminal = document.getElementById('hacker-terminal-overlay');
+    const brandBlock = document.getElementById('connect-brand-block');
+
+    if (btn) { btn.style.display = 'flex'; btn.innerHTML = '<span>⚡ TAP TO CONNECT</span>'; }
+    if (logoBtn) logoBtn.classList.remove('connecting');
+    if (hint) { hint.style.display = 'block'; hint.innerText = 'Touch to pair with your RMAX OBD-II Bluetooth adapter.'; }
+    if (dotsBanner) dotsBanner.style.display = 'none';
+    if (terminal) terminal.style.display = 'none';
+    if (brandBlock) brandBlock.style.display = 'flex';
+  }
+
+  function startLoadingAndHackerSequence() {
+    const btn = document.getElementById('btn-tap-connect');
+    const hint = document.getElementById('connect-hint');
+    const dotsBanner = document.getElementById('loading-dots-banner');
+    const dotsText = document.getElementById('loading-dots-text');
+    const brandBlock = document.getElementById('connect-brand-block');
+
+    if (btn) btn.style.display = 'none';
+    if (hint) hint.style.display = 'none';
+    if (brandBlock) brandBlock.style.display = 'none';
+    if (dotsBanner) dotsBanner.style.display = 'block';
+
+    let secondCount = 0;
+    dotsText.innerText = '';
+
+    const dotInterval = setInterval(() => {
+      secondCount++;
+      dotsText.innerText = '.'.repeat(secondCount);
+
+      if (secondCount >= 5) {
+        clearInterval(dotInterval);
+        dotsBanner.style.display = 'none';
+        drawHackerTerminalOverlay();
+      }
+    }, 1000);
+  }
+
+  function drawHackerTerminalOverlay() {
+    const terminal = document.getElementById('hacker-terminal-overlay');
+    const termBody = document.getElementById('hacker-terminal-body');
+    if (!terminal || !termBody) return;
+
+    terminal.style.display = 'flex';
+    termBody.innerHTML = '';
+
+    const linesToType = [
+      { cls: 'sys', txt: '[SYSTEM] HARDWARE_UART_INITIALIZED' },
+      { cls: 'tx',  txt: '> [TX] ATZ (Reset Controller)' },
+      { cls: 'rx',  txt: '< [RX] ELM327 v1.5a OBDII-CAN' },
+      { cls: 'tx',  txt: '> [TX] ATSP6 (Protocol: ISO 15765-4 CAN 11b/500k)' },
+      { cls: 'rx',  txt: '< [RX] OK' },
+      { cls: 'tx',  txt: '> [TX] ATSH7E0 (Target ECU: Powertrain 0x7E0)' },
+      { cls: 'rx',  txt: '< [RX] OK' },
+      { cls: 'tx',  txt: '> [TX] 21 01 (Query Yamaha Table 01)' },
+      { cls: 'rx',  txt: '< [RX] 61 01 04 EA 00 00 00 00 23 21 CF 02 CF 55 4A 22 ...' },
+      { cls: 'sys', txt: '[CAN_BUS] BITRATE: 500 KBPS // ID: 0x7E0 SYNC' },
+      { cls: 'sys', txt: '[ECU_IDENT] MITSUBISHI ELECTRIC CORP - YAMAHA 999CC' },
+      { cls: 'rx',  txt: '[STATUS] 22 SENSORS ONLINE. STREAM ACTIVE.' }
+    ];
+
+    let lineIdx = 0;
+    const typeTimer = setInterval(() => {
+      if (lineIdx >= linesToType.length) {
+        clearInterval(typeTimer);
+        setTimeout(() => {
+          transitionToFluorescentDashboard();
+        }, 600);
+        return;
+      }
+
+      const item = linesToType[lineIdx];
+      const div = document.createElement('div');
+      div.className = `term-line ${item.cls}`;
+      div.innerText = item.txt;
+      termBody.appendChild(div);
+      lineIdx++;
+    }, 110);
+  }
+
+  /* ==========================================================
+     FLUORESCENT LIGHT STRIKE DASHBOARD REVEAL (NO SOUND)
+     ========================================================== */
+  function transitionToFluorescentDashboard() {
+    const connectScreen = document.getElementById('connect-screen');
+    const appShell = document.getElementById('app-shell');
+    const dock = document.getElementById('touch-dock');
+
+    if (connectScreen) connectScreen.classList.add('hide');
+
+    setTimeout(() => {
+      if (appShell) appShell.classList.add('active-canvas');
+      if (dock) dock.style.display = 'flex';
+      buildTopGaugesDOM();
+
+      const strikeTargets = [
+        { id: 'hud-header', anim: 'strike-pattern-a', delay: 40 },
+        { id: 'card-speed', anim: 'strike-pattern-b', delay: 180 },
+        { id: 'card-rpm', anim: 'strike-pattern-c', delay: 90 },
+        { id: 'card-coolant', anim: 'strike-pattern-a', delay: 240 },
+        { id: 'drive-status-strip', anim: 'strike-pattern-b', delay: 120 },
+        { id: 'card-gps', anim: 'strike-pattern-c', delay: 300 },
+        { id: 'card-elevation', anim: 'strike-pattern-a', delay: 150 },
+        { id: 'card-load', anim: 'strike-pattern-b', delay: 220 },
+        { id: 'card-iat', anim: 'strike-pattern-c', delay: 80 },
+        { id: 'card-pedal', anim: 'strike-pattern-a', delay: 270 },
+        { id: 'card-throttle', anim: 'strike-pattern-b', delay: 160 },
+        { id: 'card-fuel', anim: 'strike-pattern-c', delay: 310 },
+        { id: 'card-timing', anim: 'strike-pattern-a', delay: 190 },
+        { id: 'card-map', anim: 'strike-pattern-b', delay: 250 },
+        { id: 'card-ase', anim: 'strike-pattern-c', delay: 140 },
+        { id: 'card-voltage', anim: 'strike-pattern-a', delay: 330 },
+        { id: 'dock-flight', anim: 'strike-pattern-b', delay: 200 },
+        { id: 'dock-gps', anim: 'strike-pattern-c', delay: 280 },
+        { id: 'log', anim: 'strike-pattern-a', delay: 360 }
+      ];
+
+      strikeTargets.forEach(t => {
+        const el = document.getElementById(t.id);
+        if (el) {
+          setTimeout(() => {
+            el.classList.remove('fluorescent-prestrike');
+            el.classList.add(t.anim);
+          }, t.delay);
+        }
+      });
+
+      startPolling();
+      setTimeout(runGaugeCalibrationSweep, 1300);
+
+    }, 450);
+  }
+
+  function runGaugeCalibrationSweep() {
+    let sweep = 0;
+    const interval = setInterval(() => {
+      sweep += 0.05;
+      const factor = Math.sin(sweep);
+      if (sweep >= Math.PI) {
+        clearInterval(interval);
+        updateTopClusterGauge('rpm', 1250, 9000);
+        document.getElementById('val-dash-rpm').innerText = (currentGaugeStyle === 'analog') ? '1.3' : '1250';
+        updateTopClusterGauge('speed', 0, 115);
+        document.getElementById('val-dash-speed').innerText = '0';
+        updateTopClusterGauge('coolant', 82, 115);
+        document.getElementById('val-dash-coolant').innerText = (tempUnit === 'f') ? '180' : '82';
+        return;
+      }
+      const testRpm = Math.round(factor * 8600);
+      const testSpeed = Math.round(factor * (speedUnit === 'kmh' ? 110 : 68));
+      updateTopClusterGauge('rpm', testRpm, 9000);
+      document.getElementById('val-dash-rpm').innerText = (currentGaugeStyle === 'analog') ? (testRpm / 1000).toFixed(1) : testRpm;
+      updateTopClusterGauge('speed', testSpeed, speedUnit === 'kmh' ? 115 : 75);
+      document.getElementById('val-dash-speed').innerText = testSpeed;
+    }, 25);
+  }
+
+  function disconnect() {
+    if (isSessionActive) closeSessionAndExport();
+    if (isGpsRecording) closeGpsSessionAndExport();
+    if (bleDevice?.gatt?.connected) bleDevice.gatt.disconnect();
+    onDisconnected();
+  }
+
+  function onDisconnected() {
+    isPolling = false;
+    const statusEl = document.getElementById('status');
+    if (statusEl) { statusEl.innerText = "DISCONNECTED"; statusEl.className = "status-badge"; }
+    log("Bluetooth Disconnected.");
+    showConnectScreen();
+  }
+
+  function showConnectScreen() {
+    const connectScreen = document.getElementById('connect-screen');
+    const appShell = document.getElementById('app-shell');
+    const dock = document.getElementById('touch-dock');
+    if (appShell) appShell.classList.remove('active-canvas');
+    if (dock) dock.style.display = 'none';
+    if (connectScreen) connectScreen.classList.remove('hide');
+    resetConnectScreenState();
+  }
+
+  /* ==========================================================
+     OBD-II ELM327 COMMAND ENGINE
+     ========================================================== */
+  let responseResolver = null;
+  function handleNotification(event) {
+    const chunk = new TextDecoder().decode(event.target.value);
+    rxBuffer += chunk;
+    if (rxBuffer.includes('>')) {
+      if (responseResolver) {
+        const res = rxBuffer.replace(/>/g, '').trim();
+        rxBuffer = '';
+        responseResolver(res);
+        responseResolver = null;
+      }
+    }
+  }
+
+  async function writeBLE(data) {
+    if (!writeChar) return;
+    if (writeChar.properties.writeWithoutResponse && writeChar.writeValueWithoutResponse) {
+      await writeChar.writeValueWithoutResponse(data);
+    } else {
+      await writeChar.writeValue(data);
+    }
+  }
+
+  async function sendCommand(cmd, timeoutMs = 2000) {
+    return new Promise(async (resolve) => {
+      rxBuffer = '';
+      const timer = setTimeout(() => { responseResolver = null; resolve("TIMEOUT"); }, timeoutMs);
+      responseResolver = (res) => { clearTimeout(timer); resolve(res); };
+      try {
+        await writeBLE(new TextEncoder().encode(cmd + '\r'));
+      } catch (e) {
+        clearTimeout(timer);
+        responseResolver = null;
+        resolve("WRITE_ERR");
+      }
+    });
+  }
+
+  async function initYamahaELM327() {
+    await writeBLE(new TextEncoder().encode('\r\r\r'));
+    await new Promise(r => setTimeout(r, 150));
+    await sendCommand("ATD", 1000);
+    await sendCommand("ATZ", 2000);
+    await new Promise(r => setTimeout(r, 300));
+    await sendCommand("ATE0", 1000);
+    await sendCommand("ATL0", 1000);
+    await sendCommand("ATS0", 1000);
+    await sendCommand("ATH0", 1000);
+    await sendCommand("ATAT2", 1000);
+    await sendCommand("ATSTFF", 1000);
+    await sendCommand("ATSP6", 1500);
+    await sendCommand("ATSH7E0", 1000);
+    log("Yamaha ECU Protocol Synced.");
+  }
+
+  async function startPolling() {
+    if (isPolling) return;
+    isPolling = true;
+
+    while (isPolling && bleDevice?.gatt?.connected) {
+      const rawRes = await sendCommand("2101", 1200);
+      const voltRes = await sendCommand("ATRV", 600);
+      let atrvVal = 0;
+      const m = String(voltRes).match(/([0-9]+\.?[0-9]*)/);
+      if (m && m[1]) atrvVal = parseFloat(m[1]);
+
+      parseYamahaPayload(rawRes, atrvVal);
+      await new Promise(r => setTimeout(r, 30));
+    }
+    isPolling = false;
+  }
+
+  /* ==========================================================
+     TELEMETRY DECODER & NON-BLOCKING ACTIVE INGESTION
+     ========================================================== */
+  function parseYamahaPayload(raw, atrvVal = 0) {
+    if (!raw || raw.includes("7F") || raw.includes("NO DATA") || raw.includes("TIMEOUT")) return;
+
+    let hexStream = '';
+    const lines = raw.split(/[\r\n]+/);
+    for (const line of lines) {
+      const clean = line.replace(/\s+/g, '');
+      const match = clean.match(/^[0-9A-Fa-f]:([0-9A-Fa-f]+)$/);
+      if (match && match[1]) hexStream += match[1];
+      else if (!clean.match(/^[0-9A-Fa-f]{3}$/)) hexStream += clean;
+    }
+
+    if (!hexStream.includes("6101")) return;
+    const payloadHex = hexStream.substring(hexStream.indexOf("6101") + 4);
+    const bytes = [];
+    for (let i = 0; i < payloadHex.length; i += 2) {
+      bytes.push(parseInt(payloadHex.substr(i, 2), 16));
+    }
+    if (bytes.length < 18) return;
+
+    const now = Date.now();
+
+    // 1. Engine RPM
+    const rpm = (bytes[0] * 256) + bytes[1];
+    if (!isNaN(rpm) && rpm <= 10000) {
+      pushMetricData('rpm', now, rpm);
+      const rpmEl = document.getElementById('val-dash-rpm');
+      if (rpmEl) rpmEl.innerText = (currentGaugeStyle === 'analog') ? (rpm / 1000).toFixed(1) : rpm;
+      updateTopClusterGauge('rpm', rpm, 9000);
+    }
+
+    // 2. Ground Speed
+    const rawMph = bytes[2];
+    const speed = (speedUnit === 'kmh') ? Math.round(rawMph * 1.60934) : rawMph;
+    pushMetricData('speed', now, speed);
+    const speedEl = document.getElementById('val-dash-speed');
+    if (speedEl) speedEl.innerText = speed;
+    updateTopClusterGauge('speed', speed, speedUnit === 'kmh' ? 120 : 75);
+
+    // 3. Coolant Temp
+    const coolantC = bytes[14] - 31;
+    const displayCoolant = (tempUnit === 'f') ? Math.round((coolantC * 1.8) + 32) : coolantC;
+    pushMetricData('coolant', now, displayCoolant);
+    const coolantEl = document.getElementById('val-dash-coolant');
+    if (coolantEl) coolantEl.innerText = displayCoolant;
+    updateTopClusterGauge('coolant', coolantC, 115);
+
+    // 4. Intake Air Temp (IAT)
+    const iatC = bytes[15] - 31;
+    const displayIat = (tempUnit === 'f') ? Math.round((iatC * 1.8) + 32) : iatC;
+    pushMetricData('iat', now, displayIat);
+    document.getElementById('val-dash-iat').innerText = displayIat;
+    updateMeterBar('iat', displayIat, 80);
+
+    // 5. Engine Load %
+    const mapMbar = (bytes[5] * 256) + bytes[6];
+    const baroMbar = Math.round((bytes[18] && bytes[18] > 100 ? bytes[18] : 192) * 5.25);
+    const engineLoadPct = Math.min(100, Math.max(0, Math.round((mapMbar / baroMbar) * 100)));
+    pushMetricData('load', now, engineLoadPct);
+    document.getElementById('val-dash-load').innerText = engineLoadPct;
+    updateMeterBar('load', engineLoadPct, 100);
+
+    // 6. Pedal (APS %) & Throttle Blade (TPS %)
+    const pedalPct = Math.min(100, Math.max(0, Math.round(((bytes[7] - 35) / 162) * 100)));
+    const tpsPct = Math.min(100, Math.max(0, Math.round(((bytes[9] - 33) / 177) * 100)));
+    pushMetricData('pedal', now, pedalPct);
+    pushMetricData('throttle', now, tpsPct);
+    document.getElementById('val-dash-pedal').innerText = pedalPct;
+    document.getElementById('val-dash-throttle').innerText = tpsPct;
+    updateMeterBar('pedal', pedalPct, 100);
+    updateMeterBar('throttle', tpsPct, 100);
+
+    // 7. Fuel Delivery & Duty %
+    const fuelIndex = bytes[8];
+    const estDutyPct = Math.min(100, Math.round(((fuelIndex * 0.15) * rpm) / 1200));
+    pushMetricData('fuel', now, fuelIndex);
+    document.getElementById('val-dash-fuel').innerText = fuelIndex;
+    document.getElementById('val-dash-duty').innerText = `${estDutyPct}%`;
+    updateMeterBar('fuel', fuelIndex, 170);
+
+    // 8. Spark Advance
+    const timingDeg = Math.round((bytes[16] - 80) / 2);
+    pushMetricData('timing', now, timingDeg);
+    document.getElementById('val-dash-timing').innerText = (timingDeg > -30 && timingDeg < 85) ? timingDeg : '--';
+    updateMeterBar('timing', timingDeg + 20, 95);
+
+    // 9. Manifold Pressure (MAP)
+    pushMetricData('map', now, mapMbar);
+    document.getElementById('val-dash-map').innerText = mapMbar > 0 ? mapMbar : '--';
+    updateMeterBar('map', mapMbar, 300);
+
+    // 10. Warmup Fuel Decay (ASE %)
+    const rawB11 = bytes[11] !== undefined ? bytes[11] : 2;
+    const asePct = Math.min(100, Math.max(0, Math.round(((rawB11 - 2) / 46) * 100)));
+    pushMetricData('ase', now, asePct);
+    document.getElementById('val-dash-ase').innerText = asePct;
+    updateMeterBar('ase', asePct, 100);
+
+    // 11. Battery & ECU Voltage Drop
+    const rawB13 = bytes[13] !== undefined ? bytes[13] : 207;
+    const ecuRailV = rawB13 * 0.0706;
+    const vDrop = atrvVal > 0 ? (atrvVal - ecuRailV).toFixed(1) : "0.0";
+    pushMetricData('voltage', now, atrvVal || ecuRailV);
+    document.getElementById('val-dash-voltage').innerText = (atrvVal || ecuRailV).toFixed(1);
+    document.getElementById('label-dash-vdrop').innerText = `${vDrop > 0 ? '-' : ''}${Math.abs(vDrop)}V Drop`;
+    updateMeterBar('voltage', (atrvVal || ecuRailV) - 10, 5);
+
+    // 12. Status Strip Updates
+    const b19 = bytes[19];
+    const gearNibble = b19 & 0x0F;
+    let gearText = 'N';
+    let gearClass = 'gear-n';
+    if (gearNibble === 0x02) { gearText = 'H'; gearClass = 'gear-h'; }
+    else if (gearNibble === 0x01) { gearText = 'L'; gearClass = 'gear-l'; }
+    else if (gearNibble === 0x03) { gearText = 'R'; gearClass = 'gear-r'; }
+    else if (gearNibble === 0x04) { gearText = 'P'; gearClass = 'gear-p'; }
+    const gearEl = document.getElementById('val-dash-gear');
+    if (gearEl) { gearEl.className = `status-pill-val ${gearClass}`; gearEl.innerText = gearText; }
+
+    const b20 = bytes[20];
+    let dmodeText = 'TRAIL';
+    let dmodeClass = 'dmode-trail';
+    if (b20 === 0x82) { dmodeText = 'CRAWL'; dmodeClass = 'dmode-crawl'; }
+    else if (b20 === 0x81) { dmodeText = 'TRAIL'; dmodeClass = 'dmode-trail'; }
+    else if (b20 === 0x80) { dmodeText = 'SPORT'; dmodeClass = 'dmode-sport'; }
+    const dmodeEl = document.getElementById('val-dash-dmode');
+    if (dmodeEl) { dmodeEl.className = `status-pill-val ${dmodeClass}`; dmodeEl.innerText = dmodeText; }
+
+    const isPBrakeOn = (bytes[21] & 0x04) === 0x04;
+    const isFBrakeOn = (bytes[21] & 0x10) === 0x10;
+    const pbrakeEl = document.getElementById('val-dash-pbrake');
+    if (pbrakeEl) { pbrakeEl.innerText = isPBrakeOn ? 'ON' : 'OFF'; pbrakeEl.className = `status-pill-val ${isPBrakeOn ? 'brake-on' : 'off'}`; }
+    const fbrakeEl = document.getElementById('val-dash-fbrake');
+    if (fbrakeEl) { fbrakeEl.innerText = isFBrakeOn ? 'ON' : 'OFF'; fbrakeEl.className = `status-pill-val ${isFBrakeOn ? 'brake-on' : 'off'}`; }
+
+    renderActiveGraphs();
+    if (activeModalMetric) updateFullScreenModalData();
+
+    // 13. High-Frequency Non-Blocking Active Ingestion
+    if (isSessionActive) {
+      const elapsed = ((now - sessionStartTime) / 1000).toFixed(3);
+      const eleVal = document.getElementById('val-dash-elevation')?.innerText || '0';
+      const row = `${elapsed},${rpm},${speed},${coolantC},${eleVal},${iatC},${mapMbar},${engineLoadPct},${asePct},${fuelIndex},${pedalPct},${tpsPct},${timingDeg},${(atrvVal || ecuRailV).toFixed(1)},${gearText},${dmodeText},${isPBrakeOn ? 1 : 0},${isFBrakeOn ? 1 : 0}`;
+      liveBuffer.push(row);
+    }
+  }
+
+  /* Metric Data Buffer Management */
+  function getBufferWindowMs() {
+    const maxTf = Math.max(300, ...appSettings.timeframes);
+    return maxTf * 1000;
+  }
+
+  function pushMetricData(key, time, value) {
+    if (!METRICS[key]) return;
+    METRICS[key].data.push({ time, value });
+    const cutoff = time - getBufferWindowMs();
+    if (METRICS[key].data.length > 300 && METRICS[key].data[0].time < cutoff) {
+      METRICS[key].data = METRICS[key].data.filter(pt => pt.time >= cutoff);
+    }
+  }
+
+  function getMetricStats(key, durationSec) {
+    if (!METRICS[key] || !METRICS[key].data.length) return { min: 0, max: 0, avg: 0, current: 0 };
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+    if (!points.length) return { min: 0, max: 0, avg: 0, current: 0 };
+
+    const vals = points.map(p => p.value);
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const avg = Math.round(vals.reduce((a,b) => a+b, 0) / vals.length);
+    const current = vals[vals.length - 1];
+    return { min, max, avg, current };
+  }
+
+  function updateMeterBar(key, val, maxVal) {
+    const bar = document.getElementById(`bar-${key}`);
+    if (bar) {
+      const pct = Math.min(100, Math.max(0, (val / maxVal) * 100));
+      bar.style.width = pct + '%';
+    }
+  }
+
+  /* ==========================================================
+     CLOSE ENGINE SESSION & EXPORT .CSV VIA IDBCURSOR & SHARE SHEET
+     ========================================================== */
+  window.toggleTelemetrySession = async function() {
+    const btn = document.getElementById('btn-cockpit-record');
+    const closeBtn = document.getElementById('btn-cockpit-close');
+
+    if (!isSessionActive) {
+      if (!bleDevice?.gatt?.connected) return alert("Connect to OBD-II first!");
+
+      await initIndexedDB();
+      await clearStore(STORE_TELEMETRY);
+
+      liveBuffer = [];
+      stagingQueue = [];
+      committedRecordCount = 0;
+      sessionStartTime = Date.now();
+      isSessionActive = true;
+
+      btn.innerText = "⏺ Recording...";
+      btn.classList.add('recording');
+      closeBtn.style.opacity = '1';
+      closeBtn.style.pointerEvents = 'auto';
+
+      sessionTimerInterval = setInterval(updateRecorderStatsUI, 1000);
+      startUnifiedStagingTimer();
+
+      log(`Engine Telemetry active. Staging every ${stagingIntervalMinutes} minutes.`);
+    }
+  };
+
+  function updateRecorderStatsUI() {
+    const timeEl = document.getElementById('cockpit-csv-time');
+    const framesEl = document.getElementById('cockpit-csv-frames');
+    if (!isSessionActive || !timeEl || !framesEl) return;
+
+    const s = Math.floor((Date.now() - sessionStartTime) / 1000);
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+    const secs = (s % 60).toString().padStart(2, '0');
+    timeEl.innerText = hrs > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}.0`;
+
+    const totalCaptured = committedRecordCount + stagingQueue.length + liveBuffer.length;
+    framesEl.innerText = `${totalCaptured} Total (${committedRecordCount} on disk)`;
+  }
+
+  window.closeSessionAndExport = async function() {
+    if (!isSessionActive) return;
+
+    const btn = document.getElementById('btn-cockpit-record');
+    const closeBtn = document.getElementById('btn-cockpit-close');
+
+    isSessionActive = false;
+    clearInterval(sessionTimerInterval);
+    dismissStagingBanner();
+
+    btn.innerText = "🔴 Record Flight";
+    btn.classList.remove('recording');
+    closeBtn.innerText = "⌛ Streaming CSV...";
+    closeBtn.style.pointerEvents = 'none';
+
+    log("Flushing final telemetry buffers to disk...");
+
+    if (liveBuffer.length > 0) {
+      stagingQueue.push(...liveBuffer);
+      liveBuffer = [];
+    }
+    if (stagingQueue.length > 0) {
+      await commitBatchesToIndexedDB(stagingQueue, []);
+      stagingQueue = [];
+    }
+
+    try {
+      const csvHeader = `Time_Sec,RPM,Speed_${speedUnit.toUpperCase()},Coolant_${tempUnit.toUpperCase()},Elevation_${elevationUnit.toUpperCase()},IAT_${tempUnit.toUpperCase()},MAP_mbar,Load_Pct,ASE_Pct,Inj_Index,APS_Pct,TPS_Pct,Timing_Deg,Volts,Gear,D_Mode,PBrake,FootBrake\n`;
+      const chunks = [csvHeader];
+
+      const tx = telemetryDb.transaction(STORE_TELEMETRY, 'readonly');
+      const store = tx.objectStore(STORE_TELEMETRY);
+      const cursorReq = store.openCursor();
+
+      await new Promise((resolve, reject) => {
+        cursorReq.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            chunks.push(cursor.value + '\n');
+            cursor.continue();
+          } else {
+            resolve();
+          }
+        };
+        cursorReq.onerror = () => reject(cursorReq.error);
+      });
+
+      const timestampStr = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `RMAX_Flight_Log_${timestampStr}.csv`;
+      const csvBlob = new Blob(chunks, { type: 'text/csv;charset=utf-8;' });
+      const csvFile = new File([csvBlob], filename, { type: 'text/csv' });
+
+      log(`Assembled ${chunks.length - 1} records. Launching iOS Share Sheet...`);
+
+      if (navigator.canShare && navigator.canShare({ files: [csvFile] })) {
+        await navigator.share({
+          title: 'Yamaha RMAX Flight Telemetry',
+          text: `RMAX Telemetry export (${chunks.length - 1} records)`,
+          files: [csvFile]
+        });
+      } else {
+        const url = URL.createObjectURL(csvBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      log("Telemetry session exported successfully.");
+    } catch (err) {
+      alert(`Export aborted: ${err.message}`);
+    } finally {
+      closeBtn.innerText = "📦 Close & Export";
+      closeBtn.style.opacity = '0.5';
+      closeBtn.style.pointerEvents = 'none';
+    }
+  };
+
+  /* Staging Interval Config ($X$ Minutes) */
+  window.setStagingInterval = function(mins) {
+    stagingIntervalMinutes = parseInt(mins, 10);
+    appSettings.stagingIntervalMin = stagingIntervalMinutes;
+    saveSettings();
+
+    if ((isSessionActive || isGpsRecording) && stagingTimerInterval) {
+      startUnifiedStagingTimer();
+    }
+    log(`Staging interval: ${stagingIntervalMinutes} minutes.`);
+  };
+
+  /* ==========================================================
+     INTERACTIVE CARD CLICK & ZOOM ENGINE
+     ========================================================== */
+  window.handleCardClick = function(key, element) {
+    if (key === 'gps') {
+      openMapModal();
+      return;
+    }
+
+    const now = Date.now();
+    if (!clickTrackers[key]) clickTrackers[key] = { count: 0, last: 0 };
+    if (now - clickTrackers[key].last < 380) {
+      clickTrackers[key].count++;
+    } else {
+      clickTrackers[key].count = 1;
+    }
+    clickTrackers[key].last = now;
+
+    if (clickTrackers[key].count >= 2) {
+      clickTrackers[key].count = 0;
+      openFullScreenModal(key);
+      return;
+    }
+
+    setTimeout(() => {
+      if (clickTrackers[key].count === 1) {
+        cycleCardMode(key);
+        clickTrackers[key].count = 0;
+      }
+    }, 300);
+  };
+
+  function cycleCardMode(key) {
+    const card = METRICS[key];
+    if (!card) return;
+    if (card.mode === 'live') card.mode = 'tf0';
+    else if (card.mode === 'tf0') card.mode = 'tf1';
+    else if (card.mode === 'tf1') card.mode = 'tf2';
+    else card.mode = 'live';
+    updateCardUI(key);
+  }
+
+  function modeToDurationSec(mode) {
+    const slot = { tf0: 0, tf1: 1, tf2: 2 }[mode];
+    return slot === undefined ? null : appSettings.timeframes[slot];
+  }
+
+  function timeframeLabel(sec) {
+    const preset = TIMEFRAME_PRESETS.find(p => p.sec === sec);
+    if (preset) return preset.label;
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.round(sec / 60)}m`;
+    return `${(sec / 3600).toFixed(1)}h`;
+  }
+
+  function updateCardUI(key) {
+    const card = METRICS[key];
+    const isHero = ['speed', 'rpm', 'coolant'].includes(key);
+
+    const liveView = isHero ? document.getElementById(`live-gauge-${key}`) : document.getElementById(`live-view-${key}`);
+    const graphView = document.getElementById(`graph-view-${key}`);
+    const badge = document.getElementById(`badge-${key}`);
+    const cardBox = document.getElementById(`card-${key}`);
+
+    cardBox.classList.remove('active-tf');
+    badge.classList.remove('badge-active');
+
+    if (card.mode === 'live') {
+      if (liveView) liveView.style.display = 'flex';
+      if (graphView) graphView.style.display = 'none';
+      badge.innerText = 'LIVE';
+    } else {
+      if (liveView) liveView.style.display = 'none';
+      if (graphView) graphView.style.display = 'flex';
+
+      const durationSec = modeToDurationSec(card.mode);
+      badge.innerText = timeframeLabel(durationSec);
+      badge.classList.add('badge-active');
+      cardBox.classList.add('active-tf');
+      renderGraph(key, durationSec);
+    }
+  }
+
+  function renderActiveGraphs() {
+    for (const [key, metric] of Object.entries(METRICS)) {
+      if (metric.mode !== 'live') renderGraph(key, modeToDurationSec(metric.mode));
+    }
+  }
+
+  function renderGraph(key, durationSec) {
+    const canvas = document.getElementById(`canvas-${key}`);
+    if (!canvas) return;
+
+    const stats = getMetricStats(key, durationSec);
+    document.getElementById(`min-${key}`).innerText = stats.min;
+    document.getElementById(`avg-${key}`).innerText = stats.avg;
+    document.getElementById(`max-${key}`).innerText = stats.max;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+    if (points.length < 2) {
+      ctx.fillStyle = "rgba(255,255,255,0.2)";
+      ctx.font = "10px JetBrains Mono";
+      ctx.fillText("Buffering telemetry...", 10, h / 2);
+      return;
+    }
+
+    const minVal = stats.min;
+    const maxVal = Math.max(stats.max, minVal + 1);
+    const range = maxVal - minVal;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.25); ctx.lineTo(w, h * 0.25);
+    ctx.moveTo(0, h * 0.75); ctx.lineTo(w, h * 0.75);
+    ctx.stroke();
+
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+      const y = h - ((p.value - minVal) / range) * (h - 10) - 5;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, `${METRICS[key].color}55`);
+    grad.addColorStop(1, `${METRICS[key].color}00`);
+
+    ctx.save();
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = METRICS[key].color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = METRICS[key].color;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+  }
+
+  function renderModalRangeButtons() {
+    const wrap = document.getElementById('modal-range-toggles');
+    if (!wrap) return;
+    wrap.innerHTML = appSettings.timeframes.map(sec => `
+      <button class="btn-touch" style="flex:1;" id="modal-btn-${sec}s" onclick="setModalRange(${sec})">${timeframeLabel(sec)}</button>
+    `).join('');
+    highlightModalRangeButton(modalDurationSec);
+  }
+
+  function highlightModalRangeButton(sec) {
+    appSettings.timeframes.forEach(s => {
+      const btn = document.getElementById(`modal-btn-${s}s`);
+      if (btn) {
+        btn.style.background = s === sec ? 'var(--yamaha-cyan)' : 'rgba(255,255,255,0.08)';
+        btn.style.color = s === sec ? '#02050e' : '#fff';
+      }
+    });
+  }
+
+  window.openFullScreenModal = function(key) {
+    activeModalMetric = key;
+    const metric = METRICS[key];
+    const modal = document.getElementById('fullscreen-modal');
+
+    document.getElementById('modal-metric-title').innerText = metric.name;
+    document.getElementById('modal-main-unit').innerText = metric.unit;
+    if (!appSettings.timeframes.includes(modalDurationSec)) modalDurationSec = appSettings.timeframes[0];
+    renderModalRangeButtons();
+    setModalRange(modalDurationSec);
+
+    modal.style.display = 'flex';
+    updateFullScreenModalData();
+  };
+
+  window.closeFullScreenModal = function() {
+    activeModalMetric = null;
+    document.getElementById('fullscreen-modal').style.display = 'none';
+  };
+
+  window.setModalRange = function(sec) {
+    modalDurationSec = sec;
+    highlightModalRangeButton(sec);
+    updateFullScreenModalData();
+  };
+
+  function updateFullScreenModalData() {
+    if (!activeModalMetric) return;
+    const key = activeModalMetric;
+    const stats = getMetricStats(key, modalDurationSec);
+
+    document.getElementById('modal-main-val').innerText = stats.current;
+    document.getElementById('modal-main-val').style.color = METRICS[key].color;
+    document.getElementById('modal-stat-min').innerText = stats.min;
+    document.getElementById('modal-stat-avg').innerText = stats.avg;
+    document.getElementById('modal-stat-max').innerText = stats.max;
+
+    renderModalCanvas(key, modalDurationSec);
+  }
+
+  function renderModalCanvas(key, durationSec) {
+    const canvas = document.getElementById('modal-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const w = rect.width;
+    const h = rect.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const now = Date.now();
+    const cutoff = now - (durationSec * 1000);
+    const points = METRICS[key].data.filter(pt => pt.time >= cutoff);
+
+    if (points.length < 2) return;
+
+    const stats = getMetricStats(key, durationSec);
+    const minVal = stats.min;
+    const maxVal = Math.max(stats.max, minVal + 1);
+    const range = maxVal - minVal;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i <= 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, (h / 5) * i); ctx.lineTo(w, (h / 5) * i);
+      ctx.stroke();
+    }
+
+    ctx.beginPath();
+    points.forEach((p, idx) => {
+      const x = ((p.time - cutoff) / (durationSec * 1000)) * w;
+      const y = h - ((p.value - minVal) / range) * (h - 30) - 15;
+      if (idx === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, `${METRICS[key].color}66`);
+    grad.addColorStop(1, `${METRICS[key].color}00`);
+
+    ctx.save();
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.strokeStyle = METRICS[key].color;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = METRICS[key].color;
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+  }
+
+  window.handleModalClick = function(e) {
+    if (e.target.id === 'fullscreen-modal') closeFullScreenModal();
+  };
+
+  /* ==========================================================
+     SETTINGS & THEME CONFIGURATION
+     ========================================================== */
+  function applyTheme(themeKey) {
+    const theme = THEMES[themeKey] ? themeKey : 'yamaha';
+    appSettings.theme = theme;
+    const accent = THEMES[theme].accent;
+    document.documentElement.style.setProperty('--yamaha-blue', accent);
+    document.documentElement.style.setProperty('--yamaha-blue-glow', THEMES[theme].glow);
+    document.documentElement.style.setProperty('--bg-tint', hexToRgba(accent, 0.18));
+
+    ACCENT_METRICS.forEach(key => { if (METRICS[key]) METRICS[key].color = accent; });
+
+    const grid = document.getElementById('theme-swatch-grid');
+    if (grid) {
+      grid.querySelectorAll('.theme-swatch').forEach(sw => {
+        sw.classList.toggle('active', sw.dataset.theme === theme);
+      });
+    }
+    saveSettings();
+    renderActiveGraphs();
+  }
+
+  function hexToRgba(hex, alpha) {
+    const h = hex.replace('#', '');
+    const bigint = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function applyFx() {
+    const fx = document.getElementById('viewport-fx');
+    if (!fx) return;
+    const saturate = appSettings.intensity / 100;
+    const contrast = appSettings.contrast / 100;
+    fx.style.filter = `saturate(${saturate}) contrast(${contrast})`;
+  }
+
+  window.setIntensity = function(val) {
+    appSettings.intensity = Number(val);
+    applyFx(); saveSettings();
+  };
+
+  window.setContrast = function(val) {
+    appSettings.contrast = Number(val);
+    applyFx(); saveSettings();
+  };
+
+  window.selectTheme = function(themeKey) { applyTheme(themeKey); };
+
+  window.setSpeedUnit = function(unit) {
+    speedUnit = unit;
+    appSettings.speedUnit = unit;
+    saveSettings();
+    METRICS.speed.unit = speedUnit.toUpperCase();
+    const spdUnitEl = document.getElementById('label-dash-speed-unit');
+    if (spdUnitEl) spdUnitEl.innerText = speedUnit.toUpperCase();
+    updateSegmentedUI('seg-speed-unit', speedUnit);
+    buildTopGaugesDOM();
+    log(`Speed: ${speedUnit.toUpperCase()}`);
+  };
+
+  window.setTempUnit = function(unit) {
+    tempUnit = unit;
+    appSettings.tempUnit = unit;
+    saveSettings();
+    const coolUnitEl = document.getElementById('label-dash-coolant-unit');
+    if (coolUnitEl) coolUnitEl.innerText = `°${tempUnit.toUpperCase()}`;
+    document.getElementById('label-dash-iat-unit').innerText = `°${tempUnit.toUpperCase()}`;
+    METRICS.coolant.unit = `°${tempUnit.toUpperCase()}`;
+    METRICS.iat.unit = `°${tempUnit.toUpperCase()}`;
+    updateSegmentedUI('seg-temp-unit', tempUnit);
+    buildTopGaugesDOM();
+    log(`Temp: °${tempUnit.toUpperCase()}`);
+  };
+
+  window.setElevationUnit = function(unit) {
+    elevationUnit = unit;
+    appSettings.elevationUnit = unit;
+    saveSettings();
+    METRICS.elevation.unit = elevationUnit.toUpperCase();
+    document.getElementById('label-dash-ele-unit').innerText = elevationUnit.toUpperCase();
+    updateSegmentedUI('seg-elevation-unit', elevationUnit);
+    log(`Elevation: ${elevationUnit.toUpperCase()}`);
+  };
+
+  function updateSegmentedUI(containerId, activeVal) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.querySelectorAll('button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.val === activeVal);
+    });
+  }
+
+  window.setTimeframe = function(slot, secStr) {
+    const sec = Number(secStr);
+    appSettings.timeframes[slot] = sec;
+    saveSettings();
+    renderModalRangeButtons();
+    for (const key of Object.keys(METRICS)) {
+      if (METRICS[key].mode === `tf${slot}`) updateCardUI(key);
+    }
+  };
+
+  function populateTimeframeSelects() {
+    for (let i = 0; i < 3; i++) {
+      const sel = document.getElementById(`tf-select-${i}`);
+      if (!sel) continue;
+      sel.innerHTML = TIMEFRAME_PRESETS.map(p =>
+        `<option value="${p.sec}" ${appSettings.timeframes[i] === p.sec ? 'selected' : ''}>${p.label}</option>`
+      ).join('');
+    }
+  }
+
+  function populateThemeSwatches() {
+    const grid = document.getElementById('theme-swatch-grid');
+    if (!grid) return;
+    grid.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+      <div class="theme-swatch ${appSettings.theme === key ? 'active' : ''}" data-theme="${key}"
+           style="--swatch-color:${t.accent}; --swatch-glow:${t.glow};"
+           onclick="selectTheme('${key}')">
+        <span class="theme-swatch-dot"></span>
+        <span class="theme-swatch-name">${t.name}</span>
+      </div>
+    `).join('');
+  }
+
+  window.openSettingsModal = function() {
+    populateTimeframeSelects();
+    populateThemeSwatches();
+    updateSegmentedUI('seg-speed-unit', speedUnit);
+    updateSegmentedUI('seg-temp-unit', tempUnit);
+    updateSegmentedUI('seg-elevation-unit', elevationUnit);
+    updateSegmentedUI('seg-gauge-style', currentGaugeStyle);
+
+    const stagingSel = document.getElementById('select-staging-interval');
+    if (stagingSel) stagingSel.value = stagingIntervalMinutes.toString();
+
+    document.getElementById('settings-modal').style.display = 'flex';
+  };
+
+  window.closeSettingsModal = function() {
+    document.getElementById('settings-modal').style.display = 'none';
+  };
+
+  window.toggleFullscreen = function() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+    else document.exitFullscreen?.().catch(() => {});
+  };
+
+  /* ==========================================================
+     APP BOOTSTRAP
+     ========================================================== */
+  (function initApp() {
+    applyTheme(appSettings.theme);
+    applyFx();
+    populateThemeSwatches();
+    buildTopGaugesDOM();
+    initPhoneGpsTelemetry();
+
+    document.getElementById('label-dash-ele-unit').innerText = elevationUnit.toUpperCase();
+  })();
+</script>
